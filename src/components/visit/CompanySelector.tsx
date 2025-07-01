@@ -2,10 +2,11 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Building, Loader2 } from 'lucide-react';
+import { Building, Loader2, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { SearchableSelect } from '@/components/ui/searchable-select';
+import { useNavigate } from 'react-router-dom';
 
 type Company = Database['public']['Tables']['companies']['Row'] & {
   addresses: Database['public']['Tables']['addresses']['Row'];
@@ -26,6 +27,7 @@ export const CompanySelector: React.FC<CompanySelectorProps> = ({
   onNext,
   onBack
 }) => {
+  const navigate = useNavigate();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -53,9 +55,11 @@ export const CompanySelector: React.FC<CompanySelectorProps> = ({
     }
   };
 
-  const handleSelect = (companyId: string) => {
-    onSelect(companyId);
-  };
+  const companyOptions = companies.map(company => ({
+    value: company.id,
+    label: company.name,
+    subtitle: `${company.codeVAT} • ${company.addresses?.city}, ${company.addresses?.stateProvince}`
+  }));
 
   const canProceed = selectedCompanyId;
 
@@ -74,38 +78,23 @@ export const CompanySelector: React.FC<CompanySelectorProps> = ({
             <span className="ml-2">Loading companies...</span>
           </div>
         ) : (
-          <div className="space-y-3 max-h-64 overflow-y-auto">
-            {companies.map((company) => (
-              <div
-                key={company.id}
-                className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                  selectedCompanyId === company.id
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-                onClick={() => handleSelect(company.id)}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-medium">{company.name}</h3>
-                    <p className="text-sm text-gray-600">{company.codeVAT}</p>
-                    {company.addresses && (
-                      <p className="text-xs text-gray-500">
-                        {company.addresses.city}, {company.addresses.stateProvince}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    {company.isSupplier && (
-                      <Badge variant="secondary" className="text-xs">Supplier</Badge>
-                    )}
-                    {company.isSeller && (
-                      <Badge variant="outline" className="text-xs">Seller</Badge>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="space-y-4">
+            <SearchableSelect
+              options={companyOptions}
+              value={selectedCompanyId}
+              onSelect={onSelect}
+              placeholder={`Select ${type} company...`}
+              searchPlaceholder="Search companies..."
+            />
+            
+            <Button
+              variant="outline"
+              onClick={() => navigate('/companies')}
+              className="w-full"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Manage Companies
+            </Button>
           </div>
         )}
 

@@ -2,9 +2,11 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Activity, Loader2 } from 'lucide-react';
+import { Activity, Loader2, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { SearchableSelect } from '@/components/ui/searchable-select';
+import { useNavigate } from 'react-router-dom';
 
 type VisitActivity = Database['public']['Tables']['visitActivities']['Row'];
 
@@ -21,6 +23,7 @@ export const ActivitySelector: React.FC<ActivitySelectorProps> = ({
   onNext,
   onBack
 }) => {
+  const navigate = useNavigate();
   const [activities, setActivities] = useState<VisitActivity[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -45,9 +48,10 @@ export const ActivitySelector: React.FC<ActivitySelectorProps> = ({
     }
   };
 
-  const handleSelect = (activityId: string) => {
-    onSelect(activityId);
-  };
+  const activityOptions = activities.map(activity => ({
+    value: activity.id,
+    label: activity.name
+  }));
 
   const canProceed = selectedActivityId;
 
@@ -66,20 +70,23 @@ export const ActivitySelector: React.FC<ActivitySelectorProps> = ({
             <span className="ml-2">Loading activities...</span>
           </div>
         ) : (
-          <div className="space-y-3 max-h-64 overflow-y-auto">
-            {activities.map((activity) => (
-              <div
-                key={activity.id}
-                className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                  selectedActivityId === activity.id
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-                onClick={() => handleSelect(activity.id)}
-              >
-                <h3 className="font-medium text-center">{activity.name}</h3>
-              </div>
-            ))}
+          <div className="space-y-4">
+            <SearchableSelect
+              options={activityOptions}
+              value={selectedActivityId}
+              onSelect={onSelect}
+              placeholder="Select activity..."
+              searchPlaceholder="Search activities..."
+            />
+            
+            <Button
+              variant="outline"
+              onClick={() => navigate('/activities')}
+              className="w-full"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Manage Activities
+            </Button>
           </div>
         )}
 
