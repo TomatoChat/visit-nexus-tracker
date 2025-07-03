@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { NewVisitForm } from "@/components/visit/NewVisitForm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Lock } from "lucide-react";
+
+// Add this TypeScript declaration to fix the linter error for import.meta.env
+interface ImportMeta {
+  env: {
+    VITE_LOGIN_PASSWORD: string;
+    [key: string]: string;
+  };
+}
+
+const PASSWORD = import.meta.env.VITE_LOGIN_PASSWORD;
 
 const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -15,8 +24,8 @@ const Index = () => {
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Simple password check - you can change this password
-    if (password === "visitpass123") {
+    // Simple password check - now using environment variable
+    if (password === PASSWORD) {
       setIsAuthenticated(true);
       setError("");
     } else {
