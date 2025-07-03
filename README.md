@@ -1,40 +1,41 @@
 # Visit Nexus Tracker
 
-A modern web application for tracking visits, activities, companies, people, and selling points. Built with Vite, React, TypeScript, shadcn-ui, and Tailwind CSS.
+A web application for tracking visits, activities, companies, people, and selling points.
 
 ---
 
 ## 🚀 Features
 - Fast, responsive UI with React and Vite
-- TypeScript for type safety
-- Beautiful components with shadcn-ui
-- Styled using Tailwind CSS
-- Modular structure for easy maintenance
-- Supabase integration for backend data
+- Type-safe codebase with TypeScript
+- Beautiful, accessible components via shadcn/ui
+- Utility-first styling with Tailwind CSS
+- Modular, maintainable project structure
+- Supabase integration for authentication and data
+- Python scripts for advanced data processing and geocoding
 
 ---
 
 ## 🛠️ Tech Stack
 - **Frontend:** React, TypeScript, Vite
-- **UI:** shadcn-ui, Tailwind CSS
-- **Backend/Data:** Supabase, Python utilities
+- **UI:** shadcn/ui, Tailwind CSS
+- **Backend/Data:** Supabase, Python (pandas, geopy, supabase-py)
 
 ---
 
-## 📦 Project Structure
+## 📁 Project Structure
 ```
 visit-nexus-tracker/
 ├── src/
-│   ├── components/         # Reusable UI and feature components
+│   ├── components/         # UI and feature components
 │   ├── hooks/              # Custom React hooks
-│   ├── integrations/       # Supabase client and types
-│   ├── pages/              # Main app pages (management, tracker, etc.)
-│   ├── backend/            # Python scripts and SQL for data processing
+│   ├── integrations/       # Supabase client/types
+│   ├── pages/              # Main app pages
+│   ├── backend/            # Python scripts & SQL for data
 │   └── ...
 ├── public/                 # Static assets
 ├── supabase/               # Supabase config
-├── package.json            # Project metadata and scripts
-├── tailwind.config.ts      # Tailwind CSS config
+├── package.json            # Project metadata/scripts
+├── requirements.txt        # Python dependencies
 └── ...
 ```
 
@@ -42,36 +43,65 @@ visit-nexus-tracker/
 
 ## ⚡ Quick Start
 
-1. **Clone the repository:**
-   ```sh
-   git clone <YOUR_GIT_URL>
-   cd visit-nexus-tracker
-   ```
-2. **Install dependencies:**
-   ```sh
-   npm install
-   ```
-3. **Start the development server:**
-   ```sh
-   npm run dev
-   ```
-   The app will be available at `http://localhost:5173` (or as shown in your terminal).
+### 1. Clone the repository
+```sh
+git clone <YOUR_GIT_URL>
+cd visit-nexus-tracker
+```
+
+### 2. Install dependencies
+- **Frontend:**
+  ```sh
+  npm install
+  ```
+- **Backend (Python scripts):**
+  ```sh
+  pip install -r requirements.txt
+  ```
+
+### 3. Set up environment variables
+Create a `.env` file in the project root for both frontend and backend variables:
+
+#### Frontend (`.env` or `.env.local`)
+```
+VITE_LOGIN_PASSWORD=your_login_password
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+#### Backend (`.env` for Python scripts)
+```
+PROJECT_DIRECTORY=/absolute/path/to/visit-nexus-tracker
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_KEY=your_supabase_service_key
+GOOGLE_MAPS_KEY=your_google_maps_api_key
+```
+
+### 4. Start the development server
+```sh
+npm run dev
+```
+The app will be available at [http://localhost:5173](http://localhost:5173) (or as shown in your terminal).
+
+---
+
+## 🐍 Using the Python Backend Scripts
+- Python scripts for data processing and geocoding are in `src/backend/`.
+- Ensure your `.env` is set up as above before running scripts.
+- Example usage:
+  ```sh
+  python src/backend/geocodeAddresses.py
+  ```
 
 ---
 
 ## 🌐 Deployment
-
-To deploy, use the platform of your choice or the [Lovable](https://lovable.dev/projects/8b8c1a9f-1391-493b-9bfb-aa50324a19fa) dashboard:
-- Open Lovable, go to your project, and click **Share → Publish**.
+You can deploy the app using your preferred platform (Vercel, Netlify, etc.) or your own infrastructure.
 
 ---
 
 ## 🔗 Custom Domain
-
-You can connect a custom domain:
-- Go to Project > Settings > Domains in Lovable
-- Click **Connect Domain**
-- [Read the step-by-step guide](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+To connect a custom domain, follow the instructions provided by your hosting provider (e.g., Vercel, Netlify, or your DNS registrar).
 
 ---
 
@@ -87,6 +117,8 @@ Pull requests and issues are welcome! Please open an issue to discuss your ideas
 - [Tailwind CSS](https://tailwindcss.com/)
 - [shadcn/ui](https://ui.shadcn.com/)
 - [Supabase](https://supabase.com/)
+- [Supabase Python Client](https://supabase.com/docs/guides/with-python)
+- [Google Maps Geocoding API](https://developers.google.com/maps/documentation/geocoding/overview)
 
 ---
 
