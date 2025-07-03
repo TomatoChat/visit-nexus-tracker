@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
+import { DatabaseZap } from "lucide-react";
 
 // Add this TypeScript declaration to fix the linter error for import.meta.env
 interface ImportMeta {
@@ -34,11 +36,6 @@ const Index = () => {
     return () => {
       listener?.subscription.unsubscribe();
     };
-import { Link } from "react-router-dom"; // Added Link import
-import { DatabaseZap } from "lucide-react"; // Added DatabaseZap icon
-
-// ... (keep existing imports and code above this)
-
   }, []);
 
   const handleSignIn = async (e: React.FormEvent) => {

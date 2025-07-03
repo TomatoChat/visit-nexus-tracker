@@ -44,16 +44,16 @@ visit-nexus-tracker/
 ## ⚡ Quick Start
 
 ### 1. Clone the repository
-```sh
-git clone <YOUR_GIT_URL>
-cd visit-nexus-tracker
-```
+   ```sh
+   git clone <YOUR_GIT_URL>
+   cd visit-nexus-tracker
+   ```
 
 ### 2. Install dependencies
 - **Frontend:**
-  ```sh
-  npm install
-  ```
+   ```sh
+   npm install
+   ```
 - **Backend (Python scripts):**
   ```sh
   pip install -r requirements.txt
@@ -78,9 +78,9 @@ GOOGLE_MAPS_KEY=your_google_maps_api_key
 ```
 
 ### 4. Start the development server
-```sh
-npm run dev
-```
+   ```sh
+   npm run dev
+   ```
 The app will be available at [http://localhost:5173](http://localhost:5173) (or as shown in your terminal).
 
 ---

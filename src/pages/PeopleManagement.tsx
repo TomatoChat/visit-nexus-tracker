@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -87,10 +86,6 @@ const PeopleManagement = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={() => navigate('/visit-tracker')}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Visit Tracker
-          </Button>
           <h1 className="text-2xl font-bold text-gray-900">People Management</h1>
         </div>
 
