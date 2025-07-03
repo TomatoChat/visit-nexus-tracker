@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MapPin, Building, Users } from 'lucide-react';
+import { MapPin, Building, Users, Activity, User } from 'lucide-react';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 
 type Company = Database['public']['Tables']['companies']['Row'];
 type SellingPoint = Database['public']['Tables']['sellingPoints']['Row'];
+type VisitActivity = Database['public']['Tables']['visitActivities']['Row'];
+type Person = Database['public']['Tables']['people']['Row'];
 
 interface NewVisitFormProps {}
 
@@ -15,10 +17,14 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
   const [suppliers, setSuppliers] = useState<Company[]>([]);
   const [sellers, setSellers] = useState<Company[]>([]);
   const [sellingPoints, setSellingPoints] = useState<SellingPoint[]>([]);
+  const [activities, setActivities] = useState<VisitActivity[]>([]);
+  const [people, setPeople] = useState<Person[]>([]);
   
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>('');
   const [selectedSellerId, setSelectedSellerId] = useState<string>('');
   const [selectedSellingPointId, setSelectedSellingPointId] = useState<string>('');
+  const [selectedActivityId, setSelectedActivityId] = useState<string>('');
+  const [selectedPersonId, setSelectedPersonId] = useState<string>('');
   
   const [loading, setLoading] = useState<{ [key: string]: boolean }>({});
 
@@ -43,10 +49,31 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
   useEffect(() => {
     if (selectedSellerId && selectedSupplierId) {
       fetchSellingPoints();
-      // Reset selling point selection
+      // Reset subsequent selections
       setSelectedSellingPointId('');
+      setSelectedActivityId('');
+      setSelectedPersonId('');
     }
   }, [selectedSellerId, selectedSupplierId]);
+
+  // Load activities when selling point is selected
+  useEffect(() => {
+    if (selectedSellingPointId) {
+      fetchActivities();
+      // Reset subsequent selections
+      setSelectedActivityId('');
+      setSelectedPersonId('');
+    }
+  }, [selectedSellingPointId]);
+
+  // Load people when activity is selected
+  useEffect(() => {
+    if (selectedActivityId && selectedSupplierId && selectedSellerId && selectedSellingPointId) {
+      fetchPeople();
+      // Reset person selection
+      setSelectedPersonId('');
+    }
+  }, [selectedActivityId, selectedSupplierId, selectedSellerId, selectedSellingPointId]);
 
   const fetchSuppliers = async () => {
     setLoading(prev => ({ ...prev, suppliers: true }));
@@ -132,6 +159,39 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
     }
   };
 
+  const fetchActivities = async () => {
+    setLoading(prev => ({ ...prev, activities: true }));
+    try {
+      const { data, error } = await supabase
+        .from('visitActivities')
+        .select('*');
+
+      if (error) throw error;
+      setActivities(data || []);
+    } catch (error) {
+      console.error('Error fetching activities:', error);
+    } finally {
+      setLoading(prev => ({ ...prev, activities: false }));
+    }
+  };
+
+  const fetchPeople = async () => {
+    setLoading(prev => ({ ...prev, people: true }));
+    try {
+      const { data, error } = await supabase
+        .from('people')
+        .select('*')
+        .or(`companyId.eq.${selectedSupplierId},companyId.eq.${selectedSellerId},sellingPointId.eq.${selectedSellingPointId}`);
+
+      if (error) throw error;
+      setPeople(data || []);
+    } catch (error) {
+      console.error('Error fetching people:', error);
+    } finally {
+      setLoading(prev => ({ ...prev, people: false }));
+    }
+  };
+
   const supplierOptions = suppliers.map(supplier => ({
     value: supplier.id,
     label: supplier.name,
@@ -150,21 +210,64 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
     subtitle: point.phoneNumber || 'No phone'
   }));
 
+  const activityOptions = activities.map(activity => ({
+    value: activity.id,
+    label: activity.name,
+    subtitle: undefined
+  }));
+
+  const personOptions = people.map(person => ({
+    value: person.id,
+    label: person.name,
+    subtitle: person.surname
+  }));
+
   const selectedSupplier = suppliers.find(s => s.id === selectedSupplierId);
   const selectedSeller = sellers.find(s => s.id === selectedSellerId);
   const selectedSellingPoint = sellingPoints.find(p => p.id === selectedSellingPointId);
+  const selectedActivity = activities.find(a => a.id === selectedActivityId);
+  const selectedPerson = people.find(p => p.id === selectedPersonId);
 
-  const canSubmit = selectedSupplierId && selectedSellerId && selectedSellingPointId;
+  const canSubmit = selectedSupplierId && selectedSellerId && selectedSellingPointId && selectedActivityId && selectedPersonId;
 
-  const handleSubmit = () => {
-    if (canSubmit) {
-      console.log('Visit submitted:', {
-        supplier: selectedSupplier,
-        seller: selectedSeller,
-        sellingPoint: selectedSellingPoint
-      });
-      // TODO: Implement actual visit submission logic
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
+    
+    setLoading(prev => ({ ...prev, submitting: true }));
+    try {
+      const { data, error } = await supabase
+        .from('visits')
+        .insert({
+          supplierCompanyId: selectedSupplierId,
+          sellingPointId: selectedSellingPointId,
+          activityId: selectedActivityId,
+          agentId: selectedPersonId, // The person making the visit is the agent
+          visitDate: new Date().toISOString().split('T')[0], // Today's date
+          personVisitedId: null // This could be added later if needed
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
       alert('Visit logged successfully!');
+      
+      // Reset form after successful submission
+      setSelectedSupplierId('');
+      setSelectedSellerId('');
+      setSelectedSellingPointId('');
+      setSelectedActivityId('');
+      setSelectedPersonId('');
+      setSellers([]);
+      setSellingPoints([]);
+      setActivities([]);
+      setPeople([]);
+      
+    } catch (error) {
+      console.error('Error submitting visit:', error);
+      alert('Error submitting visit. Please try again.');
+    } finally {
+      setLoading(prev => ({ ...prev, submitting: false }));
     }
   };
 
@@ -227,6 +330,38 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
               />
             </div>
 
+            {/* Step 4: Select Activity */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <Activity className="w-4 h-4" />
+                Select Activity
+              </label>
+              <SearchableSelect
+                options={activityOptions}
+                value={selectedActivityId}
+                onSelect={setSelectedActivityId}
+                placeholder="Choose an activity..."
+                searchPlaceholder="Search activities..."
+                disabled={!selectedSellingPointId || loading.activities}
+              />
+            </div>
+
+            {/* Step 5: Select Person */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <User className="w-4 h-4" />
+                Select Person
+              </label>
+              <SearchableSelect
+                options={personOptions}
+                value={selectedPersonId}
+                onSelect={setSelectedPersonId}
+                placeholder="Choose a person..."
+                searchPlaceholder="Search people..."
+                disabled={!selectedActivityId || loading.people}
+              />
+            </div>
+
             {/* Selection Summary */}
             {canSubmit && (
               <div className="space-y-3 p-4 bg-blue-50 rounded-lg">
@@ -235,6 +370,8 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                   <p><span className="font-medium">Supplier:</span> {selectedSupplier?.name}</p>
                   <p><span className="font-medium">Selling Company:</span> {selectedSeller?.name}</p>
                   <p><span className="font-medium">Selling Point:</span> {selectedSellingPoint?.name}</p>
+                  <p><span className="font-medium">Activity:</span> {selectedActivity?.name}</p>
+                  <p><span className="font-medium">Person:</span> {selectedPerson?.name} {selectedPerson?.surname}</p>
                 </div>
               </div>
             )}
@@ -242,11 +379,11 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
             {/* Submit Button */}
             <Button 
               onClick={handleSubmit}
-              disabled={!canSubmit}
+              disabled={!canSubmit || loading.submitting}
               className="w-full"
               size="lg"
             >
-              Submit Visit
+              {loading.submitting ? 'Submitting...' : 'Submit Visit'}
             </Button>
           </CardContent>
         </Card>
