@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 
 type Company = Database['public']['Tables']['companies']['Row'];
-type SellingPoint = Database['public']['Tables']['sellingPoints']['Row'];
+type SellingPointWithAddress = Database['public']['Tables']['sellingPoints']['Row'] & { addresses?: Database['public']['Tables']['addresses']['Row'] };
 type VisitActivity = Database['public']['Tables']['visitActivities']['Row'];
 type Person = Database['public']['Tables']['people']['Row'];
 
@@ -20,7 +20,7 @@ interface NewVisitFormProps {}
 export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
   const [suppliers, setSuppliers] = useState<Company[]>([]);
   const [sellers, setSellers] = useState<Company[]>([]);
-  const [sellingPoints, setSellingPoints] = useState<SellingPoint[]>([]);
+  const [sellingPoints, setSellingPoints] = useState<SellingPointWithAddress[]>([]);
   const [activities, setActivities] = useState<VisitActivity[]>([]);
   const [agents, setAgents] = useState<Person[]>([]);
   
@@ -157,10 +157,9 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
   const fetchSellingPoints = async () => {
     setLoading(prev => ({ ...prev, sellingPoints: true }));
     try {
-      // Get selling points that belong to the selected seller AND have a relationship with the selected supplier
       const { data, error } = await supabase
         .from('sellingPoints')
-        .select('*')
+        .select('*, addresses(*)')
         .eq('sellerCompanyId', selectedSellerId)
         .in('id', 
           await supabase
@@ -171,7 +170,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
         );
 
       if (error) throw error;
-      setSellingPoints(data || []);
+      setSellingPoints((data || []) as SellingPointWithAddress[]);
     } catch (error) {
       console.error('Error fetching selling points:', error);
     } finally {
@@ -195,35 +194,48 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
     }
   };
 
-  const supplierOptions = suppliers.map(supplier => ({
-    value: supplier.id,
-    label: supplier.name,
-    subtitle: supplier.codeVAT
-  }));
+  const supplierOptions = suppliers
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(supplier => ({
+      value: supplier.id,
+      label: supplier.name
+    }));
 
-  const sellerOptions = sellers.map(seller => ({
-    value: seller.id,
-    label: seller.name,
-    subtitle: seller.codeVAT
-  }));
+  const sellerOptions = sellers
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(seller => ({
+      value: seller.id,
+      label: seller.name
+    }));
 
-  const sellingPointOptions = sellingPoints.map(point => ({
-    value: point.id,
-    label: point.name,
-    subtitle: point.phoneNumber || 'No phone'
-  }));
+  const sellingPointOptions = sellingPoints
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(point => ({
+      value: point.id,
+      label: point.name,
+      subtitle: point.addresses?.city || ''
+    }));
 
-  const activityOptions = activities.map(activity => ({
-    value: activity.id,
-    label: activity.name,
-    subtitle: undefined
-  }));
+  const activityOptions = activities
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(activity => ({
+      value: activity.id,
+      label: activity.name,
+      subtitle: undefined
+    }));
 
-  const agentOptions = agents.map(agent => ({
-    value: agent.id,
-    label: agent.name,
-    subtitle: agent.surname
-  }));
+  const agentOptions = agents
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(agent => ({
+      value: agent.id,
+      label: agent.name,
+      subtitle: agent.surname
+    }));
 
   const selectedSupplier = suppliers.find(s => s.id === selectedSupplierId);
   const selectedSeller = sellers.find(s => s.id === selectedSellerId);
@@ -253,7 +265,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
 
       if (error) throw error;
       
-      alert('Visit logged successfully!');
+      alert('Visita registrata correttamente!');
       
       // Reset form after successful submission
       setSelectedSupplierId('');
@@ -267,7 +279,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
       
     } catch (error) {
       console.error('Error submitting visit:', error);
-      alert('Error submitting visit. Please try again.');
+      alert('Errore nel invio della visita. Per favore riprova più tardi.');
     } finally {
       setLoading(prev => ({ ...prev, submitting: false }));
     }
@@ -281,14 +293,14 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
           <div className="w-64">
             <label className="text-sm font-medium flex items-center gap-2 mb-2">
               <User className="w-4 h-4" />
-              Select Agent
+              Agente
             </label>
             <SearchableSelect
               options={agentOptions}
               value={selectedAgentId}
               onSelect={setSelectedAgentId}
-              placeholder="Choose an agent..."
-              searchPlaceholder="Search agents..."
+              placeholder="Scegli un agente..."
+              searchPlaceholder="Cerca agenti..."
               disabled={loading.agents}
             />
           </div>
@@ -298,7 +310,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
           <CardHeader>
             <CardTitle className="text-2xl text-center flex items-center justify-center gap-2">
               <MapPin className="w-6 h-6" />
-              New Visit Form
+              Nuovo Rapporto Visita
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -306,7 +318,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center gap-2">
                 <CalendarIcon className="w-4 h-4" />
-                Visit Date
+                Data Visita
               </label>
               <Popover>
                 <PopoverTrigger asChild>
@@ -318,7 +330,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                    {selectedDate ? format(selectedDate, "PPP") : <span>Scegli una data</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -338,14 +350,14 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center gap-2">
                 <Building className="w-4 h-4" />
-                Select Supplier
+                Fornitore
               </label>
               <SearchableSelect
                 options={supplierOptions}
                 value={selectedSupplierId}
                 onSelect={setSelectedSupplierId}
-                placeholder="Choose a supplier company..."
-                searchPlaceholder="Search suppliers..."
+                placeholder="Scegli un'azienda fornitrice..."
+                searchPlaceholder="Cerca fornitori..."
                 disabled={loading.suppliers}
               />
             </div>
@@ -354,14 +366,14 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center gap-2">
                 <Users className="w-4 h-4" />
-                Select Selling Company
+                Azienda Venditrice
               </label>
               <SearchableSelect
                 options={sellerOptions}
                 value={selectedSellerId}
                 onSelect={setSelectedSellerId}
-                placeholder="Choose a selling company..."
-                searchPlaceholder="Search selling companies..."
+                placeholder="Scegli un'azienda venditrice..."
+                searchPlaceholder="Cerca aziende venditrici..."
                 disabled={!selectedSupplierId || loading.sellers}
               />
             </div>
@@ -370,14 +382,14 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center gap-2">
                 <MapPin className="w-4 h-4" />
-                Select Selling Point
+                Punto Vendita
               </label>
               <SearchableSelect
                 options={sellingPointOptions}
                 value={selectedSellingPointId}
                 onSelect={setSelectedSellingPointId}
-                placeholder="Choose a selling point..."
-                searchPlaceholder="Search selling points..."
+                placeholder="Scegli un punto vendita..."
+                searchPlaceholder="Cerca punti vendita..."
                 disabled={!selectedSellerId || loading.sellingPoints}
               />
             </div>
@@ -386,14 +398,14 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center gap-2">
                 <Activity className="w-4 h-4" />
-                Select Activity
+                Attività
               </label>
               <SearchableSelect
                 options={activityOptions}
                 value={selectedActivityId}
                 onSelect={setSelectedActivityId}
-                placeholder="Choose an activity..."
-                searchPlaceholder="Search activities..."
+                placeholder="Scegli un'attività..."
+                searchPlaceholder="Cerca attività..."
                 disabled={!selectedSellingPointId || loading.activities}
               />
             </div>
@@ -401,14 +413,14 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
             {/* Selection Summary */}
             {canSubmit && (
               <div className="space-y-3 p-4 bg-blue-50 rounded-lg">
-                <h3 className="font-medium text-blue-900">Visit Summary</h3>
+                <h3 className="font-medium text-blue-900">Riepilogo Visita</h3>
                 <div className="space-y-1 text-sm">
-                  <p><span className="font-medium">Agent:</span> {selectedAgent?.name} {selectedAgent?.surname}</p>
-                  <p><span className="font-medium">Date:</span> {format(selectedDate, "PPP")}</p>
-                  <p><span className="font-medium">Supplier:</span> {selectedSupplier?.name}</p>
-                  <p><span className="font-medium">Selling Company:</span> {selectedSeller?.name}</p>
-                  <p><span className="font-medium">Selling Point:</span> {selectedSellingPoint?.name}</p>
-                  <p><span className="font-medium">Activity:</span> {selectedActivity?.name}</p>
+                  <p><span className="font-medium">Agente:</span> {selectedAgent?.name} {selectedAgent?.surname}</p>
+                  <p><span className="font-medium">Data:</span> {format(selectedDate, "PPP")}</p>
+                  <p><span className="font-medium">Fornitore:</span> {selectedSupplier?.name}</p>
+                  <p><span className="font-medium">Azienda Venditrice:</span> {selectedSeller?.name}</p>
+                  <p><span className="font-medium">Punto Vendita:</span> {selectedSellingPoint?.name}</p>
+                  <p><span className="font-medium">Attività:</span> {selectedActivity?.name}</p>
                 </div>
               </div>
             )}
@@ -420,7 +432,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
               className="w-full"
               size="lg"
             >
-              {loading.submitting ? 'Submitting...' : 'Submit Visit'}
+              {loading.submitting ? 'Invio in corso...' : 'Invia Rapporto Visita'}
             </Button>
           </CardContent>
         </Card>

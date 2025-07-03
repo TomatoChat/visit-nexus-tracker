@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -102,6 +101,9 @@ export const SellingPointSelector: React.FC<SellingPointSelectorProps> = ({
 
   const canProceed = selectedSellingPointId && selectedAgentId;
 
+  const sortedSellingPoints = sellingPoints.slice().sort((a, b) => a.name.localeCompare(b.name));
+  const sortedAgents = agents.slice().sort((a, b) => a.name.localeCompare(b.name));
+
   return (
     <div className="space-y-4">
       {/* Agent Selection */}
@@ -111,7 +113,7 @@ export const SellingPointSelector: React.FC<SellingPointSelectorProps> = ({
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {agents.map((agent) => (
+            {sortedAgents.map((agent) => (
               <div
                 key={agent.id}
                 className={`p-3 border rounded-lg cursor-pointer transition-colors ${
@@ -148,13 +150,13 @@ export const SellingPointSelector: React.FC<SellingPointSelectorProps> = ({
               <Loader2 className="w-6 h-6 animate-spin" />
               <span className="ml-2">Loading selling points...</span>
             </div>
-          ) : sellingPoints.length === 0 ? (
+          ) : sortedSellingPoints.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               No selling points available for this supplier company
             </div>
           ) : (
             <div className="space-y-3 max-h-64 overflow-y-auto">
-              {sellingPoints.map((point) => (
+              {sortedSellingPoints.map((point) => (
                 <div
                   key={point.id}
                   className={`p-3 border rounded-lg cursor-pointer transition-colors ${

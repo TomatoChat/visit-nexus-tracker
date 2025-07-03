@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -55,11 +54,14 @@ export const CompanySelector: React.FC<CompanySelectorProps> = ({
     }
   };
 
-  const companyOptions = companies.map(company => ({
-    value: company.id,
-    label: company.name,
-    subtitle: `${company.codeVAT} • ${company.addresses?.city}, ${company.addresses?.stateProvince}`
-  }));
+  const companyOptions = companies
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(company => ({
+      value: company.id,
+      label: company.name,
+      subtitle: `${company.codeVAT} • ${company.addresses?.city}, ${company.addresses?.stateProvince}`
+    }));
 
   const canProceed = selectedCompanyId;
 

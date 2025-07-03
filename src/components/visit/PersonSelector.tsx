@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -67,6 +66,8 @@ export const PersonSelector: React.FC<PersonSelectorProps> = ({
     onNext();
   };
 
+  const sortedPeople = people.slice().sort((a, b) => a.name.localeCompare(b.name));
+
   return (
     <Card>
       <CardHeader>
@@ -87,7 +88,7 @@ export const PersonSelector: React.FC<PersonSelectorProps> = ({
           </div>
         ) : (
           <div className="space-y-3 max-h-64 overflow-y-auto">
-            {people.map((person) => (
+            {sortedPeople.map((person) => (
               <div
                 key={person.id}
                 className={`p-3 border rounded-lg cursor-pointer transition-colors ${

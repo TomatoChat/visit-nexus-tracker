@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NewVisitForm } from "@/components/visit/NewVisitForm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Lock } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 // Add this TypeScript declaration to fix the linter error for import.meta.env
 interface ImportMeta {
@@ -17,24 +18,34 @@ interface ImportMeta {
 const PASSWORD = import.meta.env.VITE_LOGIN_PASSWORD;
 
 const Index = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [session, setSession] = useState(null);
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+    return () => {
+      listener?.subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Simple password check - now using environment variable
-    if (password === PASSWORD) {
-      setIsAuthenticated(true);
-      setError("");
-    } else {
-      setError("Invalid password. Please try again.");
-      setPassword("");
-    }
+    setLoading(true);
+    setError("");
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) setError(error.message);
+    setLoading(false);
   };
 
-  if (isAuthenticated) {
+  if (session) {
     return <NewVisitForm />;
   }
 
@@ -44,27 +55,38 @@ const Index = () => {
         <CardHeader>
           <CardTitle className="text-2xl text-center flex items-center justify-center gap-2">
             <Lock className="w-6 h-6" />
-            Access Required
+            Login Required
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handlePasswordSubmit} className="space-y-4">
+          <form onSubmit={handleSignIn} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="password">Enter Password</Label>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password to access visit form"
+                placeholder="Enter your password"
                 required
               />
             </div>
             {error && (
               <p className="text-sm text-red-600">{error}</p>
             )}
-            <Button type="submit" className="w-full">
-              Access Visit Form
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Signing in..." : "Login"}
             </Button>
           </form>
         </CardContent>
