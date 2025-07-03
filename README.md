@@ -1,73 +1,94 @@
-# Welcome to your Lovable project
+# Visit Nexus Tracker
 
-## Project info
+A modern web application for tracking visits, activities, companies, people, and selling points. Built with Vite, React, TypeScript, shadcn-ui, and Tailwind CSS.
 
-**URL**: https://lovable.dev/projects/8b8c1a9f-1391-493b-9bfb-aa50324a19fa
+---
 
-## How can I edit this code?
+## 🚀 Features
+- Fast, responsive UI with React and Vite
+- TypeScript for type safety
+- Beautiful components with shadcn-ui
+- Styled using Tailwind CSS
+- Modular structure for easy maintenance
+- Supabase integration for backend data
 
-There are several ways of editing your application.
+---
 
-**Use Lovable**
+## 🛠️ Tech Stack
+- **Frontend:** React, TypeScript, Vite
+- **UI:** shadcn-ui, Tailwind CSS
+- **Backend/Data:** Supabase, Python utilities
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/8b8c1a9f-1391-493b-9bfb-aa50324a19fa) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+## 📦 Project Structure
+```
+visit-nexus-tracker/
+├── src/
+│   ├── components/         # Reusable UI and feature components
+│   ├── hooks/              # Custom React hooks
+│   ├── integrations/       # Supabase client and types
+│   ├── pages/              # Main app pages (management, tracker, etc.)
+│   ├── backend/            # Python scripts and SQL for data processing
+│   └── ...
+├── public/                 # Static assets
+├── supabase/               # Supabase config
+├── package.json            # Project metadata and scripts
+├── tailwind.config.ts      # Tailwind CSS config
+└── ...
 ```
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## ⚡ Quick Start
 
-**Use GitHub Codespaces**
+1. **Clone the repository:**
+   ```sh
+   git clone <YOUR_GIT_URL>
+   cd visit-nexus-tracker
+   ```
+2. **Install dependencies:**
+   ```sh
+   npm install
+   ```
+3. **Start the development server:**
+   ```sh
+   npm run dev
+   ```
+   The app will be available at `http://localhost:5173` (or as shown in your terminal).
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## 🌐 Deployment
 
-This project is built with:
+To deploy, use the platform of your choice or the [Lovable](https://lovable.dev/projects/8b8c1a9f-1391-493b-9bfb-aa50324a19fa) dashboard:
+- Open Lovable, go to your project, and click **Share → Publish**.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+---
 
-## How can I deploy this project?
+## 🔗 Custom Domain
 
-Simply open [Lovable](https://lovable.dev/projects/8b8c1a9f-1391-493b-9bfb-aa50324a19fa) and click on Share -> Publish.
+You can connect a custom domain:
+- Go to Project > Settings > Domains in Lovable
+- Click **Connect Domain**
+- [Read the step-by-step guide](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
 
-## Can I connect a custom domain to my Lovable project?
+---
 
-Yes, you can!
+## 🤝 Contributing
+Pull requests and issues are welcome! Please open an issue to discuss your ideas or report bugs.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+---
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## 📚 Resources
+- [Vite Documentation](https://vitejs.dev/)
+- [React Documentation](https://react.dev/)
+- [TypeScript Documentation](https://www.typescriptlang.org/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [shadcn/ui](https://ui.shadcn.com/)
+- [Supabase](https://supabase.com/)
+
+---
+
+## 📝 License
+This project is licensed under the MIT License.
