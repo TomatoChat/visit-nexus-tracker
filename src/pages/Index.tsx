@@ -34,6 +34,11 @@ const Index = () => {
     return () => {
       listener?.subscription.unsubscribe();
     };
+import { Link } from "react-router-dom"; // Added Link import
+import { DatabaseZap } from "lucide-react"; // Added DatabaseZap icon
+
+// ... (keep existing imports and code above this)
+
   }, []);
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -46,7 +51,20 @@ const Index = () => {
   };
 
   if (session) {
-    return <NewVisitForm />;
+    return (
+      <div className="container mx-auto p-4 space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <Link to="/data-management">
+            <Button variant="outline">
+              <DatabaseZap className="w-4 h-4 mr-2" />
+              Data Management
+            </Button>
+          </Link>
+        </div>
+        <NewVisitForm />
+      </div>
+    );
   }
 
   return (

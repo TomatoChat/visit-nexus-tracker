@@ -10,6 +10,7 @@ import CompanyManagement from "./pages/CompanyManagement";
 import PeopleManagement from "./pages/PeopleManagement";
 import SellingPointManagement from "./pages/SellingPointManagement";
 import ActivityManagement from "./pages/ActivityManagement";
+import DataManagement from "./pages/DataManagement"; // Import the new page
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/people" element={<PeopleManagement />} />
           <Route path="/selling-points" element={<SellingPointManagement />} />
           <Route path="/activities" element={<ActivityManagement />} />
+          <Route path="/data-management" element={<DataManagement />} /> {/* Add route for DataManagement */}
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
