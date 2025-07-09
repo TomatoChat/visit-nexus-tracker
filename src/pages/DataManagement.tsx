@@ -40,133 +40,136 @@ const DataManagement = () => {
           );
         } finally {
           setAddressLoading(false);
-    }
+        }
       })();
     }
   }, [addressSearch, showAddressForm]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 p-4">
-      <div className="w-full md:max-w-5xl mx-auto space-y-4 md:space-y-6">
-        <div className="flex items-center gap-4">
-          <h1 className="text-lg md:text-3xl font-bold text-gray-800">Data Management</h1>
+      <div className="w-full md:max-w-4xl mx-auto px-2 md:px-0 mt-8">
+        {/* Mobile: Title */}
+        <div className="flex flex-row items-center gap-2 md:hidden mb-4">
+          <h1 className="text-lg font-bold text-gray-800">Data Management</h1>
         </div>
-        <div className="px-2 md:px-0 mt-8">
-          <Tabs defaultValue="company" className="w-full">
-            <TabsList className="mb-4 gap-2">
-              <TabsTrigger value="company">Nuova Azienda</TabsTrigger>
-              <TabsTrigger value="sellingPoint">Nuovo Punto Vendita</TabsTrigger>
-              <TabsTrigger value="person">Nuova Persona</TabsTrigger>
-              <TabsTrigger value="activity">Nuova Attività</TabsTrigger>
-            </TabsList>
-            <TabsContent value="company">
-        <Card>
-          <CardHeader>
-                  <CardTitle>Crea Nuova Azienda</CardTitle>
-          </CardHeader>
-                <CardContent>
-                  <form className="space-y-4">
-                    <div>
-                      <Label htmlFor="company-name">Nome Azienda <span className="text-red-500">*</span></Label>
-                      <Input id="company-name" placeholder="Inserisci il nome dell'azienda" required />
+        {/* Desktop: Title */}
+        <div className="hidden md:flex items-center gap-4 mb-8">
+          <h1 className="text-3xl font-bold text-gray-800 text-left">Data Management</h1>
+        </div>
+        <Tabs defaultValue="company" className="w-full">
+          <TabsList className="mb-4 gap-2">
+            <TabsTrigger value="company">Nuova Azienda</TabsTrigger>
+            <TabsTrigger value="sellingPoint">Nuovo Punto Vendita</TabsTrigger>
+            <TabsTrigger value="person">Nuova Persona</TabsTrigger>
+            <TabsTrigger value="activity">Nuova Attività</TabsTrigger>
+          </TabsList>
+          <TabsContent value="company">
+            <Card>
+              <CardHeader>
+                <CardTitle>Crea Nuova Azienda</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form className="space-y-4">
+                  <div>
+                    <Label htmlFor="company-name">Nome Azienda <span className="text-red-500">*</span></Label>
+                    <Input id="company-name" placeholder="Inserisci il nome dell'azienda" required />
+                  </div>
+                  <div>
+                    <Label htmlFor="company-vat">Partita IVA <span className="text-red-500">*</span></Label>
+                    <Input id="company-vat" placeholder="Inserisci la partita IVA" required />
+                  </div>
+                  <div>
+                    <Label>Tipo Azienda <span className="text-red-500">*</span></Label>
+                    <div className="flex gap-4 mt-2">
+                      <label className="flex items-center gap-2">
+                        <input 
+                          type="checkbox" 
+                          checked={companyType === 'supplier'}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setCompanyType('supplier');
+                            } else {
+                              setCompanyType(null);
+                            }
+                          }}
+                        /> 
+                        Fornitore
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input 
+                          type="checkbox" 
+                          checked={companyType === 'seller'}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setCompanyType('seller');
+                            } else {
+                              setCompanyType(null);
+                            }
+                          }}
+                        /> 
+                        Venditore
+                      </label>
                     </div>
-                    <div>
-                      <Label htmlFor="company-vat">Partita IVA <span className="text-red-500">*</span></Label>
-                      <Input id="company-vat" placeholder="Inserisci la partita IVA" required />
-                    </div>
-                    <div>
-                      <Label>Tipo Azienda <span className="text-red-500">*</span></Label>
-                      <div className="flex gap-4 mt-2">
-                        <label className="flex items-center gap-2">
-                          <input 
-                            type="checkbox" 
-                            checked={companyType === 'supplier'}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setCompanyType('supplier');
-                              } else {
-                                setCompanyType(null);
-                              }
-                            }}
-                          /> 
-                          Fornitore
-                        </label>
-                        <label className="flex items-center gap-2">
-                          <input 
-                            type="checkbox" 
-                            checked={companyType === 'seller'}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setCompanyType('seller');
-                              } else {
-                                setCompanyType(null);
-                              }
-                            }}
-                          /> 
-                          Venditore
-                        </label>
+                  </div>
+                  <div>
+                    <Label>Indirizzo <span className="text-red-500">*</span></Label>
+                    {!showAddressForm ? (
+                      <div className="flex gap-2">
+                        <SearchableSelect
+                          options={addressOptions}
+                          value={selectedAddress}
+                          onSelect={(val) => {
+                            setSelectedAddress(val);
+                          }}
+                          placeholder="Cerca indirizzo per via o città..."
+                          searchPlaceholder="Digita indirizzo o città..."
+                          disabled={addressLoading}
+                          className="flex-1"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setShowAddressForm(true)}
+                          className="px-3"
+                        >
+                          +
+                        </Button>
                       </div>
-                    </div>
-                    <div>
-                      <Label>Indirizzo <span className="text-red-500">*</span></Label>
-                      {!showAddressForm ? (
+                    ) : (
+                      <div className="space-y-2 border rounded p-2 mt-2">
+                        <Input placeholder="Via" />
+                        <Input placeholder="Civico" />
+                        <Input placeholder="Città" />
+                        <Input placeholder="Provincia" />
+                        <Input placeholder="CAP" />
+                        <Input placeholder="Nazione" />
                         <div className="flex gap-2">
-                          <SearchableSelect
-                            options={addressOptions}
-                            value={selectedAddress}
-                            onSelect={(val) => {
-                              setSelectedAddress(val);
-                            }}
-                            placeholder="Cerca indirizzo per via o città..."
-                            searchPlaceholder="Digita indirizzo o città..."
-                            disabled={addressLoading}
-              className="flex-1"
-                          />
-            <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setShowAddressForm(true)}
-                            className="px-3"
-            >
-                            +
-            </Button>
+                          <Input placeholder="Latitudine" />
+                          <Input placeholder="Longitudine" />
                         </div>
-                      ) : (
-                        <div className="space-y-2 border rounded p-2 mt-2">
-                          <Input placeholder="Via" />
-                          <Input placeholder="Civico" />
-                          <Input placeholder="Città" />
-                          <Input placeholder="Provincia" />
-                          <Input placeholder="CAP" />
-                          <Input placeholder="Nazione" />
-                          <div className="flex gap-2">
-                            <Input placeholder="Latitudine" />
-                            <Input placeholder="Longitudine" />
-                          </div>
-                          <Button type="button" variant="outline" onClick={() => setShowAddressForm(false)}>
-                            Annulla
-            </Button>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex justify-end">
-                      <Button type="submit">Crea Azienda</Button>
-                    </div>
-                  </form>
-          </CardContent>
-        </Card>
-            </TabsContent>
-            <TabsContent value="sellingPoint">
-              <AddNewSellingPointForm />
-            </TabsContent>
-            <TabsContent value="person">
-              <AddNewPersonForm />
-            </TabsContent>
-            <TabsContent value="activity">
-              <AddNewActivityForm />
-            </TabsContent>
-          </Tabs>
-        </div>
+                        <Button type="button" variant="outline" onClick={() => setShowAddressForm(false)}>
+                          Annulla
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex justify-end">
+                    <Button type="submit">Crea Azienda</Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="sellingPoint">
+            <AddNewSellingPointForm />
+          </TabsContent>
+          <TabsContent value="person">
+            <AddNewPersonForm />
+          </TabsContent>
+          <TabsContent value="activity">
+            <AddNewActivityForm />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
