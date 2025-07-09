@@ -51,11 +51,13 @@ export const SellingPointSelector: React.FC<SellingPointSelectorProps> = ({
           addresses (*),
           companies (*)
         `)
+        .eq('isactive', true)
         .in('id', 
           await supabase
             .from('companySellingPoint')
             .select('sellingPointId')
             .eq('supplierCompanyId', supplierCompanyId)
+            .eq('isactive', true)
             .is('endDate', null)
             .then(({ data }) => data?.map(item => item.sellingPointId) || [])
         );

@@ -36,6 +36,7 @@ export const ActivitySelector: React.FC<ActivitySelectorProps> = ({
       const { data, error } = await supabase
         .from('visitActivities')
         .select('*')
+        .eq('isactive', true)
         .order('name');
 
       if (error) throw error;

@@ -21,6 +21,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
+import { AgentOrAbove } from '@/components/ui/role-guard';
 
 type Company = Database['public']['Tables']['companies']['Row'];
 type SellingPointWithAddress = Database['public']['Tables']['sellingPoints']['Row'] & { addresses?: Database['public']['Tables']['addresses']['Row'] };
@@ -321,23 +322,24 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
     }));
 
   return (
-    <>
-      {/* Logout Confirmation Dialog */}
-      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Vuoi uscire?</AlertDialogTitle>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annulla</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmLogout}>Sì</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      {/* Submission Result Dialog */}
-      <AlertDialog open={showResultDialog} onOpenChange={setShowResultDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
+    <AgentOrAbove>
+      <>
+        {/* Logout Confirmation Dialog */}
+        <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Vuoi uscire?</AlertDialogTitle>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annulla</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmLogout}>Sì</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+        {/* Submission Result Dialog */}
+        <AlertDialog open={showResultDialog} onOpenChange={setShowResultDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
             <AlertDialogTitle>Risultato</AlertDialogTitle>
             <AlertDialogDescription>{resultDialogContent}</AlertDialogDescription>
           </AlertDialogHeader>
@@ -526,6 +528,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
             )}
           </CardContent>
         </Card>
-    </>
+      </>
+    </AgentOrAbove>
   );
 };

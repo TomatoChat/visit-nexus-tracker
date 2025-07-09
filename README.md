@@ -11,6 +11,7 @@ Visit Nexus Tracker is a full-stack application that enables users to:
 - **Data Management**: Add and manage companies, people, selling points, and activities
 - **Geocoding**: Automatically geocode addresses using Google Maps API
 - **Authentication**: Secure user authentication with Supabase
+- **Role-Based Access Control**: Comprehensive permission system with four user roles
 
 ## ✨ Key Features
 
@@ -18,6 +19,11 @@ Visit Nexus Tracker is a full-stack application that enables users to:
 - Secure login system with Supabase Auth
 - Session management and automatic token refresh
 - Protected routes and user-specific data access
+- **Role-Based Access Control (RBAC)** with four distinct roles:
+  - **Admin**: Full access to all features and data management
+  - **Internal Agent**: Read-only access to data management, can create visits and view their own visits
+  - **External Agent**: Can create visits and view their own visits, limited to "My Visits" only
+  - **Guest**: Read-only access to view data
 
 ### 🏢 Business Relationship Management
 - **Multi-level Company Structure**: Suppliers → Sellers → Selling Points
@@ -30,78 +36,55 @@ Visit Nexus Tracker is a full-stack application that enables users to:
 - **Selling Point Management**: Track retail locations with addresses and geocoding
 - **Person Management**: Maintain contact databases for each company
 - **Activity Management**: Define and track different types of business activities
+- **User Management**: Admin interface for managing user roles and permissions
+- **Search Functionality**: Real-time search across all data management pages
+- **Add Forms**: Quick add functionality with inline forms for all entities
 
 ### 🗺️ Location Services
 - **Address Geocoding**: Automatic coordinate generation from addresses
 - **Location Validation**: Ensure accurate address data
 - **Google Maps Integration**: Leverage Google Maps API for geocoding
 
-### 📱 Responsive Design
-- **Mobile-First**: Optimized for field use on mobile devices
-- **Desktop Support**: Full-featured desktop interface
-- **Progressive Web App**: Works offline and can be installed on devices
+## 🔐 Role-Based Access Control
 
-## 🛠️ Technology Stack
-
-### Frontend
-- **React 18** - Modern UI library with hooks
-- **TypeScript** - Type-safe development
-- **Vite** - Fast build tool and development server
-- **React Router** - Client-side routing
-- **React Query** - Server state management
-- **React Hook Form** - Form handling with validation
-
-### UI & Styling
-- **shadcn/ui** - Beautiful, accessible component library
-- **Tailwind CSS** - Utility-first CSS framework
-- **Radix UI** - Headless UI primitives
-- **Lucide React** - Modern icon library
-- **Framer Motion** - Smooth animations
-
-### Backend & Data
-- **Supabase** - Backend-as-a-Service (PostgreSQL, Auth, Real-time)
-- **Python** - Data processing and geocoding scripts
-- **Pandas** - Data manipulation and analysis
-- **Geopy** - Geocoding and location services
-
-### Development Tools
-- **ESLint** - Code linting and formatting
-- **TypeScript** - Static type checking
-- **PostCSS** - CSS processing
-- **Autoprefixer** - CSS vendor prefixing
-
-## 📁 Project Structure
-
+### Role Hierarchy
 ```
-visit-nexus-tracker/
-├── src/
-│   ├── components/
-│   │   ├── ui/                    # shadcn/ui components
-│   │   └── visit/                 # Visit-specific components
-│   │       ├── NewVisitForm.tsx   # Main visit form
-│   │       ├── VisitSummary.tsx   # Visit summary display
-│   │       ├── CompanySelector.tsx
-│   │       ├── PersonSelector.tsx
-│   │       └── ...
-│   ├── pages/
-│   │   ├── Index.tsx              # Login and main visit page
-│   │   ├── DataManagement.tsx     # Data management interface
-│   │   └── NotFound.tsx           # 404 page
-│   ├── hooks/                     # Custom React hooks
-│   ├── integrations/
-│   │   └── supabase/              # Supabase client and types
-│   ├── backend/                   # Python scripts
-│   │   ├── geocodeAddresses.py    # Address geocoding
-│   │   ├── locationUtils.py       # Location utilities
-│   │   ├── supabaseUtils.py       # Supabase utilities
-│   │   ├── notebooks/             # Jupyter notebooks
-│   │   └── queries/               # SQL queries
-│   └── lib/                       # Utility functions
-├── public/                        # Static assets
-├── supabase/                      # Supabase configuration
-├── data/                          # Data files
-└── requirements.txt               # Python dependencies
+Admin (4) > Internal Agent (3) > External Agent (2) > Guest (1)
 ```
+
+### Permissions by Role
+
+#### Admin
+- ✅ Full access to all features
+- ✅ Manage user roles and permissions
+- ✅ Create, read, update, delete all data
+- ✅ View all visits from all users
+- ✅ Manage system settings and configurations
+- ✅ Access all data management pages
+
+#### Internal Agent
+- ✅ Create visits and view own visits
+- ✅ View companies, people, selling points, activities (read-only)
+- ✅ Access all data management pages in read-only mode
+- ❌ Cannot modify data in Data Management
+- ❌ Cannot view other users' visits
+
+#### External Agent
+- ✅ Create visits and view own visits
+- ✅ Access only "My Visits" page
+- ❌ Cannot access data management pages
+- ❌ Cannot view other users' visits
+
+#### Guest
+- ✅ View companies, people, selling points, activities (read-only)
+- ❌ Cannot create visits
+- ❌ Cannot modify any data
+
+### Security Implementation
+- **Database Level**: Row Level Security (RLS) policies enforce permissions
+- **Application Level**: Role guards prevent unauthorized UI elements
+- **API Level**: Role checking in functions provides additional security
+- **Session Management**: Roles checked on each request
 
 ## 🚀 Quick Start
 
@@ -134,7 +117,7 @@ pip install -r requirements.txt
 
 Create a `.env` file in the project root:
 
-#### Frontend Environment Variables
+#### 4. Frontend Environment Variables
 ```env
 # Supabase Configuration
 VITE_SUPABASE_URL=your_supabase_project_url
@@ -157,37 +140,9 @@ SUPABASE_KEY=your_supabase_service_key
 GOOGLE_MAPS_KEY=your_google_maps_api_key
 ```
 
-### 4. Database Setup
-
-1. **Create Supabase Project**: Set up a new project at [supabase.com](https://supabase.com)
-2. **Database Schema**: The application expects specific tables for companies, selling points, people, etc.
-3. **Enable Auth**: Configure authentication in your Supabase dashboard
-4. **Set up RLS**: Configure Row Level Security policies
-
 ### 5. Start Development Server
 ```bash
 npm run dev
-```
-
-The application will be available at `http://localhost:5173`
-
-## 🐍 Python Backend Scripts
-
-The application includes Python scripts for advanced data processing:
-
-### Geocoding Addresses
-```bash
-python src/backend/geocodeAddresses.py
-```
-
-### Data Processing
-```bash
-python src/backend/locationUtils.py
-```
-
-### Jupyter Notebooks
-```bash
-jupyter notebook src/backend/notebooks/
 ```
 
 ## 📊 Database Schema
@@ -200,6 +155,7 @@ The application uses the following main entities:
 - **Visit Activities**: Types of business activities
 - **Visits**: Individual visit records
 - **Addresses**: Location data with geocoding
+- **UserRoles**: User role assignments for RBAC
 
 ## 🔧 Development
 
@@ -212,11 +168,6 @@ npm run lint         # Run ESLint
 npm run preview      # Preview production build
 ```
 
-### Code Quality
-- **TypeScript**: Strict type checking enabled
-- **ESLint**: Code linting and formatting
-- **Prettier**: Code formatting (via ESLint)
-
 ### Testing
 ```bash
 # Frontend testing (when implemented)
@@ -225,6 +176,20 @@ npm test
 # Python testing
 pytest src/backend/
 ```
+
+## 🔐 Security Features
+
+### Role-Based Access Control
+- **Database Level**: RLS policies enforce permissions at the database level
+- **Application Level**: Role guards prevent unauthorized UI elements from rendering
+- **API Level**: Role checking in functions provides additional security
+- **Session Management**: Roles are checked on each request
+
+### Data Protection
+- **Row Level Security**: Database-level access control
+- **User Isolation**: Users can only access their own data
+- **Admin Controls**: Only admins can modify system data
+- **Audit Trail**: Visit tracking with user attribution
 
 ## 🌐 Deployment
 
