@@ -48,6 +48,11 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
   const [showResultDialog, setShowResultDialog] = useState(false);
   const [resultDialogContent, setResultDialogContent] = useState<string>('');
 
+  // Add state for visited person
+  const [visitedPerson, setVisitedPerson] = useState(false);
+  const [personVisitedId, setPersonVisitedId] = useState<string | null>(null);
+  const [people, setPeople] = useState<Person[]>([]);
+
   useEffect(() => {
     fetchSuppliers();
     fetchUser();
@@ -100,6 +105,23 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
   useEffect(() => {
     if (selectedActivityId) setPlacedOrder(false);
   }, [selectedActivityId]);
+
+  // Fetch people when selling point is selected
+  useEffect(() => {
+    if (selectedSupplierId || selectedSellerId) {
+      let query = supabase.from('people').select('*');
+      if (selectedSupplierId && selectedSellerId) {
+        query = query.in('companyId', [selectedSupplierId, selectedSellerId]);
+      } else if (selectedSupplierId) {
+        query = query.eq('companyId', selectedSupplierId);
+      } else if (selectedSellerId) {
+        query = query.eq('companyId', selectedSellerId);
+      }
+      query.then(({ data }) => setPeople(data || []));
+    } else {
+      setPeople([]);
+    }
+  }, [selectedSupplierId, selectedSellerId]);
 
   const fetchSuppliers = async () => {
     setLoading(prev => ({ ...prev, suppliers: true }));
@@ -253,7 +275,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
           activityId: selectedActivityId,
           agentId: user!.id,
           visitDate: selectedDate.toISOString().split('T')[0],
-          personVisitedId: null,
+          personVisitedId: visitedPerson ? personVisitedId : null,
           placedOrder: placedOrder
         })
         .select()
@@ -288,6 +310,15 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
     await supabase.auth.signOut();
     window.location.reload();
   };
+
+  // Add person options
+  const personOptions = people
+    .slice()
+    .sort((a, b) => a.surname.localeCompare(b.surname))
+    .map(person => ({
+      value: person.id,
+      label: `${person.name} ${person.surname}`
+    }));
 
   return (
     <>
@@ -419,28 +450,57 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
               </div>
             )}
 
-            {/* Ordine completato Switch */}
-            {selectedActivityId && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2" htmlFor="ordine-completato-switch">
-                  Ordine completato
-                </label>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm font-medium w-6 text-center">
-                    {placedOrder ? 'Sì' : 'No'}
-                  </span>
-                  <Switch
-                    id="ordine-completato-switch"
-                    checked={placedOrder === true}
-                    onCheckedChange={setPlacedOrder}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Selection Summary and Submit Button */}
+            {/* Step 5: Hai visitato una persona? */}
             {selectedActivityId && (
               <>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    Hai visitato una persona?
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-medium w-6 text-center">
+                      {visitedPerson ? 'Sì' : 'No'}
+                    </span>
+                    <Switch
+                      id="visited-person-switch"
+                      checked={visitedPerson}
+                      onCheckedChange={setVisitedPerson}
+                    />
+                  </div>
+                  {visitedPerson && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium flex items-center gap-2">
+                        Seleziona persona visitata
+                      </label>
+                      <SearchableSelect
+                        options={personOptions}
+                        value={personVisitedId || ''}
+                        onSelect={setPersonVisitedId}
+                        placeholder="Cerca persona..."
+                        searchPlaceholder="Digita nome o cognome..."
+                        disabled={people.length === 0}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Ordine completato Switch */}
+                <div className="space-y-2 mt-6">
+                  <label className="text-sm font-medium flex items-center gap-2" htmlFor="ordine-completato-switch">
+                    Ordine completato
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-medium w-6 text-center">
+                      {placedOrder ? 'Sì' : 'No'}
+                    </span>
+                    <Switch
+                      id="ordine-completato-switch"
+                      checked={placedOrder === true}
+                      onCheckedChange={setPlacedOrder}
+                    />
+                  </div>
+                </div>
+
                 {canSubmit && (
                   <div className="space-y-3 p-4 bg-blue-50 rounded-lg">
                     <h3 className="font-medium text-blue-900">Riepilogo visita</h3>
