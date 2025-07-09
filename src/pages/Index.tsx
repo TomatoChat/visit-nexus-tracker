@@ -49,8 +49,18 @@ const Index = () => {
 
   if (session) {
     return (
-      <div className="container mx-auto p-4 space-y-6">
-        <NewVisitForm />
+      <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 p-4">
+        <div className="w-full md:max-w-4xl mx-auto px-2 md:px-0 mt-8">
+          {/* Mobile: Title and sidebar button row */}
+          <div className="flex flex-row items-center gap-2 md:hidden mb-4">
+            <h1 className="text-lg font-bold text-gray-800">Nuovo Rapporto Visita</h1>
+          </div>
+          {/* Desktop: Title */}
+          <div className="hidden md:flex items-center gap-4 mb-8">
+            <h1 className="text-3xl font-bold text-gray-800 text-left">Nuovo Rapporto Visita</h1>
+          </div>
+          <NewVisitForm />
+        </div>
       </div>
     );
   }
@@ -61,7 +71,7 @@ const Index = () => {
         <CardHeader>
           <CardTitle className="text-2xl text-center flex items-center justify-center gap-2">
             <Lock className="w-6 h-6" />
-            Login Required
+            Accesso richiesto
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -73,7 +83,7 @@ const Index = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
+                placeholder="Inserisci la tua email"
                 required
               />
             </div>
@@ -84,7 +94,7 @@ const Index = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
+                placeholder="Inserisci la tua password"
                 required
               />
             </div>
@@ -92,7 +102,7 @@ const Index = () => {
               <p className="text-sm text-red-600">{error}</p>
             )}
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Signing in..." : "Login"}
+              {loading ? "Accesso in corso..." : "Accedi"}
             </Button>
           </form>
         </CardContent>

@@ -315,39 +315,15 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
-        <div className="max-w-4xl mx-auto">
-          {/* Agent Email Display - Top Right */}
-          <div className="flex justify-end mb-4">
-            <div className="w-64 flex items-center gap-2">
-              <div className="border rounded px-3 py-2 bg-white text-gray-700 w-full truncate" title={user?.email || ''}>
-                {user?.email || '...'}
-              </div>
-              <button
-                className="p-2 rounded hover:bg-gray-200 transition"
-                onClick={handleLogout}
-                title="Logout"
-                type="button"
-                disabled={!user?.email}
-              >
-                <Power className="w-5 h-5 text-gray-600" />
-              </button>
-            </div>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl text-center flex items-center justify-center gap-2">
-                <MapPin className="w-6 h-6" />
-                Nuovo Rapporto Visita
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
+      <div className="w-full md:max-w-4xl mx-auto px-0">
+        <Card className="w-full">
+          <CardContent className="space-y-4 md:space-y-6">
+            <div className='pt-6'>
               {/* Date Picker */}
               <div className="space-y-2">
                 <label className="text-sm font-medium flex items-center gap-2">
                   <CalendarIcon className="w-4 h-4" />
-                  Data Visita
+                  Data visita
                 </label>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -374,9 +350,8 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                   </PopoverContent>
                 </Popover>
               </div>
-
               {/* Step 1: Fornitore */}
-              <div className="space-y-2">
+              <div className="space-y-2 mt-6">
                 <label className="text-sm font-medium flex items-center gap-2">
                   <Building className="w-4 h-4" />
                   Fornitore
@@ -390,110 +365,110 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                   disabled={loading.suppliers}
                 />
               </div>
+            </div>
 
-              {/* Step 2: Azienda Venditrice */}
-              {selectedSupplierId && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium flex items-center gap-2">
-                    <Users className="w-4 h-4" />
-                    Azienda Venditrice
-                  </label>
-                  <SearchableSelect
-                    options={sellerOptions}
-                    value={selectedSellerId}
-                    onSelect={setSelectedSellerId}
-                    placeholder="Scegli un'azienda venditrice..."
-                    searchPlaceholder="Cerca aziende venditrici..."
-                    disabled={loading.sellers}
+            {/* Step 2: Azienda Venditrice */}
+            {selectedSupplierId && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Azienda venditrice
+                </label>
+                <SearchableSelect
+                  options={sellerOptions}
+                  value={selectedSellerId}
+                  onSelect={setSelectedSellerId}
+                  placeholder="Scegli un'azienda venditrice..."
+                  searchPlaceholder="Cerca aziende venditrici..."
+                  disabled={loading.sellers}
+                />
+              </div>
+            )}
+
+            {/* Step 3: Punto Vendita */}
+            {selectedSellerId && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <MapPin className="w-4 h-4" />
+                  Punto vendita
+                </label>
+                <SearchableSelect
+                  options={sellingPointOptions}
+                  value={selectedSellingPointId}
+                  onSelect={setSelectedSellingPointId}
+                  placeholder="Scegli un punto vendita..."
+                  searchPlaceholder="Cerca punti vendita..."
+                  disabled={loading.sellingPoints}
+                />
+              </div>
+            )}
+
+            {/* Step 4: Attività */}
+            {selectedSellingPointId && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <Activity className="w-4 h-4" />
+                  Attività
+                </label>
+                <SearchableSelect
+                  options={activityOptions}
+                  value={selectedActivityId}
+                  onSelect={setSelectedActivityId}
+                  placeholder="Scegli un'attività..."
+                  searchPlaceholder="Cerca attività..."
+                  disabled={loading.activities}
+                />
+              </div>
+            )}
+
+            {/* Ordine completato Switch */}
+            {selectedActivityId && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-2" htmlFor="ordine-completato-switch">
+                  Ordine completato
+                </label>
+                <div className="flex items-center gap-4">
+                  <span className="text-sm font-medium w-6 text-center">
+                    {placedOrder ? 'Sì' : 'No'}
+                  </span>
+                  <Switch
+                    id="ordine-completato-switch"
+                    checked={placedOrder === true}
+                    onCheckedChange={setPlacedOrder}
                   />
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Step 3: Punto Vendita */}
-              {selectedSellerId && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium flex items-center gap-2">
-                    <MapPin className="w-4 h-4" />
-                    Punto Vendita
-                  </label>
-                  <SearchableSelect
-                    options={sellingPointOptions}
-                    value={selectedSellingPointId}
-                    onSelect={setSelectedSellingPointId}
-                    placeholder="Scegli un punto vendita..."
-                    searchPlaceholder="Cerca punti vendita..."
-                    disabled={loading.sellingPoints}
-                  />
-                </div>
-              )}
-
-              {/* Step 4: Attività */}
-              {selectedSellingPointId && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium flex items-center gap-2">
-                    <Activity className="w-4 h-4" />
-                    Attività
-                  </label>
-                  <SearchableSelect
-                    options={activityOptions}
-                    value={selectedActivityId}
-                    onSelect={setSelectedActivityId}
-                    placeholder="Scegli un'attività..."
-                    searchPlaceholder="Cerca attività..."
-                    disabled={loading.activities}
-                  />
-                </div>
-              )}
-
-              {/* Ordine completato Switch */}
-              {selectedActivityId && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium flex items-center gap-2" htmlFor="ordine-completato-switch">
-                    Ordine completato
-                  </label>
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm font-medium w-6 text-center">
-                      {placedOrder ? 'Sì' : 'No'}
-                    </span>
-                    <Switch
-                      id="ordine-completato-switch"
-                      checked={placedOrder === true}
-                      onCheckedChange={setPlacedOrder}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Selection Summary and Submit Button */}
-              {selectedActivityId && (
-                <>
-                  {canSubmit && (
-                    <div className="space-y-3 p-4 bg-blue-50 rounded-lg">
-                      <h3 className="font-medium text-blue-900">Riepilogo Visita</h3>
-                      <div className="space-y-1 text-sm">
-                        <p><span className="font-medium">Email utente:</span> {user?.email}</p>
-                        <p><span className="font-medium">Data:</span> {format(selectedDate, "PPP")}</p>
-                        <p><span className="font-medium">Fornitore:</span> {selectedSupplier?.name}</p>
-                        <p><span className="font-medium">Azienda Venditrice:</span> {selectedSeller?.name}</p>
-                        <p><span className="font-medium">Punto Vendita:</span> {selectedSellingPoint?.name}</p>
-                        <p><span className="font-medium">Attività:</span> {selectedActivity?.name}</p>
-                        <p><span className="font-medium">Ordine completato:</span> {placedOrder ? 'Sì' : 'No'}</p>
-                      </div>
+            {/* Selection Summary and Submit Button */}
+            {selectedActivityId && (
+              <>
+                {canSubmit && (
+                  <div className="space-y-3 p-4 bg-blue-50 rounded-lg">
+                    <h3 className="font-medium text-blue-900">Riepilogo visita</h3>
+                    <div className="space-y-1 text-sm">
+                      <p><span className="font-medium">Email utente:</span> {user?.email}</p>
+                      <p><span className="font-medium">Data:</span> {format(selectedDate, "PPP")}</p>
+                      <p><span className="font-medium">Fornitore:</span> {selectedSupplier?.name}</p>
+                      <p><span className="font-medium">Azienda venditrice:</span> {selectedSeller?.name}</p>
+                      <p><span className="font-medium">Punto vendita:</span> {selectedSellingPoint?.name}</p>
+                      <p><span className="font-medium">Attività:</span> {selectedActivity?.name}</p>
+                      <p><span className="font-medium">Ordine completato:</span> {placedOrder ? 'Sì' : 'No'}</p>
                     </div>
-                  )}
-                  <Button 
-                    onClick={handleSubmit}
-                    disabled={!canSubmit || loading.submitting}
-                    className="w-full"
-                    size="lg"
-                  >
-                    {loading.submitting ? 'Invio in corso...' : 'Invia Rapporto Visita'}
-                  </Button>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                  </div>
+                )}
+                <Button 
+                  onClick={handleSubmit}
+                  disabled={!canSubmit || loading.submitting}
+                  className="w-full"
+                  size="lg"
+                >
+                  {loading.submitting ? 'Invio in corso...' : 'Invia rapporto visita'}
+                </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </>
   );
