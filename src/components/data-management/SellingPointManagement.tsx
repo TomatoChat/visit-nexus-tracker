@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { geocodeAddress } from '@/lib/utils';
+import { Trash2, Pencil, Search, Plus } from 'lucide-react';
 
 type SellingPoint = Database['public']['Tables']['sellingPoints']['Row'];
 type Company = Database['public']['Tables']['companies']['Row'];
@@ -49,6 +50,9 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = () => {
     longitude: ''
   });
   const [isGeocoding, setIsGeocoding] = useState(false);
+
+  const [showSearch, setShowSearch] = useState(false);
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
 
   const fetchSellingPoints = async () => {
     setIsLoading(true);
@@ -237,6 +241,20 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = () => {
     setShowAddForm(true);
   };
 
+  const handleSoftDelete = async (sp: SellingPoint & { addresses: Address, companies: Company }) => {
+    try {
+      const { error } = await supabase
+        .from('sellingPoints')
+        .delete()
+        .eq('id', sp.id);
+      if (error) throw error;
+      toast({ title: 'Successo!', description: 'Punto vendita eliminato con successo!' });
+      fetchSellingPoints();
+    } catch (error: any) {
+      toast({ title: 'Errore', description: error.message || 'Impossibile eliminare il punto vendita.', variant: 'destructive' });
+    }
+  };
+
   const filteredSellingPoints = useMemo(() => {
     return sellingPoints.filter(sp =>
       sp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -261,33 +279,69 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = () => {
             </div>
             <div>
               <Label>Indirizzo <span className="text-red-500">*</span></Label>
-              {!showAddressForm ? (
-                <div className="flex gap-2">
-                  <SearchableSelect options={addressOptions} value={selectedAddressId} onSelect={setSelectedAddressId} onSearchChange={setAddressSearch} placeholder="Cerca indirizzo..." searchPlaceholder="Digita indirizzo..." disabled={addressLoading} className="flex-1" />
-                  <Button type="button" variant="outline" onClick={() => setShowAddressForm(true)} className="px-3">+</Button>
+              {editingSellingPoint ? (
+                <div className="p-3 bg-gray-50 rounded border">
+                  {editingSellingPoint.addresses ? (
+                    <div className="text-sm text-gray-700">
+                      <div>{editingSellingPoint.addresses.addressLine1 || ''}</div>
+                      <div>{editingSellingPoint.addresses.addressLine2 || ''}</div>
+                      <div>{editingSellingPoint.addresses.city || ''}, {editingSellingPoint.addresses.stateProvince || ''}</div>
+                      <div>{editingSellingPoint.addresses.postalCode || ''} {editingSellingPoint.addresses.country || ''}</div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-500">Nessun indirizzo associato</div>
+                  )}
                 </div>
               ) : (
-                <div className="space-y-2 border rounded p-2 mt-2">
-                  <div><Label htmlFor="sp-addr-l1">Via</Label><Input id="sp-addr-l1" value={addressForm.addressLine1} onChange={e => setAddressForm(p => ({ ...p, addressLine1: e.target.value }))} /></div>
-                  <div><Label htmlFor="sp-addr-l2">Civico</Label><Input id="sp-addr-l2" value={addressForm.addressLine2} onChange={e => setAddressForm(p => ({ ...p, addressLine2: e.target.value }))} /></div>
-                  <div><Label htmlFor="sp-addr-city">Città <span className="text-red-500">*</span></Label><Input id="sp-addr-city" value={addressForm.city} onChange={e => setAddressForm(p => ({ ...p, city: e.target.value }))} required /></div>
-                  <div><Label htmlFor="sp-addr-state">Provincia <span className="text-red-500">*</span></Label><Input id="sp-addr-state" value={addressForm.stateProvince} onChange={e => setAddressForm(p => ({ ...p, stateProvince: e.target.value }))} required /></div>
-                  <div><Label htmlFor="sp-addr-zip">CAP</Label><Input id="sp-addr-zip" value={addressForm.postalCode} onChange={e => setAddressForm(p => ({ ...p, postalCode: e.target.value }))} /></div>
-                  <div><Label htmlFor="sp-addr-country">Nazione <span className="text-red-500">*</span></Label><Input id="sp-addr-country" value={addressForm.country} onChange={e => setAddressForm(p => ({ ...p, country: e.target.value }))} required /></div>
-                  <div className="flex gap-2">
-                    <div className="flex-1"><Label htmlFor="sp-addr-lat">Latitudine</Label><Input id="sp-addr-lat" type="number" step="any" value={addressForm.latitude} onChange={e => setAddressForm(p => ({ ...p, latitude: e.target.value }))} placeholder={isGeocoding ? "Caricamento..." : ""} disabled={isGeocoding} /></div>
-                    <div className="flex-1"><Label htmlFor="sp-addr-lng">Longitudine</Label><Input id="sp-addr-lng" type="number" step="any" value={addressForm.longitude} onChange={e => setAddressForm(p => ({ ...p, longitude: e.target.value }))} placeholder={isGeocoding ? "Caricamento..." : ""} disabled={isGeocoding} /></div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button type="button" variant="outline" onClick={() => { setShowAddressForm(false); setAddressForm({ addressLine1: '', addressLine2: '', city: '', stateProvince: '', postalCode: '', country: '', latitude: '', longitude: '' }); setIsGeocoding(false); }}>Annulla</Button>
-                    <Button type="button" disabled={isGeocoding} onClick={handleCreateAddress}>{isGeocoding ? 'Caricamento...' : 'Salva Indirizzo'}</Button>
-                  </div>
-                </div>
+                <>
+                  {!showAddressForm ? (
+                    <div className="flex gap-2">
+                      <SearchableSelect options={addressOptions} value={selectedAddressId} onSelect={setSelectedAddressId} placeholder="Cerca indirizzo..." searchPlaceholder="Digita indirizzo..." disabled={addressLoading} className="flex-1" />
+                      <Button type="button" variant="outline" onClick={() => setShowAddressForm(true)} className="px-3">+</Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 border rounded p-2 mt-2">
+                      <div><Label htmlFor="sp-addr-l1">Via</Label><Input id="sp-addr-l1" value={addressForm.addressLine1} onChange={e => setAddressForm(p => ({ ...p, addressLine1: e.target.value }))} /></div>
+                      <div><Label htmlFor="sp-addr-l2">Civico</Label><Input id="sp-addr-l2" value={addressForm.addressLine2} onChange={e => setAddressForm(p => ({ ...p, addressLine2: e.target.value }))} /></div>
+                      <div><Label htmlFor="sp-addr-city">Città <span className="text-red-500">*</span></Label><Input id="sp-addr-city" value={addressForm.city} onChange={e => setAddressForm(p => ({ ...p, city: e.target.value }))} required /></div>
+                      <div><Label htmlFor="sp-addr-state">Provincia <span className="text-red-500">*</span></Label><Input id="sp-addr-state" value={addressForm.stateProvince} onChange={e => setAddressForm(p => ({ ...p, stateProvince: e.target.value }))} required /></div>
+                      <div><Label htmlFor="sp-addr-zip">CAP</Label><Input id="sp-addr-zip" type="number" step="1" value={addressForm.postalCode} onChange={e => setAddressForm(p => ({ ...p, postalCode: e.target.value }))} /></div>
+                      <div><Label htmlFor="sp-addr-country">Nazione <span className="text-red-500">*</span></Label><Input id="sp-addr-country" value={addressForm.country} onChange={e => setAddressForm(p => ({ ...p, country: e.target.value }))} required /></div>
+                      <div className="flex gap-2">
+                        <div className="flex-1"><Label htmlFor="sp-addr-lat">Latitudine</Label><Input id="sp-addr-lat" type="number" step="any" value={addressForm.latitude} onChange={e => setAddressForm(p => ({ ...p, latitude: e.target.value }))} placeholder={isGeocoding ? "Caricamento..." : ""} disabled={isGeocoding} /></div>
+                        <div className="flex-1"><Label htmlFor="sp-addr-lng">Longitudine</Label><Input id="sp-addr-lng" type="number" step="any" value={addressForm.longitude} onChange={e => setAddressForm(p => ({ ...p, longitude: e.target.value }))} placeholder={isGeocoding ? "Caricamento..." : ""} disabled={isGeocoding} /></div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button type="button" variant="outline" onClick={() => { setShowAddressForm(false); setAddressForm({ addressLine1: '', addressLine2: '', city: '', stateProvince: '', postalCode: '', country: '', latitude: '', longitude: '' }); setIsGeocoding(false); }}>Annulla</Button>
+                        <Button type="button" disabled={isGeocoding} onClick={handleCreateAddress}>{isGeocoding ? 'Caricamento...' : 'Salva Indirizzo'}</Button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
-            <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline" onClick={() => { setShowAddForm(false); resetForm(); }}>Annulla</Button>
-              <Button type="submit">{editingSellingPoint ? 'Salva Modifiche' : 'Crea Punto Vendita'}</Button>
+            <div className="flex justify-between items-center space-x-2">
+              <div>
+                {editingSellingPoint && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="text-red-600 hover:bg-red-50"
+                    aria-label="Elimina"
+                    onClick={() => {
+                      if (confirm("Sei sicuro di voler eliminare questo punto vendita?")) {
+                        handleSoftDelete(editingSellingPoint);
+                      }
+                    }}
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </Button>
+                )}
+              </div>
+              <div className="flex space-x-2">
+                <Button type="button" variant="outline" onClick={() => { setShowAddForm(false); resetForm(); }}>Annulla</Button>
+                <Button type="submit">{editingSellingPoint ? 'Salva Modifiche' : 'Crea Punto Vendita'}</Button>
+              </div>
             </div>
           </form>
         </CardContent>
@@ -297,21 +351,57 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = () => {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Punti Vendita</CardTitle>
-        <Button onClick={() => { setEditingSellingPoint(null); resetForm(); setShowAddForm(true); }}>Nuovo Punto Vendita</Button>
+      <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <CardTitle>Punti Vendita</CardTitle>
+          {!showSearch && (
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Cerca"
+              onClick={() => setShowSearch(true)}
+            >
+              <Search className="w-5 h-5" />
+            </Button>
+          )}
+          {showSearch && (
+            <Input
+              ref={searchInputRef}
+              autoFocus
+              className="ml-2 w-48"
+              placeholder="Cerca per nome, azienda o città..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              onBlur={() => setShowSearch(false)}
+              onKeyDown={e => {
+                if (e.key === 'Escape') setShowSearch(false);
+              }}
+            />
+          )}
+        </div>
+        <Button 
+          variant="outline" 
+          className="border-black text-black hover:bg-gray-50" 
+          onClick={() => { setEditingSellingPoint(null); resetForm(); setShowAddForm(true); }}
+        >
+          <Plus className="w-5 h-5" />
+        </Button>
       </CardHeader>
       <CardContent>
-        <div className="mb-4"><Input placeholder="Cerca per nome, azienda o città..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
         {isLoading ? (<p>Caricamento...</p>) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+          <>
+            <div className="mb-4 text-sm text-gray-600">
+              {sellingPoints.length} punti vendita
+            </div>
+            <div className="overflow-x-auto">
+            <table className="w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Azienda Venditrice</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Indirizzo</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Telefono</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">Nome</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">Azienda Venditrice</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/5">Indirizzo</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">Telefono</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Azioni</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -320,16 +410,45 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = () => {
                   const company = sp.companies;
                   return (
                     <tr key={sp.id} onClick={() => handleEdit(sp)} className="cursor-pointer hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{sp.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company?.name || 'N/A'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{address ? `${address.addressLine1 || ''}${address.addressLine1 && address.city ? ', ' : ''}${address.city || ''}` : 'N/A'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{sp.phoneNumber || 'N/A'}</td>
+                      <td className="px-4 py-4 text-sm font-medium text-gray-900 break-words">{sp.name}</td>
+                      <td className="px-4 py-4 text-sm text-gray-500 break-words">{company?.name || 'N/A'}</td>
+                      <td className="px-4 py-4 text-sm text-gray-500 break-words">{address ? `${address.addressLine1 || ''}${address.addressLine1 && address.city ? ', ' : ''}${address.city || ''}` : 'N/A'}</td>
+                      <td className="px-4 py-4 text-sm text-gray-500 break-words">{sp.phoneNumber || 'N/A'}</td>
+                      <td className="px-4 py-4 text-sm text-gray-500">
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={e => {
+                              e.stopPropagation();
+                              handleEdit(sp);
+                            }}
+                            aria-label="Modifica"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={e => {
+                              e.stopPropagation();
+                              if (confirm('Sei sicuro di voler eliminare questo punto vendita?')) {
+                                handleSoftDelete(sp);
+                              }
+                            }}
+                            aria-label="Elimina"
+                          >
+                            <Trash2 className="w-4 h-4 text-red-600" />
+                          </Button>
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
+          </>
         )}
         {filteredSellingPoints.length === 0 && !isLoading && <p>Nessun punto vendita trovato.</p>}
       </CardContent>

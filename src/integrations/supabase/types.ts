@@ -17,6 +17,7 @@ export type Database = {
           country: string
           created_at: string
           id: string
+          isActive: boolean
           latitude: number
           longitude: number
           postalCode: string | null
@@ -30,6 +31,7 @@ export type Database = {
           country: string
           created_at?: string
           id?: string
+          isActive?: boolean
           latitude: number
           longitude: number
           postalCode?: string | null
@@ -43,6 +45,7 @@ export type Database = {
           country?: string
           created_at?: string
           id?: string
+          isActive?: boolean
           latitude?: number
           longitude?: number
           postalCode?: string | null
@@ -58,6 +61,7 @@ export type Database = {
           codeVAT: string
           created_at: string
           id: string
+          isActive: boolean
           isSeller: boolean
           isSupplier: boolean
           name: string
@@ -70,6 +74,7 @@ export type Database = {
           codeVAT: string
           created_at?: string
           id?: string
+          isActive?: boolean
           isSeller: boolean
           isSupplier: boolean
           name: string
@@ -82,6 +87,7 @@ export type Database = {
           codeVAT?: string
           created_at?: string
           id?: string
+          isActive?: boolean
           isSeller?: boolean
           isSupplier?: boolean
           name?: string
@@ -186,6 +192,7 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          isActive: boolean
           name: string
           phoneNumber: string
           roleId: string
@@ -198,6 +205,7 @@ export type Database = {
           created_at?: string
           email: string
           id?: string
+          isActive?: boolean
           name: string
           phoneNumber: string
           roleId: string
@@ -210,6 +218,7 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          isActive?: boolean
           name?: string
           phoneNumber?: string
           roleId?: string

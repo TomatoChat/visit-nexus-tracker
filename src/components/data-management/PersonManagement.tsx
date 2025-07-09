@@ -7,6 +7,7 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
+import { Trash2, Pencil, Search, Plus } from 'lucide-react';
 
 type Person = Database['public']['Tables']['people']['Row'] & {
   companies: Database['public']['Tables']['companies']['Row'] | null,
@@ -47,6 +48,9 @@ const PersonManagement: React.FC<PersonManagementProps> = () => {
   const [showNewRoleForm, setShowNewRoleForm] = useState(false);
   const [newRole, setNewRole] = useState({ name: '', isAgent: false, isExternal: false });
 
+  const [showSearch, setShowSearch] = useState(false);
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
+
 
   const fetchPeople = async () => {
     setIsLoading(true);
@@ -59,6 +63,7 @@ const PersonManagement: React.FC<PersonManagementProps> = () => {
           sellingPoints (*),
           personRoles (*)
         `)
+        .eq('isActive', true)
         .order('surname', { ascending: true })
         .order('name', { ascending: true });
       if (error) throw error;
@@ -192,6 +197,22 @@ const PersonManagement: React.FC<PersonManagementProps> = () => {
     setShowAddForm(true);
   };
 
+  const handleSoftDelete = async (person: Person) => {
+    try {
+      const { error } = await supabase
+        .from('people')
+        .update({ isActive: false })
+        .eq('id', person.id);
+      
+      if (error) throw error;
+      
+      toast({ title: 'Successo!', description: 'Persona eliminata con successo!' });
+      fetchPeople(); // Refresh the list
+    } catch (error: any) {
+      toast({ title: 'Errore', description: error.message || 'Impossibile eliminare la persona.', variant: 'destructive' });
+    }
+  };
+
   const filteredPeople = useMemo(() => {
     return people.filter(p =>
       `${p.name} ${p.surname}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -203,9 +224,11 @@ const PersonManagement: React.FC<PersonManagementProps> = () => {
   if (showAddForm || editingPerson) {
     return (
       <Card>
-        <CardHeader><CardTitle>{editingPerson ? 'Modifica Persona' : 'Nuova Persona'}</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>{editingPerson ? 'Modifica Persona' : 'Crea Nuova Persona'}</CardTitle>
+        </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div><Label htmlFor="name">Nome <span className="text-red-500">*</span></Label><Input id="name" value={name} onChange={e => setName(e.target.value)} required /></div>
               <div><Label htmlFor="surname">Cognome <span className="text-red-500">*</span></Label><Input id="surname" value={surname} onChange={e => setSurname(e.target.value)} required /></div>
@@ -235,9 +258,28 @@ const PersonManagement: React.FC<PersonManagementProps> = () => {
                 </div>
               )}
             </div>
-            <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline" onClick={() => { setShowAddForm(false); resetForm(); }}>Annulla</Button>
-              <Button type="submit">{editingPerson ? 'Salva Modifiche' : 'Salva Persona'}</Button>
+            <div className="flex justify-between items-center space-x-2">
+              <div>
+                {editingPerson && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="text-red-600 hover:bg-red-50"
+                    aria-label="Elimina"
+                    onClick={() => {
+                      if (confirm("Sei sicuro di voler eliminare questa persona?")) {
+                        handleSoftDelete(editingPerson);
+                      }
+                    }}
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </Button>
+                )}
+              </div>
+              <div className="flex space-x-2">
+                <Button type="button" variant="outline" onClick={() => { setShowAddForm(false); resetForm(); }}>Annulla</Button>
+                <Button type="submit">{editingPerson ? 'Salva Modifiche' : 'Crea Persona'}</Button>
+              </div>
             </div>
           </form>
         </CardContent>
@@ -247,37 +289,102 @@ const PersonManagement: React.FC<PersonManagementProps> = () => {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Persone</CardTitle>
-        <Button onClick={() => { setEditingPerson(null); resetForm(); setShowAddForm(true); }}>Nuova Persona</Button>
+      <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <CardTitle>Persone</CardTitle>
+          {!showSearch && (
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Cerca"
+              onClick={() => setShowSearch(true)}
+            >
+              <Search className="w-5 h-5" />
+            </Button>
+          )}
+          {showSearch && (
+            <Input
+              ref={searchInputRef}
+              autoFocus
+              className="ml-2 w-48"
+              placeholder="Cerca per nome, email, azienda..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              onBlur={() => setShowSearch(false)}
+              onKeyDown={e => {
+                if (e.key === 'Escape') setShowSearch(false);
+              }}
+            />
+          )}
+        </div>
+        <Button 
+          variant="outline" 
+          className="border-black text-black hover:bg-gray-50" 
+          onClick={() => { setEditingPerson(null); resetForm(); setShowAddForm(true); }}
+        >
+          <Plus className="w-5 h-5" />
+        </Button>
       </CardHeader>
       <CardContent>
-        <div className="mb-4"><Input placeholder="Cerca per nome, email, azienda..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
         {isLoading ? (<p>Caricamento...</p>) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+          <>
+            <div className="mb-4 text-sm text-gray-600">
+              {people.length} persone
+            </div>
+            <div className="overflow-x-auto">
+                          <table className="w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome Cognome</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Azienda</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">P. Vendita</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ruolo</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">Nome Cognome</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">Azienda</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">P. Vendita</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">Ruolo</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Azioni</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredPeople.map(person => (
-                  <tr key={person.id} onClick={() => handleEdit(person)} className="cursor-pointer hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{`${person.surname} ${person.name}`}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{person.email}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{person.companies?.name || 'N/A'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{person.sellingPoints?.name || 'N/A'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{person.personRoles?.name || 'N/A'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredPeople.map(person => (
+                    <tr key={person.id} onClick={() => handleEdit(person)} className="cursor-pointer hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{`${person.surname} ${person.name}`}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{person.email}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{person.companies?.name || 'N/A'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{person.sellingPoints?.name || 'N/A'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{person.personRoles?.name || 'N/A'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEdit(person);
+                            }}
+                            aria-label="Modifica"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm('Sei sicuro di voler eliminare questa persona?')) {
+                                handleSoftDelete(person);
+                              }
+                            }}
+                            aria-label="Elimina"
+                          >
+                            <Trash2 className="w-4 h-4 text-red-600" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
         {filteredPeople.length === 0 && !isLoading && <p>Nessuna persona trovata.</p>}
       </CardContent>

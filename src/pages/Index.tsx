@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { DatabaseZap } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import Layout from '@/components/Layout';
 
 // Add this TypeScript declaration to fix the linter error for import.meta.env
 interface ImportMeta {
@@ -50,25 +51,23 @@ const Index = () => {
 
   if (session) {
     return (
-      <div className="min-h-screen pt-4 md:pt-0">
-        <div className="w-full md:max-w-4xl mx-auto px-2 md:px-0 mt-0 lg:mt-8">
-          {/* Mobile: Sidebar button and title row */}
-          <div className="flex flex-row items-center gap-2 md:hidden mb-4">
-            <SidebarTrigger />
-            <h1 className="text-lg font-bold text-gray-800">Nuovo Rapporto Visita</h1>
-          </div>
-          {/* Desktop: Title */}
-          <div className="hidden md:flex items-center gap-4 mb-8">
-            <h1 className="text-3xl font-bold text-gray-800 text-left">Nuovo Rapporto Visita</h1>
-          </div>
-          <NewVisitForm />
+      <Layout>
+        {/* Mobile: Sidebar button and title row */}
+        <div className="flex flex-row items-center gap-2 md:hidden mb-4">
+          <SidebarTrigger />
+          <h1 className="text-lg font-bold text-gray-800">Nuovo Rapporto Visita</h1>
         </div>
-      </div>
+        {/* Desktop: Title */}
+        <div className="hidden md:flex items-center gap-4 mb-8">
+          <h1 className="text-3xl font-bold text-gray-800 text-left">Nuovo Rapporto Visita</h1>
+        </div>
+        <NewVisitForm />
+      </Layout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+    <div className="min-h-screen w-full bg-gray-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl text-center flex items-center justify-center gap-2">

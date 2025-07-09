@@ -5,13 +5,24 @@ import CompanyManagement from '@/components/data-management/CompanyManagement';
 import SellingPointManagement from '@/components/data-management/SellingPointManagement';
 import PersonManagement from '@/components/data-management/PersonManagement';
 import ActivityManagement from '@/components/data-management/ActivityManagement';
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
+import { useEffect, useMemo } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { geocodeAddress } from '@/lib/utils';
+import type { Database } from '@/integrations/supabase/types';
+import { SearchableSelect } from '@/components/ui/searchable-select';
+import { Input } from '@/components/ui/input';
+import Layout from '@/components/Layout';
 
 const DataManagement = () => {
   const [activeTab, setActiveTab] = useState("company");
 
   return (
-    <div className="min-h-screen pt-4 md:pt-0">
-      <div className="w-full md:max-w-4xl mx-auto px-2 md:px-0 pb-2 md:pb-0 mt-0 lg:mt-8">
+    <Layout>
+      <div className="min-h-screen w-full pb-2 md:pb-0">
         {/* Mobile: Sidebar button and title row */}
         <div className="flex flex-row items-center gap-2 md:hidden mb-4">
           <SidebarTrigger />
@@ -47,7 +58,7 @@ const DataManagement = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </Layout>
   );
 };
 
@@ -227,7 +238,7 @@ const AddNewPersonForm = () => {
   };
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>Aggiungi Nuova Persona</CardTitle>
       </CardHeader>
@@ -554,7 +565,7 @@ const AddNewSellingPointForm = () => {
   };
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>Nuovo Punto Vendita</CardTitle>
       </CardHeader>
@@ -840,7 +851,7 @@ const AddNewActivityForm = () => {
   };
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>Nuova Attività</CardTitle>
       </CardHeader>

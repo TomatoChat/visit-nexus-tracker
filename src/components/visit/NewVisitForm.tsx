@@ -346,8 +346,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <div className="w-full md:max-w-4xl mx-auto px-0">
-        <Card className="w-full">
+      <Card className="w-full">
           <CardContent className="p-6 space-y-4 md:space-y-6">
             {/* Date Picker */}
             <div className="space-y-2">
@@ -527,7 +526,6 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
             )}
           </CardContent>
         </Card>
-      </div>
     </>
   );
 };
