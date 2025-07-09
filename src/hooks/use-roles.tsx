@@ -11,7 +11,7 @@ import {
   canViewAllVisits,
   type UserRole,
   type UserWithRole
-} from '@/lib';
+} from '../lib/index';
 
 export function useRoles() {
   const [userRole, setUserRole] = useState<UserRole | null>(null);
