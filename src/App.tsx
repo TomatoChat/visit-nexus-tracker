@@ -20,6 +20,7 @@ import {
   useSidebar
 } from "@/components/ui/sidebar";
 import { Car } from "lucide-react";
+import { useEffect, useState } from "react";
 
 const queryClient = new QueryClient();
 
@@ -45,7 +46,28 @@ function SidebarMenuContent() {
 }
 
 function AppLayout({ children }: { children: React.ReactNode }) {
-  return (
+  const [session, setSession] = useState<any>(undefined);
+  useEffect(() => {
+    import("@/integrations/supabase/client").then(({ supabase }) => {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session);
+      });
+      const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+        setSession(session);
+      });
+      return () => {
+        listener?.subscription.unsubscribe();
+      };
+    });
+  }, []);
+
+  if (session === undefined) {
+    // Still loading session
+    return null;
+  }
+
+  // Only show sidebar if logged in
+  return session ? (
     <SidebarProvider defaultOpen={false}>
       <div className="flex min-h-screen w-full">
         <Sidebar collapsible="icon">
@@ -66,6 +88,10 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         </main>
       </div>
     </SidebarProvider>
+  ) : (
+    <main className="flex-1 w-full min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-0 md:p-8 relative">
+      <div className="w-full h-full">{children}</div>
+    </main>
   );
 }
 
