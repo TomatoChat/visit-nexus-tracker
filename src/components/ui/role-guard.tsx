@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react';
 import { useRoles } from '@/hooks/use-roles';
-import type { UserRole } from '../../lib/index';
+import type { UserRole } from '../../lib/roles';
 
 interface RoleGuardProps {
   children: ReactNode;
