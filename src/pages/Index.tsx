@@ -49,7 +49,7 @@ const Index = () => {
 
   if (session) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 p-4">
+      <div className="min-h-screen p-4">
         <div className="w-full md:max-w-4xl mx-auto px-2 md:px-0 mt-8">
           {/* Mobile: Title and sidebar button row */}
           <div className="flex flex-row items-center gap-2 md:hidden mb-4">
@@ -66,7 +66,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-8">
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl text-center flex items-center justify-center gap-2">

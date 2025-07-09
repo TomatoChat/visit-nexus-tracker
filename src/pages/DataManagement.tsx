@@ -46,7 +46,7 @@ const DataManagement = () => {
   }, [addressSearch, showAddressForm]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 p-4">
+    <div className="min-h-screen p-4">
       <div className="w-full md:max-w-4xl mx-auto px-2 md:px-0 mt-8">
         {/* Mobile: Title */}
         <div className="flex flex-row items-center gap-2 md:hidden mb-4">
@@ -64,10 +64,10 @@ const DataManagement = () => {
             <TabsTrigger value="activity">Nuova Attività</TabsTrigger>
           </TabsList>
           <TabsContent value="company">
-            <Card>
-              <CardHeader>
+        <Card>
+          <CardHeader>
                 <CardTitle>Crea Nuova Azienda</CardTitle>
-              </CardHeader>
+          </CardHeader>
               <CardContent>
                 <form className="space-y-4">
                   <div>
@@ -124,16 +124,16 @@ const DataManagement = () => {
                           placeholder="Cerca indirizzo per via o città..."
                           searchPlaceholder="Digita indirizzo o città..."
                           disabled={addressLoading}
-                          className="flex-1"
+              className="flex-1"
                         />
-                        <Button
+            <Button
                           type="button"
                           variant="outline"
                           onClick={() => setShowAddressForm(true)}
                           className="px-3"
                         >
                           +
-                        </Button>
+            </Button>
                       </div>
                     ) : (
                       <div className="space-y-2 border rounded p-2 mt-2">
@@ -149,7 +149,7 @@ const DataManagement = () => {
                         </div>
                         <Button type="button" variant="outline" onClick={() => setShowAddressForm(false)}>
                           Annulla
-                        </Button>
+            </Button>
                       </div>
                     )}
                   </div>
@@ -157,8 +157,8 @@ const DataManagement = () => {
                     <Button type="submit">Crea Azienda</Button>
                   </div>
                 </form>
-              </CardContent>
-            </Card>
+          </CardContent>
+        </Card>
           </TabsContent>
           <TabsContent value="sellingPoint">
             <AddNewSellingPointForm />

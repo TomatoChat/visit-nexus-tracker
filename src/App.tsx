@@ -175,7 +175,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
             <SidebarMenuContent />
           </div>
         </Sidebar>
-        <main className="flex-1 w-full min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-0 md:p-8 relative pt-[64px] md:pt-0">
+        <main className="flex-1 w-full min-h-screen bg-gray-100 p-0 md:p-8 relative pt-[64px] md:pt-0">
           <div className="md:hidden absolute top-4 left-4 z-50">
             <SidebarTrigger />
           </div>
@@ -186,7 +186,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       </div>
     </SidebarProvider>
   ) : (
-    <main className="flex-1 w-full min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-0 md:p-8 relative">
+    <main className="flex-1 w-full min-h-screen bg-gray-100 p-0 md:p-8 relative">
       <div className="w-full h-full">{children}</div>
     </main>
   );
