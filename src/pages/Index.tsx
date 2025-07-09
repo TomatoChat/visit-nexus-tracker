@@ -68,7 +68,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col p-8">
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl text-center flex items-center justify-center gap-2">
