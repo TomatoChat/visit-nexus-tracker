@@ -51,6 +51,7 @@ function SidebarMenuContent() {
   const [session, setSession] = useState<any>(null);
   const { userRole, userWithRole } = useRoles();
   const [authUserId, setAuthUserId] = useState<string | null>(null);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -70,7 +71,9 @@ function SidebarMenuContent() {
     };
   }, []);
 
-  const handleLogout = async () => {
+  const handleLogoutClick = () => setShowLogoutDialog(true);
+
+  const confirmLogout = async () => {
     await supabase.auth.signOut();
   };
 
@@ -150,12 +153,23 @@ function SidebarMenuContent() {
         </SidebarMenu>
       </div>
       <button
-        onClick={handleLogout}
+        onClick={handleLogoutClick}
         className="w-full flex items-center gap-2 px-4 py-3 text-base font-normal rounded-lg transition-colors hover:bg-gray-100 focus:outline-none focus:bg-gray-100 text-gray-900"
       >
         <Power className="w-5 h-5 flex-shrink-0" />
         {(state === 'expanded' || isMobile) && <span className="truncate text-base">Logout</span>}
       </button>
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Vuoi uscire?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmLogout}>Sì</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SidebarContent>
   );
 }
