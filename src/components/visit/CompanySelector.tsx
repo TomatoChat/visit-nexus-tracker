@@ -66,7 +66,7 @@ export const CompanySelector: React.FC<CompanySelectorProps> = ({
   const canProceed = selectedCompanyId;
 
   return (
-    <Card>
+    <Card className="pt-[2%]">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Building className="w-5 h-5" />

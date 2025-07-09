@@ -350,10 +350,12 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = () => {
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+    <Card className="overflow-x-hidden">
+      <CardHeader className="hidden md:flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <CardTitle>Punti Vendita</CardTitle>
+          <h2 className="hidden md:block text-lg md:text-3xl font-bold text-gray-800">Punti Vendita</h2>
+        </div>
+        <div className="hidden md:flex items-center gap-2">
           {!showSearch && (
             <Button
               variant="ghost"
@@ -368,8 +370,8 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = () => {
             <Input
               ref={searchInputRef}
               autoFocus
-              className="ml-2 w-48"
-              placeholder="Cerca per nome, azienda o città..."
+              className="w-48"
+              placeholder="Cerca per nome..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               onBlur={() => setShowSearch(false)}
@@ -378,20 +380,55 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = () => {
               }}
             />
           )}
+          <Button 
+            variant="ghost"
+            size="icon"
+            className="md:variant-outline md:border-black text-black hover:bg-gray-50" 
+            onClick={() => { setEditingSellingPoint(null); resetForm(); setShowAddForm(true); }}
+          >
+            <Plus className="w-5 h-5" />
+          </Button>
         </div>
-        <Button 
-          variant="outline" 
-          className="border-black text-black hover:bg-gray-50" 
-          onClick={() => { setEditingSellingPoint(null); resetForm(); setShowAddForm(true); }}
-        >
-          <Plus className="w-5 h-5" />
-        </Button>
       </CardHeader>
       <CardContent>
         {isLoading ? (<p>Caricamento...</p>) : (
           <>
-            <div className="mb-4 text-sm text-gray-600">
-              {sellingPoints.length} punti vendita
+            <div className="mb-4 text-sm text-gray-600 flex items-center justify-between">
+              <span>{sellingPoints.length} punti vendita</span>
+              <div className="flex items-center gap-2 md:hidden">
+                {!showSearch && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Cerca"
+                    onClick={() => setShowSearch(true)}
+                  >
+                    <Search className="w-5 h-5" />
+                  </Button>
+                )}
+                {showSearch && (
+                  <Input
+                    ref={searchInputRef}
+                    autoFocus
+                    className="w-32"
+                    placeholder="Cerca..."
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    onBlur={() => setShowSearch(false)}
+                    onKeyDown={e => {
+                      if (e.key === 'Escape') setShowSearch(false);
+                    }}
+                  />
+                )}
+                <Button 
+                  variant="ghost"
+                  size="icon"
+                  className="md:variant-outline md:border-black text-black hover:bg-gray-50" 
+                  onClick={() => { setEditingSellingPoint(null); resetForm(); setShowAddForm(true); }}
+                >
+                  <Plus className="w-5 h-5" />
+                </Button>
+              </div>
             </div>
             <div className="overflow-x-auto">
             <table className="w-full divide-y divide-gray-200">

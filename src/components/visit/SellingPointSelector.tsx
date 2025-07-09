@@ -107,7 +107,7 @@ export const SellingPointSelector: React.FC<SellingPointSelectorProps> = ({
   return (
     <div className="space-y-4">
       {/* Agent Selection */}
-      <Card>
+      <Card className="pt-[2%]">
         <CardHeader>
           <CardTitle className="text-lg">Select Agent</CardTitle>
         </CardHeader>
@@ -137,7 +137,7 @@ export const SellingPointSelector: React.FC<SellingPointSelectorProps> = ({
       </Card>
 
       {/* Selling Point Selection */}
-      <Card>
+      <Card className="pt-[2%]">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <MapPin className="w-5 h-5" />
