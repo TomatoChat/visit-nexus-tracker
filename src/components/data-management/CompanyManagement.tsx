@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
@@ -18,16 +19,17 @@ interface CompanyManagementProps {
 
 const CompanyManagement: React.FC<CompanyManagementProps> = () => {
   const { toast } = useToast();
-  const [companies, setCompanies] = useState<Company[]>([]);
+  const [companies, setCompanies] = useState<(Company & { addresses: Address })[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [companyTypeFilter, setCompanyTypeFilter] = useState<string>('all'); // 'all', 'supplier', 'seller'
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+  const [editingCompany, setEditingCompany] = useState<(Company & { addresses: Address }) | null>(null);
 
   // Add New Company Form State
   const [companyName, setCompanyName] = useState('');
   const [companyVat, setCompanyVat] = useState('');
-  const [companyType, setCompanyType] = useState<'supplier' | 'seller' | null>(null);
+  const [currentCompanyType, setCurrentCompanyType] = useState<'supplier' | 'seller' | null>(null); // Renamed from companyType to avoid conflict
   const [selectedAddressId, setSelectedAddressId] = useState<string | undefined>(undefined);
 
   const [showAddressForm, setShowAddressForm] = useState(false);
@@ -62,7 +64,7 @@ const CompanyManagement: React.FC<CompanyManagementProps> = () => {
         `)
         .order('name', { ascending: true });
       if (error) throw error;
-      setCompanies(data || []);
+      setCompanies(data as (Company & { addresses: Address })[] || []);
     } catch (error: any) {
       toast({ title: 'Error fetching companies', description: error.message, variant: 'destructive' });
     } finally {
@@ -72,7 +74,7 @@ const CompanyManagement: React.FC<CompanyManagementProps> = () => {
 
   // Fetch addresses for dropdown
   useEffect(() => {
-    if (!showAddressForm) {
+    if (!showAddressForm && (showAddForm || editingCompany)) { // Only fetch if form is active
       setAddressLoading(true);
       (async () => {
         try {
@@ -80,7 +82,7 @@ const CompanyManagement: React.FC<CompanyManagementProps> = () => {
             .from("addresses")
             .select("id, addressLine1, city")
             .or(`addressLine1.ilike.%${addressSearch}%,city.ilike.%${addressSearch}%`)
-            .limit(20); // Limit results for performance
+            .limit(20);
           setAddressOptions(
             (data || []).map((a: any) => ({
               value: a.id,
@@ -93,7 +95,7 @@ const CompanyManagement: React.FC<CompanyManagementProps> = () => {
         }
       })();
     }
-  }, [addressSearch, showAddressForm]);
+  }, [addressSearch, showAddressForm, showAddForm, editingCompany]);
 
   // Auto-geocode when mandatory fields are filled
   useEffect(() => {
@@ -198,7 +200,7 @@ const CompanyManagement: React.FC<CompanyManagementProps> = () => {
   const resetAddCompanyForm = () => {
     setCompanyName('');
     setCompanyVat('');
-    setCompanyType(null);
+    setCurrentCompanyType(null);
     setSelectedAddressId(undefined);
     setShowAddressForm(false);
     setAddressForm({ addressLine1: '', addressLine2: '', city: '', stateProvince: '', postalCode: '', country: '', latitude: '', longitude: '' });
@@ -207,7 +209,7 @@ const CompanyManagement: React.FC<CompanyManagementProps> = () => {
 
   const handleAddOrUpdateCompany = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!companyName || !companyVat || !companyType || !selectedAddressId) {
+    if (!companyName || !companyVat || !currentCompanyType || !selectedAddressId) {
       toast({ title: 'Errore di validazione', description: 'Compila tutti i campi obbligatori (*).', variant: 'destructive' });
       return;
     }
@@ -215,13 +217,10 @@ const CompanyManagement: React.FC<CompanyManagementProps> = () => {
     const companyData = {
       name: companyName,
       codeVAT: companyVat,
-      isSupplier: companyType === 'supplier',
-      isSeller: companyType === 'seller',
+      isSupplier: currentCompanyType === 'supplier',
+      isSeller: currentCompanyType === 'seller',
       addressId: selectedAddressId,
-      // categoryId will need to be handled if it's a required field. For now, assuming it can be null or has a default.
-      // Let's add a placeholder or remove if not used in the form yet.
-      // For now, I'll assume categoryId is not part of this simplified form.
-      // categoryId: 'default-category-id', // Replace with actual logic if needed
+      // categoryId is still not handled here, as per previous note.
     };
 
     try {
@@ -254,11 +253,21 @@ const CompanyManagement: React.FC<CompanyManagementProps> = () => {
     setEditingCompany(company);
     setCompanyName(company.name);
     setCompanyVat(company.codeVAT);
-    if (company.isSeller) setCompanyType('seller');
-    else if (company.isSupplier) setCompanyType('supplier');
-    else setCompanyType(null);
+    if (company.isSeller && company.isSupplier) {
+      // This case needs clarification if "both" is an option or if one should take precedence.
+      // For now, defaulting to 'seller' if both are true, or you might need a combined type.
+      // Let's assume for the form, it can be one or the other, or it could be that the DB stores two booleans
+      // and the form represents this. The current form allows only one to be selected or null.
+      // If the requirement is to select 'supplier' OR 'seller' but not exclusively both via a single form option:
+       setCurrentCompanyType(company.isSeller ? 'seller' : 'supplier');
+    } else if (company.isSeller) {
+      setCurrentCompanyType('seller');
+    } else if (company.isSupplier) {
+      setCurrentCompanyType('supplier');
+    } else {
+      setCurrentCompanyType(null);
+    }
     setSelectedAddressId(company.addressId);
-    // Pre-fill address search to show the current address in SearchableSelect
     if (company.addresses) {
         setAddressSearch(company.addresses.addressLine1 || company.addresses.city);
     }
@@ -266,11 +275,20 @@ const CompanyManagement: React.FC<CompanyManagementProps> = () => {
   };
 
   const filteredCompanies = useMemo(() => {
-    return companies.filter(company =>
-      company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      company.codeVAT.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [companies, searchTerm]);
+    return companies.filter(company => {
+      const searchTermMatch = company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                              company.codeVAT.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const typeMatch = companyTypeFilter === 'all' ||
+                        (companyTypeFilter === 'supplier' && company.isSupplier && !company.isSeller) ||
+                        (companyTypeFilter === 'seller' && company.isSeller && !company.isSupplier) ||
+                        (companyTypeFilter === 'supplierOnly' && company.isSupplier && !company.isSeller) ||
+                        (companyTypeFilter === 'sellerOnly' && company.isSeller && !company.isSupplier) ||
+                        (companyTypeFilter === 'both' && company.isSeller && company.isSupplier);
+
+      return searchTermMatch && typeMatch;
+    });
+  }, [companies, searchTerm, companyTypeFilter]);
 
   if (showAddForm || editingCompany) {
     return (
@@ -292,10 +310,10 @@ const CompanyManagement: React.FC<CompanyManagementProps> = () => {
               <Label>Tipo Azienda <span className="text-red-500">*</span></Label>
               <div className="flex gap-4 mt-2">
                 <label className="flex items-center gap-2">
-                  <input type="checkbox" checked={companyType === 'supplier'} onChange={() => setCompanyType(companyType === 'supplier' ? null : 'supplier')} /> Fornitore
+                  <input type="radio" name="companyType" value="supplier" checked={currentCompanyType === 'supplier'} onChange={() => setCurrentCompanyType('supplier')} /> Fornitore
                 </label>
                 <label className="flex items-center gap-2">
-                  <input type="checkbox" checked={companyType === 'seller'} onChange={() => setCompanyType(companyType === 'seller' ? null : 'seller')} /> Venditore
+                  <input type="radio" name="companyType" value="seller" checked={currentCompanyType === 'seller'} onChange={() => setCurrentCompanyType('seller')} /> Venditore
                 </label>
               </div>
             </div>
@@ -346,17 +364,29 @@ const CompanyManagement: React.FC<CompanyManagementProps> = () => {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <CardTitle>Aziende</CardTitle>
         <Button onClick={() => { setEditingCompany(null); resetAddCompanyForm(); setShowAddForm(true); }}>Nuova Azienda</Button>
       </CardHeader>
       <CardContent>
-        <div className="mb-4">
+        <div className="flex flex-col md:flex-row gap-4 mb-4">
           <Input
             placeholder="Cerca per nome o P.IVA..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            className="flex-grow"
           />
+          <Select value={companyTypeFilter} onValueChange={setCompanyTypeFilter}>
+            <SelectTrigger className="w-full md:w-[180px]">
+              <SelectValue placeholder="Filtra per tipo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tutti i tipi</SelectItem>
+              <SelectItem value="supplierOnly">Solo Fornitori</SelectItem>
+              <SelectItem value="sellerOnly">Solo Venditori</SelectItem>
+              <SelectItem value="both">Fornitori & Venditori</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         {isLoading ? (
           <p>Caricamento aziende...</p>
@@ -369,25 +399,20 @@ const CompanyManagement: React.FC<CompanyManagementProps> = () => {
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">P.IVA</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Indirizzo</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Azioni</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredCompanies.map((company) => {
-                  const address = company.addresses as Address; // Cast because we selected it
+                  const address = company.addresses; // No longer need cast due to state type
                   return (
-                    <tr key={company.id}>
+                    <tr key={company.id} onClick={() => handleEdit(company)} className="cursor-pointer hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{company.name}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.codeVAT}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {company.isSeller && company.isSupplier ? 'Venditore & Fornitore' : company.isSeller ? 'Venditore' : company.isSupplier ? 'Fornitore' : 'N/A'}
+                        {company.isSeller && company.isSupplier ? 'Fornitore & Venditore' : company.isSeller ? 'Venditore' : company.isSupplier ? 'Fornitore' : 'N/A'}
                       </td>
                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {address ? `${address.addressLine1 || ''}, ${address.city}` : 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <Button variant="link" onClick={() => handleEdit(company as Company & { addresses: Address })}>Modifica</Button>
-                        {/* Delete button can be added here */}
+                        {address ? `${address.addressLine1 || ''}${address.addressLine1 && address.city ? ', ' : ''}${address.city || ''}` : 'N/A'}
                       </td>
                     </tr>
                   );

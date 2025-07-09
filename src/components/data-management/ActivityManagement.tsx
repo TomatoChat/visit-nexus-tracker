@@ -155,17 +155,12 @@ const ActivityManagement: React.FC<ActivityManagementProps> = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Azioni</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredActivities.map((activity) => (
-                    <tr key={activity.id}>
+                    <tr key={activity.id} onClick={() => handleEdit(activity)} className="cursor-pointer hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{activity.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <Button variant="link" onClick={() => handleEdit(activity)}>Modifica</Button>
-                        {/* Delete button can be added here */}
-                      </td>
                     </tr>
                   ))}
               </tbody>

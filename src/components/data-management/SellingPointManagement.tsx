@@ -312,7 +312,6 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Azienda Venditrice</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Indirizzo</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Telefono</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Azioni</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -320,14 +319,11 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = () => {
                   const address = sp.addresses;
                   const company = sp.companies;
                   return (
-                    <tr key={sp.id}>
+                    <tr key={sp.id} onClick={() => handleEdit(sp)} className="cursor-pointer hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{sp.name}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company?.name || 'N/A'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{address ? `${address.addressLine1 || ''}, ${address.city}` : 'N/A'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{address ? `${address.addressLine1 || ''}${address.addressLine1 && address.city ? ', ' : ''}${address.city || ''}` : 'N/A'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{sp.phoneNumber || 'N/A'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <Button variant="link" onClick={() => handleEdit(sp)}>Modifica</Button>
-                      </td>
                     </tr>
                   );
                 })}

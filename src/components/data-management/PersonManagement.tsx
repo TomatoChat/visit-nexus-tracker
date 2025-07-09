@@ -263,20 +263,16 @@ const PersonManagement: React.FC<PersonManagementProps> = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Azienda</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">P. Vendita</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ruolo</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Azioni</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredPeople.map(person => (
-                  <tr key={person.id}>
+                  <tr key={person.id} onClick={() => handleEdit(person)} className="cursor-pointer hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{`${person.surname} ${person.name}`}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{person.email}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{person.companies?.name || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{person.sellingPoints?.name || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{person.personRoles?.name || 'N/A'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <Button variant="link" onClick={() => handleEdit(person)}>Modifica</Button>
-                    </td>
                   </tr>
                 ))}
               </tbody>
