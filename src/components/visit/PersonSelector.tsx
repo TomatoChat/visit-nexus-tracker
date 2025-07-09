@@ -69,7 +69,7 @@ export const PersonSelector: React.FC<PersonSelectorProps> = ({
   const sortedPeople = people.slice().sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <Card>
+    <Card className="pt-[2%]">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="w-5 h-5" />

@@ -1,100 +1,28 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, UserPlus, Building, Store, ShoppingCart } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { SearchableSelect } from "@/components/ui/searchable-select";
-import { supabase } from "@/integrations/supabase/client";
-import type { Database } from '@/integrations/supabase/types';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { useToast } from '@/hooks/use-toast';
+import CompanyManagement from '@/components/data-management/CompanyManagement';
+import SellingPointManagement from '@/components/data-management/SellingPointManagement';
+import PersonManagement from '@/components/data-management/PersonManagement';
+import ActivityManagement from '@/components/data-management/ActivityManagement';
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
+import { useEffect, useMemo } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { geocodeAddress } from '@/lib/utils';
-
-type EntityType = 'person' | 'seller' | 'supplier' | 'sellingPoint';
+import type { Database } from '@/integrations/supabase/types';
+import { SearchableSelect } from '@/components/ui/searchable-select';
+import { Input } from '@/components/ui/input';
+import Layout from '@/components/Layout';
 
 const DataManagement = () => {
-  const { toast } = useToast();
-  const navigate = useNavigate();
-  const [showAddressForm, setShowAddressForm] = useState(false);
-  const [addressOptions, setAddressOptions] = useState([]);
-  const [selectedAddress, setSelectedAddress] = useState<string | undefined>(undefined);
-  const [addressSearch, setAddressSearch] = useState("");
-  const [addressLoading, setAddressLoading] = useState(false);
-  const [companyType, setCompanyType] = useState<'supplier' | 'seller' | null>(null);
-  
-  // Address form state
-  const [addressForm, setAddressForm] = useState({
-    addressLine1: '',
-    addressLine2: '',
-    city: '',
-    stateProvince: '',
-    postalCode: '',
-    country: '',
-    latitude: '',
-    longitude: ''
-  });
-  const [isGeocoding, setIsGeocoding] = useState(false);
-
-  useEffect(() => {
-    if (!showAddressForm) {
-      setAddressLoading(true);
-      (async () => {
-        try {
-          const { data } = await supabase
-            .from("addresses")
-            .select("id, addressLine1, city")
-            .or(`addressLine1.ilike.%${addressSearch}%,city.ilike.%${addressSearch}%`);
-          setAddressOptions(
-            (data || []).map((a: any) => ({
-              value: a.id,
-              label: a.addressLine1 || "(No address line)",
-              subtitle: a.city
-            }))
-          );
-        } finally {
-          setAddressLoading(false);
-        }
-      })();
-    }
-  }, [addressSearch, showAddressForm]);
-
-  // Auto-geocode when mandatory fields are filled
-  useEffect(() => {
-    const hasMandatoryFields = addressForm.city && addressForm.stateProvince && addressForm.country;
-    const hasCoordinates = addressForm.latitude && addressForm.longitude;
-    
-    if (hasMandatoryFields && !hasCoordinates && !isGeocoding) {
-      setIsGeocoding(true);
-      geocodeAddress({
-        addressLine1: addressForm.addressLine1,
-        city: addressForm.city,
-        stateProvince: addressForm.stateProvince,
-        country: addressForm.country,
-        postalCode: addressForm.postalCode,
-      }, import.meta.env.VITE_GOOGLE_MAPS_KEY)
-        .then(({ lat, lng }) => {
-          setAddressForm(prev => ({
-            ...prev,
-            latitude: lat.toString(),
-            longitude: lng.toString()
-          }));
-        })
-        .catch((err) => {
-          console.log('Geocoding failed:', err.message);
-          // Don't show error toast for auto-geocoding, just leave fields blank
-        })
-        .finally(() => {
-          setIsGeocoding(false);
-        });
-    }
-  }, [addressForm.city, addressForm.stateProvince, addressForm.country, addressForm.addressLine1, addressForm.addressLine2, addressForm.postalCode]);
+  const [activeTab, setActiveTab] = useState("company");
 
   return (
-    <div className="min-h-screen pt-4 md:pt-0">
-      <div className="w-full md:max-w-4xl mx-auto px-2 md:px-0 pb-2 md:pb-0 mt-0 lg:mt-8">
+    <Layout>
+      <div className="min-h-screen w-full pb-2 md:pb-0">
         {/* Mobile: Sidebar button and title row */}
         <div className="flex flex-row items-center gap-2 md:hidden mb-4">
           <SidebarTrigger />
@@ -104,314 +32,33 @@ const DataManagement = () => {
         <div className="hidden md:flex items-center gap-4 mb-8">
           <h1 className="text-3xl font-bold text-gray-800 text-left">Data Management</h1>
         </div>
-        <Tabs defaultValue="company" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="w-full overflow-x-auto">
             <TabsList className="min-w-max flex gap-2 mb-4">
-              <TabsTrigger value="company" className="inline-block">Nuova Azienda</TabsTrigger>
-              <TabsTrigger value="sellingPoint" className="inline-block">Nuovo Punto Vendita</TabsTrigger>
-              <TabsTrigger value="person" className="inline-block">Nuova Persona</TabsTrigger>
-              <TabsTrigger value="activity" className="inline-block">Nuova Attività</TabsTrigger>
+              <TabsTrigger value="company" className="inline-block">Aziende</TabsTrigger>
+              <TabsTrigger value="sellingPoint" className="inline-block">Punti Vendita</TabsTrigger>
+              <TabsTrigger value="person" className="inline-block">Persone</TabsTrigger>
+              <TabsTrigger value="activity" className="inline-block">Attività</TabsTrigger>
             </TabsList>
           </div>
           <TabsContent value="company">
-        <Card>
-          <CardHeader>
-                <CardTitle>Crea Nuova Azienda</CardTitle>
-          </CardHeader>
-              <CardContent>
-                <form className="space-y-4">
-                  <div>
-                    <Label htmlFor="company-name">Nome Azienda <span className="text-red-500">*</span></Label>
-                    <Input id="company-name" placeholder="Inserisci il nome dell'azienda" required />
-                  </div>
-                  <div>
-                    <Label htmlFor="company-vat">Partita IVA <span className="text-red-500">*</span></Label>
-                    <Input id="company-vat" placeholder="Inserisci la partita IVA" required />
-                  </div>
-                  <div>
-                    <Label>Tipo Azienda <span className="text-red-500">*</span></Label>
-                    <div className="flex gap-4 mt-2">
-                      <label className="flex items-center gap-2">
-                        <input 
-                          type="checkbox" 
-                          checked={companyType === 'supplier'}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setCompanyType('supplier');
-                            } else {
-                              setCompanyType(null);
-                            }
-                          }}
-                        /> 
-                        Fornitore
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input 
-                          type="checkbox" 
-                          checked={companyType === 'seller'}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setCompanyType('seller');
-                            } else {
-                              setCompanyType(null);
-                            }
-                          }}
-                        /> 
-                        Venditore
-                      </label>
-                    </div>
-                  </div>
-                  <div>
-                    <Label>Indirizzo <span className="text-red-500">*</span></Label>
-                    {!showAddressForm ? (
-                      <div className="flex gap-2">
-                        <SearchableSelect
-                          options={addressOptions}
-                          value={selectedAddress}
-                          onSelect={(val) => {
-                            setSelectedAddress(val);
-                          }}
-                          placeholder="Cerca indirizzo per via o città..."
-                          searchPlaceholder="Digita indirizzo o città..."
-                          disabled={addressLoading}
-              className="flex-1"
-                        />
-            <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => setShowAddressForm(true)}
-                          className="px-3"
-                        >
-                          +
-            </Button>
-                      </div>
-                    ) : (
-                      <div className="space-y-2 border rounded p-2 mt-2">
-                        <div>
-                          <Label htmlFor="address-line1">Via</Label>
-                          <Input
-                            id="address-line1"
-                            value={addressForm.addressLine1}
-                            onChange={(e) => setAddressForm(prev => ({ ...prev, addressLine1: e.target.value }))}
-                            placeholder="Via"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="address-line2">Civico</Label>
-                          <Input
-                            id="address-line2"
-                            value={addressForm.addressLine2}
-                            onChange={(e) => setAddressForm(prev => ({ ...prev, addressLine2: e.target.value }))}
-                            placeholder="Civico"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="address-city">Città <span className="text-red-500">*</span></Label>
-                          <Input
-                            id="address-city"
-                            value={addressForm.city}
-                            onChange={(e) => setAddressForm(prev => ({ ...prev, city: e.target.value }))}
-                            placeholder="Città"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="address-state">Provincia <span className="text-red-500">*</span></Label>
-                          <Input
-                            id="address-state"
-                            value={addressForm.stateProvince}
-                            onChange={(e) => setAddressForm(prev => ({ ...prev, stateProvince: e.target.value }))}
-                            placeholder="Provincia"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="address-postal">CAP</Label>
-                          <Input
-                            id="address-postal"
-                            value={addressForm.postalCode}
-                            onChange={(e) => setAddressForm(prev => ({ ...prev, postalCode: e.target.value }))}
-                            placeholder="CAP"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="address-country">Nazione <span className="text-red-500">*</span></Label>
-                          <Input
-                            id="address-country"
-                            value={addressForm.country}
-                            onChange={(e) => setAddressForm(prev => ({ ...prev, country: e.target.value }))}
-                            placeholder="Nazione"
-                            required
-                          />
-                        </div>
-                        <div className="flex gap-2">
-                          <div className="flex-1">
-                            <Label htmlFor="address-lat">Latitudine <span className="text-red-500">*</span></Label>
-                            <Input
-                              id="address-lat"
-                              type="number"
-                              step="any"
-                              value={addressForm.latitude}
-                              onChange={(e) => setAddressForm(prev => ({ ...prev, latitude: e.target.value }))}
-                              placeholder={isGeocoding ? "Caricamento..." : "Latitudine"}
-                              required
-                              disabled={isGeocoding}
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <Label htmlFor="address-lng">Longitudine <span className="text-red-500">*</span></Label>
-                            <Input
-                              id="address-lng"
-                              type="number"
-                              step="any"
-                              value={addressForm.longitude}
-                              onChange={(e) => setAddressForm(prev => ({ ...prev, longitude: e.target.value }))}
-                              placeholder={isGeocoding ? "Caricamento..." : "Longitudine"}
-                              required
-                              disabled={isGeocoding}
-                            />
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => {
-                              setShowAddressForm(false);
-                              setAddressForm({
-                                addressLine1: '',
-                                addressLine2: '',
-                                city: '',
-                                stateProvince: '',
-                                postalCode: '',
-                                country: '',
-                                latitude: '',
-                                longitude: ''
-                              });
-                              setIsGeocoding(false);
-                            }}
-                          >
-                            Annulla
-                          </Button>
-                          <Button
-                            type="button"
-                            disabled={isGeocoding}
-                            onClick={async () => {
-                              // Validate mandatory fields
-                              if (!addressForm.city || !addressForm.stateProvince || !addressForm.country) {
-                                toast({
-                                  title: 'Errore di validazione',
-                                  description: 'Per favore compila tutti i campi obbligatori (*).',
-                                  variant: 'destructive',
-                                });
-                                return;
-                              }
-                              
-                              let latitude = addressForm.latitude;
-                              let longitude = addressForm.longitude;
-                              
-                              // If still no coordinates, try geocoding one more time
-                              if (!latitude || !longitude) {
-                                setIsGeocoding(true);
-                                try {
-                                  const { lat, lng } = await geocodeAddress({
-                                    addressLine1: addressForm.addressLine1,
-                                    city: addressForm.city,
-                                    stateProvince: addressForm.stateProvince,
-                                    country: addressForm.country,
-                                    postalCode: addressForm.postalCode,
-                                  }, import.meta.env.VITE_GOOGLE_MAPS_KEY);
-                                  latitude = lat.toString();
-                                  longitude = lng.toString();
-                                  setAddressForm(prev => ({
-                                    ...prev,
-                                    latitude: lat.toString(),
-                                    longitude: lng.toString()
-                                  }));
-                                } catch (err) {
-                                  toast({
-                                    title: 'Errore geocoding',
-                                    description: err.message || 'Impossibile ottenere latitudine e longitudine automaticamente.',
-                                    variant: 'destructive',
-                                  });
-                                  setIsGeocoding(false);
-                                  return;
-                                } finally {
-                                  setIsGeocoding(false);
-                                }
-                              }
-
-                              try {
-                                const { data, error } = await supabase
-                                  .from('addresses')
-                                  .insert({
-                                    addressLine1: addressForm.addressLine1 || null,
-                                    addressLine2: addressForm.addressLine2 || null,
-                                    city: addressForm.city,
-                                    stateProvince: addressForm.stateProvince,
-                                    postalCode: addressForm.postalCode || null,
-                                    country: addressForm.country,
-                                    latitude: parseFloat(latitude),
-                                    longitude: parseFloat(longitude)
-                                  })
-                                  .select()
-                                  .single();
-
-                                if (error) throw error;
-
-                                setSelectedAddress(data.id);
-                                setShowAddressForm(false);
-                                setAddressForm({
-                                  addressLine1: '',
-                                  addressLine2: '',
-                                  city: '',
-                                  stateProvince: '',
-                                  postalCode: '',
-                                  country: '',
-                                  latitude: '',
-                                  longitude: ''
-                                });
-                                setIsGeocoding(false);
-
-                                toast({
-                                  title: 'Successo!',
-                                  description: 'Indirizzo creato con successo!',
-                                });
-                              } catch (error) {
-                                console.error('Error creating address:', error);
-                                toast({
-                                  title: 'Errore',
-                                  description: error.message || 'Impossibile creare l\'indirizzo. Riprova.',
-                                  variant: 'destructive',
-                                });
-                              }
-                            }}
-                          >
-                            {isGeocoding ? 'Caricamento...' : 'Salva Indirizzo'}
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex justify-end">
-                    <Button type="submit">Crea Azienda</Button>
-                  </div>
-                </form>
-          </CardContent>
-        </Card>
+            <CompanyManagement />
           </TabsContent>
           <TabsContent value="sellingPoint">
-            <AddNewSellingPointForm />
+            {/* Replace with actual SellingPointManagement component */}
+            <SellingPointManagement />
           </TabsContent>
           <TabsContent value="person">
-            <AddNewPersonForm />
+            {/* Replace with actual PersonManagement component */}
+            <PersonManagement />
           </TabsContent>
           <TabsContent value="activity">
-            <AddNewActivityForm />
+            {/* Replace with actual ActivityManagement component */}
+            <ActivityManagement />
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </Layout>
   );
 };
 
@@ -591,7 +238,7 @@ const AddNewPersonForm = () => {
   };
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>Aggiungi Nuova Persona</CardTitle>
       </CardHeader>
@@ -918,7 +565,7 @@ const AddNewSellingPointForm = () => {
   };
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>Nuovo Punto Vendita</CardTitle>
       </CardHeader>
@@ -1204,7 +851,7 @@ const AddNewActivityForm = () => {
   };
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>Nuova Attività</CardTitle>
       </CardHeader>

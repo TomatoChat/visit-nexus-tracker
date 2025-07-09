@@ -30,6 +30,7 @@ import {
 import { Car, DatabaseZap, LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import Layout from '@/components/Layout';
 
 const queryClient = new QueryClient();
 
@@ -176,15 +177,13 @@ function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </Sidebar>
         <main className="flex-1 w-full min-h-screen bg-gray-100 p-0 md:p-8 relative md:pt-0">
-          <div className="w-full h-full">
-            {children}
-          </div>
+          <Layout>{children}</Layout>
         </main>
       </div>
     </SidebarProvider>
   ) : (
     <main className="flex-1 w-full min-h-screen bg-gray-100 p-0 md:p-8 relative">
-      <div className="w-full h-full">{children}</div>
+      <Layout>{children}</Layout>
     </main>
   );
 }
