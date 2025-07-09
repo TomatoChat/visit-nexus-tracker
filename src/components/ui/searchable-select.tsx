@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -20,6 +19,7 @@ interface SearchableSelectProps {
   searchPlaceholder?: string;
   className?: string;
   disabled?: boolean;
+  alwaysVisibleOption?: Option;
 }
 
 export const SearchableSelect: React.FC<SearchableSelectProps> = ({
@@ -29,7 +29,8 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   placeholder = "Select an option...",
   searchPlaceholder = "Search...",
   className,
-  disabled = false
+  disabled = false,
+  alwaysVisibleOption
 }) => {
   const [open, setOpen] = useState(false);
   const [selectedOption, setSelectedOption] = useState<Option | undefined>();
@@ -90,6 +91,31 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
                 </CommandItem>
               ))}
             </CommandGroup>
+            {alwaysVisibleOption && (
+              <CommandGroup>
+                <CommandItem
+                  key={alwaysVisibleOption.value}
+                  value={alwaysVisibleOption.label}
+                  onSelect={() => {
+                    onSelect(alwaysVisibleOption.value);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === alwaysVisibleOption.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  <div className="flex flex-col">
+                    <span>{alwaysVisibleOption.label}</span>
+                    {alwaysVisibleOption.subtitle && (
+                      <span className="text-xs text-muted-foreground">{alwaysVisibleOption.subtitle}</span>
+                    )}
+                  </div>
+                </CommandItem>
+              </CommandGroup>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>

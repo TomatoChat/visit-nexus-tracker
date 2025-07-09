@@ -6,6 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
+import { DatabaseZap } from "lucide-react";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 // Add this TypeScript declaration to fix the linter error for import.meta.env
 interface ImportMeta {
@@ -46,16 +49,31 @@ const Index = () => {
   };
 
   if (session) {
-    return <NewVisitForm />;
+    return (
+      <div className="min-h-screen pt-4 md:pt-0">
+        <div className="w-full md:max-w-4xl mx-auto px-2 md:px-0 mt-0 lg:mt-8">
+          {/* Mobile: Sidebar button and title row */}
+          <div className="flex flex-row items-center gap-2 md:hidden mb-4">
+            <SidebarTrigger />
+            <h1 className="text-lg font-bold text-gray-800">Nuovo Rapporto Visita</h1>
+          </div>
+          {/* Desktop: Title */}
+          <div className="hidden md:flex items-center gap-4 mb-8">
+            <h1 className="text-3xl font-bold text-gray-800 text-left">Nuovo Rapporto Visita</h1>
+          </div>
+          <NewVisitForm />
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-8">
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl text-center flex items-center justify-center gap-2">
             <Lock className="w-6 h-6" />
-            Login Required
+            Accesso richiesto
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -67,7 +85,7 @@ const Index = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
+                placeholder="Inserisci la tua email"
                 required
               />
             </div>
@@ -78,7 +96,7 @@ const Index = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
+                placeholder="Inserisci la tua password"
                 required
               />
             </div>
@@ -86,7 +104,7 @@ const Index = () => {
               <p className="text-sm text-red-600">{error}</p>
             )}
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Signing in..." : "Login"}
+              {loading ? "Accesso in corso..." : "Accedi"}
             </Button>
           </form>
         </CardContent>
