@@ -317,54 +317,52 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
       </AlertDialog>
       <div className="w-full md:max-w-4xl mx-auto px-0">
         <Card className="w-full">
-          <CardContent className="space-y-4 md:space-y-6">
-            <div className='pt-6'>
-              {/* Date Picker */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2">
-                  <CalendarIcon className="w-4 h-4" />
-                  Data visita
-                </label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !selectedDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {selectedDate ? format(selectedDate, "PPP") : <span>Scegli una data</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={(date) => date && setSelectedDate(date)}
-                      disabled={(date) => date > new Date()}
-                      initialFocus
-                      className="p-3 pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              {/* Step 1: Fornitore */}
-              <div className="space-y-2 mt-6">
-                <label className="text-sm font-medium flex items-center gap-2">
-                  <Building className="w-4 h-4" />
-                  Fornitore
-                </label>
-                <SearchableSelect
-                  options={supplierOptions}
-                  value={selectedSupplierId}
-                  onSelect={setSelectedSupplierId}
-                  placeholder="Scegli un'azienda fornitrice..."
-                  searchPlaceholder="Cerca fornitori..."
-                  disabled={loading.suppliers}
-                />
-              </div>
+          <CardContent className="p-6 space-y-4 md:space-y-6">
+            {/* Date Picker */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <CalendarIcon className="w-4 h-4" />
+                Data visita
+              </label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !selectedDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedDate ? format(selectedDate, "PPP") : <span>Scegli una data</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => date && setSelectedDate(date)}
+                    disabled={(date) => date > new Date()}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            {/* Step 1: Fornitore */}
+            <div className="space-y-2 mt-6">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <Building className="w-4 h-4" />
+                Fornitore
+              </label>
+              <SearchableSelect
+                options={supplierOptions}
+                value={selectedSupplierId}
+                onSelect={setSelectedSupplierId}
+                placeholder="Scegli un'azienda fornitrice..."
+                searchPlaceholder="Cerca fornitori..."
+                disabled={loading.suppliers}
+              />
             </div>
 
             {/* Step 2: Azienda Venditrice */}

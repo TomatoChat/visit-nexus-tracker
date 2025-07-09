@@ -8,6 +8,7 @@ import { Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { DatabaseZap } from "lucide-react";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 // Add this TypeScript declaration to fix the linter error for import.meta.env
 interface ImportMeta {
@@ -49,10 +50,11 @@ const Index = () => {
 
   if (session) {
     return (
-      <div className="min-h-screen p-4">
-        <div className="w-full md:max-w-4xl mx-auto px-2 md:px-0 mt-8">
-          {/* Mobile: Title and sidebar button row */}
+      <div className="min-h-screen pt-4 md:pt-0">
+        <div className="w-full md:max-w-4xl mx-auto px-2 md:px-0 mt-0 lg:mt-8">
+          {/* Mobile: Sidebar button and title row */}
           <div className="flex flex-row items-center gap-2 md:hidden mb-4">
+            <SidebarTrigger />
             <h1 className="text-lg font-bold text-gray-800">Nuovo Rapporto Visita</h1>
           </div>
           {/* Desktop: Title */}
@@ -66,7 +68,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
+    <div className="min-h-screen bg-gray-100 flex flex-col p-8">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl text-center flex items-center justify-center gap-2">

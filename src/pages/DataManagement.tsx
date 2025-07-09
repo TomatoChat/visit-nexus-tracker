@@ -10,6 +10,7 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 
 type EntityType = 'person' | 'seller' | 'supplier' | 'sellingPoint';
 
@@ -46,10 +47,11 @@ const DataManagement = () => {
   }, [addressSearch, showAddressForm]);
 
   return (
-    <div className="min-h-screen p-4">
-      <div className="w-full md:max-w-4xl mx-auto px-2 md:px-0 mt-8">
-        {/* Mobile: Title */}
+    <div className="min-h-screen pt-4 md:pt-0">
+      <div className="w-full md:max-w-4xl mx-auto px-2 md:px-0 pb-2 md:pb-0 mt-0 lg:mt-8">
+        {/* Mobile: Sidebar button and title row */}
         <div className="flex flex-row items-center gap-2 md:hidden mb-4">
+          <SidebarTrigger />
           <h1 className="text-lg font-bold text-gray-800">Data Management</h1>
         </div>
         {/* Desktop: Title */}
@@ -57,12 +59,14 @@ const DataManagement = () => {
           <h1 className="text-3xl font-bold text-gray-800 text-left">Data Management</h1>
         </div>
         <Tabs defaultValue="company" className="w-full">
-          <TabsList className="mb-4 gap-2">
-            <TabsTrigger value="company">Nuova Azienda</TabsTrigger>
-            <TabsTrigger value="sellingPoint">Nuovo Punto Vendita</TabsTrigger>
-            <TabsTrigger value="person">Nuova Persona</TabsTrigger>
-            <TabsTrigger value="activity">Nuova Attività</TabsTrigger>
-          </TabsList>
+          <div className="w-full overflow-x-auto">
+            <TabsList className="min-w-max flex gap-2 mb-4">
+              <TabsTrigger value="company" className="inline-block">Nuova Azienda</TabsTrigger>
+              <TabsTrigger value="sellingPoint" className="inline-block">Nuovo Punto Vendita</TabsTrigger>
+              <TabsTrigger value="person" className="inline-block">Nuova Persona</TabsTrigger>
+              <TabsTrigger value="activity" className="inline-block">Nuova Attività</TabsTrigger>
+            </TabsList>
+          </div>
           <TabsContent value="company">
         <Card>
           <CardHeader>
