@@ -9,6 +9,41 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      userRoles: {
+        Row: {
+          id: string
+          userId: string
+          role: 'admin' | 'internalAgent' | 'externalAgent' | 'guest'
+          created_at: string
+          updated_at: string
+          isActive: boolean
+        }
+        Insert: {
+          id?: string
+          userId: string
+          role: 'admin' | 'internalAgent' | 'externalAgent' | 'guest'
+          created_at?: string
+          updated_at?: string
+          isActive?: boolean
+        }
+        Update: {
+          id?: string
+          userId?: string
+          role?: 'admin' | 'internalAgent' | 'externalAgent' | 'guest'
+          created_at?: string
+          updated_at?: string
+          isActive?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "userRoles_userId_fkey"
+            columns: ["userId"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       addresses: {
         Row: {
           addressLine1: string | null
@@ -17,7 +52,7 @@ export type Database = {
           country: string
           created_at: string
           id: string
-          isActive: boolean
+          isactive: boolean
           latitude: number
           longitude: number
           postalCode: string | null
@@ -31,7 +66,7 @@ export type Database = {
           country: string
           created_at?: string
           id?: string
-          isActive?: boolean
+          isactive?: boolean
           latitude: number
           longitude: number
           postalCode?: string | null
@@ -45,7 +80,7 @@ export type Database = {
           country?: string
           created_at?: string
           id?: string
-          isActive?: boolean
+          isactive?: boolean
           latitude?: number
           longitude?: number
           postalCode?: string | null
@@ -119,6 +154,7 @@ export type Database = {
           sellerCategory: boolean
           supplierCategory: boolean
           updated_at: string
+          isactive: boolean
         }
         Insert: {
           created_at?: string
@@ -127,6 +163,7 @@ export type Database = {
           sellerCategory: boolean
           supplierCategory: boolean
           updated_at?: string
+          isactive?: boolean
         }
         Update: {
           created_at?: string
@@ -135,6 +172,7 @@ export type Database = {
           sellerCategory?: boolean
           supplierCategory?: boolean
           updated_at?: string
+          isactive?: boolean
         }
         Relationships: []
       }
@@ -148,6 +186,7 @@ export type Database = {
           startDate: string
           supplierCompanyId: string
           updated_at: string
+          isactive: boolean
         }
         Insert: {
           created_at?: string
@@ -158,6 +197,7 @@ export type Database = {
           startDate: string
           supplierCompanyId: string
           updated_at?: string
+          isactive?: boolean
         }
         Update: {
           created_at?: string
@@ -168,6 +208,7 @@ export type Database = {
           startDate?: string
           supplierCompanyId?: string
           updated_at?: string
+          isactive?: boolean
         }
         Relationships: [
           {
@@ -258,6 +299,7 @@ export type Database = {
           isExternal: boolean
           name: string
           updated_at: string
+          isactive: boolean
         }
         Insert: {
           created_at?: string
@@ -266,6 +308,7 @@ export type Database = {
           isExternal: boolean
           name: string
           updated_at?: string
+          isactive?: boolean
         }
         Update: {
           created_at?: string
@@ -274,6 +317,7 @@ export type Database = {
           isExternal?: boolean
           name?: string
           updated_at?: string
+          isactive?: boolean
         }
         Relationships: []
       }
@@ -286,6 +330,7 @@ export type Database = {
           phoneNumber: string | null
           sellerCompanyId: string
           updated_at: string
+          isactive: boolean
         }
         Insert: {
           addressId: string
@@ -295,6 +340,7 @@ export type Database = {
           phoneNumber?: string | null
           sellerCompanyId: string
           updated_at?: string
+          isactive?: boolean
         }
         Update: {
           addressId?: string
@@ -304,6 +350,7 @@ export type Database = {
           phoneNumber?: string | null
           sellerCompanyId?: string
           updated_at?: string
+          isactive?: boolean
         }
         Relationships: [
           {
@@ -328,18 +375,21 @@ export type Database = {
           id: string
           name: string
           updated_at: string
+          isactive: boolean
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
           updated_at?: string
+          isactive?: boolean
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
           updated_at?: string
+          isactive?: boolean
         }
         Relationships: []
       }

@@ -85,20 +85,15 @@ export const VisitSummary: React.FC<VisitSummaryProps> = ({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <CheckCircle className="w-5 h-5" />
-          Visit Summary
-        </CardTitle>
-      </CardHeader>
+    <Card className="overflow-x-hidden">
       <CardContent className="space-y-6">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">Visit Summary</h2>
         <div className="space-y-4">
           {/* Visit Date */}
           <div className="flex items-center gap-3">
             <Calendar className="w-5 h-5 text-gray-500" />
             <div>
-              <p className="font-medium">Visit Date</p>
+              <p className="font-medium text-gray-900">Visit Date</p>
               <p className="text-sm text-gray-600">
                 {new Date(visitData.visitDate).toLocaleDateString()}
               </p>
@@ -109,7 +104,7 @@ export const VisitSummary: React.FC<VisitSummaryProps> = ({
           <div className="flex items-center gap-3">
             <Users className="w-5 h-5 text-gray-500" />
             <div>
-              <p className="font-medium">Agent</p>
+              <p className="font-medium text-gray-900">Agent</p>
               <p className="text-sm text-gray-600">
                 {summaryData.agent?.name} {summaryData.agent?.surname}
               </p>
@@ -120,7 +115,7 @@ export const VisitSummary: React.FC<VisitSummaryProps> = ({
           <div className="flex items-center gap-3">
             <Building className="w-5 h-5 text-gray-500" />
             <div>
-              <p className="font-medium">Supplier Company</p>
+              <p className="font-medium text-gray-900">Supplier Company</p>
               <p className="text-sm text-gray-600">{summaryData.supplierCompany?.name}</p>
             </div>
           </div>
@@ -129,7 +124,7 @@ export const VisitSummary: React.FC<VisitSummaryProps> = ({
           <div className="flex items-center gap-3">
             <MapPin className="w-5 h-5 text-gray-500" />
             <div>
-              <p className="font-medium">Selling Point</p>
+              <p className="font-medium text-gray-900">Selling Point</p>
               <p className="text-sm text-gray-600">
                 {summaryData.sellingPoint?.name}
               </p>
@@ -144,8 +139,10 @@ export const VisitSummary: React.FC<VisitSummaryProps> = ({
           <div className="flex items-center gap-3">
             <Activity className="w-5 h-5 text-gray-500" />
             <div>
-              <p className="font-medium">Activity</p>
-              <Badge variant="secondary">{summaryData.activity?.name}</Badge>
+              <p className="font-medium text-gray-900">Activity</p>
+              <Badge variant="secondary" className="text-xs font-medium bg-blue-100 text-blue-800">
+                {summaryData.activity?.name}
+              </Badge>
             </div>
           </div>
 
@@ -154,7 +151,7 @@ export const VisitSummary: React.FC<VisitSummaryProps> = ({
             <div className="flex items-center gap-3">
               <Users className="w-5 h-5 text-gray-500" />
               <div>
-                <p className="font-medium">Person Visited</p>
+                <p className="font-medium text-gray-900">Person Visited</p>
                 <p className="text-sm text-gray-600">
                   {summaryData.personVisited.name} {summaryData.personVisited.surname}
                 </p>

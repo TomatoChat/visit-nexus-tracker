@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from "@/components/ui/input";
@@ -15,15 +15,17 @@ type Company = Database['public']['Tables']['companies']['Row'];
 type Address = Database['public']['Tables']['addresses']['Row'];
 
 interface CompanyManagementProps {
-  // Props will be added later if needed
+  readOnly?: boolean;
+  searchTerm?: string;
+  triggerAddForm?: boolean;
+  onAddFormShown?: () => void;
 }
 
-const CompanyManagement: React.FC<CompanyManagementProps> = () => {
+const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false, searchTerm = '', triggerAddForm = false, onAddFormShown }) => {
   const { toast } = useToast();
   const [companies, setCompanies] = useState<(Company & { addresses: Address })[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+
   const [companyTypeFilter, setCompanyTypeFilter] = useState<string>('all'); // 'all', 'supplier', 'seller'
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingCompany, setEditingCompany] = useState<(Company & { addresses: Address }) | null>(null);
@@ -51,22 +53,22 @@ const CompanyManagement: React.FC<CompanyManagementProps> = () => {
   });
   const [isGeocoding, setIsGeocoding] = useState(false);
 
-  const [showSearch, setShowSearch] = useState(false);
-  const searchInputRef = React.useRef<HTMLInputElement>(null);
+
 
   // Fetch companies
   useEffect(() => {
     fetchCompanies();
   }, []);
 
-  // Debounce search term
+  // Handle triggerAddForm prop
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 300);
+    if (triggerAddForm) {
+      setShowAddForm(true);
+      if (onAddFormShown) onAddFormShown();
+    }
+  }, [triggerAddForm, onAddFormShown]);
 
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
+
 
   const fetchCompanies = async () => {
     setIsLoading(true);
@@ -97,6 +99,7 @@ const CompanyManagement: React.FC<CompanyManagementProps> = () => {
           const { data } = await supabase
             .from("addresses")
             .select("id, addressLine1, city")
+            .eq('isactive', true)
             .or(`addressLine1.ilike.%${addressSearch}%,city.ilike.%${addressSearch}%`)
             .limit(20);
           setAddressOptions(
@@ -303,8 +306,8 @@ const CompanyManagement: React.FC<CompanyManagementProps> = () => {
 
   const filteredCompanies = useMemo(() => {
     return companies.filter(company => {
-      const searchTermMatch = company.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-                              company.codeVAT.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
+      const searchTermMatch = company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                              company.codeVAT.toLowerCase().includes(searchTerm.toLowerCase());
 
       let typeMatch = true;
       
@@ -338,7 +341,7 @@ const CompanyManagement: React.FC<CompanyManagementProps> = () => {
 
       return searchTermMatch && typeMatch;
     });
-  }, [companies, debouncedSearchTerm, companyTypeFilter]);
+  }, [companies, searchTerm, companyTypeFilter]);
 
   if (showAddForm || editingCompany) {
     return (
@@ -451,87 +454,12 @@ const CompanyManagement: React.FC<CompanyManagementProps> = () => {
 
   return (
     <Card className="overflow-x-hidden">
-      <CardHeader className="hidden md:flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <CardTitle>Aziende</CardTitle>
-        </div>
-        <div className="hidden md:flex items-center gap-2">
-          {!showSearch && (
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Cerca"
-              onClick={() => setShowSearch(true)}
-            >
-              <Search className="w-5 h-5" />
-            </Button>
-          )}
-          {showSearch && (
-            <Input
-              ref={searchInputRef}
-              autoFocus
-              className="w-48"
-              placeholder="Cerca per nome o P.IVA..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              onBlur={() => setShowSearch(false)}
-              onKeyDown={e => {
-                if (e.key === 'Escape') setShowSearch(false);
-              }}
-            />
-          )}
-          <Button 
-            variant="ghost"
-            size="icon"
-            className="md:variant-outline md:border-black text-black hover:bg-gray-50" 
-            onClick={() => { setEditingCompany(null); resetAddCompanyForm(); setShowAddForm(true); }}
-          >
-            <Plus className="w-5 h-5" />
-          </Button>
-        </div>
-      </CardHeader>
+
       <CardContent>
         {isLoading ? (
           <p>Caricamento aziende...</p>
         ) : (
           <>
-            <div className="mb-4 text-sm text-gray-600 flex items-center justify-between">
-              <span>{companies.length} aziende</span>
-              <div className="flex items-center gap-2 md:hidden">
-                {!showSearch && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Cerca"
-                    onClick={() => setShowSearch(true)}
-                  >
-                    <Search className="w-5 h-5" />
-                  </Button>
-                )}
-                {showSearch && (
-                  <Input
-                    ref={searchInputRef}
-                    autoFocus
-                    className="w-32"
-                    placeholder="Cerca..."
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                    onBlur={() => setShowSearch(false)}
-                    onKeyDown={e => {
-                      if (e.key === 'Escape') setShowSearch(false);
-                    }}
-                  />
-                )}
-                <Button 
-                  variant="ghost"
-                  size="icon"
-                  className="md:variant-outline md:border-black text-black hover:bg-gray-50" 
-                  onClick={() => { setEditingCompany(null); resetAddCompanyForm(); setShowAddForm(true); }}
-                >
-                  <Plus className="w-5 h-5" />
-                </Button>
-              </div>
-            </div>
             <div className="overflow-x-auto">
             <table className="w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -547,7 +475,7 @@ const CompanyManagement: React.FC<CompanyManagementProps> = () => {
                 {filteredCompanies.map((company) => {
                   const address = company.addresses; // No longer need cast due to state type
                   return (
-                    <tr key={company.id} onClick={() => handleEdit(company)} className="cursor-pointer hover:bg-gray-50">
+                    <tr key={company.id} onClick={!readOnly ? () => handleEdit(company) : undefined} className={!readOnly ? "cursor-pointer hover:bg-gray-50" : "hover:bg-gray-50"}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{company.name}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.codeVAT}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -573,32 +501,34 @@ const CompanyManagement: React.FC<CompanyManagementProps> = () => {
                         {address ? `${address.addressLine1 || ''}${address.addressLine1 && address.city ? ', ' : ''}${address.city || ''}` : 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEdit(company);
-                            }}
-                            aria-label="Modifica"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (confirm('Sei sicuro di voler eliminare questa azienda?')) {
-                                handleSoftDelete(company);
-                              }
-                            }}
-                            aria-label="Elimina"
-                          >
-                            <Trash2 className="w-4 h-4 text-red-600" />
-                          </Button>
-                        </div>
+                        {!readOnly && (
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEdit(company);
+                              }}
+                              aria-label="Modifica"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm('Sei sicuro di voler eliminare questa azienda?')) {
+                                  handleSoftDelete(company);
+                                }
+                              }}
+                              aria-label="Elimina"
+                            >
+                              <Trash2 className="w-4 h-4 text-red-600" />
+                            </Button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   );

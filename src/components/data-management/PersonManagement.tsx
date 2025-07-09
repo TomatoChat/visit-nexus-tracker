@@ -18,13 +18,18 @@ type Company = Database['public']['Tables']['companies']['Row'];
 type SellingPoint = Database['public']['Tables']['sellingPoints']['Row'];
 type PersonRole = Database['public']['Tables']['personRoles']['Row'];
 
-interface PersonManagementProps {}
+interface PersonManagementProps {
+  readOnly?: boolean;
+  searchTerm?: string;
+  triggerAddForm?: boolean;
+  onAddFormShown?: () => void;
+}
 
-const PersonManagement: React.FC<PersonManagementProps> = () => {
+const PersonManagement: React.FC<PersonManagementProps> = ({ readOnly = false, searchTerm = '', triggerAddForm = false, onAddFormShown }) => {
   const { toast } = useToast();
   const [people, setPeople] = useState<Person[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingPerson, setEditingPerson] = useState<Person | null>(null);
 
@@ -47,10 +52,6 @@ const PersonManagement: React.FC<PersonManagementProps> = () => {
 
   const [showNewRoleForm, setShowNewRoleForm] = useState(false);
   const [newRole, setNewRole] = useState({ name: '', isAgent: false, isExternal: false });
-
-  const [showSearch, setShowSearch] = useState(false);
-  const searchInputRef = React.useRef<HTMLInputElement>(null);
-
 
   const fetchPeople = async () => {
     setIsLoading(true);
@@ -95,7 +96,7 @@ const PersonManagement: React.FC<PersonManagementProps> = () => {
   useEffect(() => {
     const fetchPersonRoles = async () => {
       setIsLoadingPersonRoles(true);
-      const { data, error } = await supabase.from('personRoles').select('*').order('name', { ascending: true });
+      const { data, error } = await supabase.from('personRoles').select('*').eq('isactive', true).order('name', { ascending: true });
       if (error) toast({ title: 'Error fetching person roles', variant: 'destructive' });
       else setPersonRoles(data || []);
       setIsLoadingPersonRoles(false);
@@ -129,6 +130,13 @@ const PersonManagement: React.FC<PersonManagementProps> = () => {
       setSellingPoints([]);
     }
   }, [selectedCompanyId, isSellingPointDropdownEnabled, toast]);
+
+  useEffect(() => {
+    if (triggerAddForm) {
+      setShowAddForm(true);
+      if (onAddFormShown) onAddFormShown();
+    }
+  }, [triggerAddForm, onAddFormShown]);
 
   const companyOptions = useMemo(() => companies.map(c => ({ value: c.id, label: c.name })), [companies]);
   const sellingPointOptions = useMemo(() => sellingPoints.map(sp => ({ value: sp.id, label: sp.name })), [sellingPoints]);
@@ -289,85 +297,10 @@ const PersonManagement: React.FC<PersonManagementProps> = () => {
 
   return (
     <Card className="overflow-x-hidden">
-      <CardHeader className="hidden md:flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <h2 className="hidden md:block text-lg md:text-3xl font-bold text-gray-800">Persone</h2>
-        </div>
-        <div className="hidden md:flex items-center gap-2">
-          {!showSearch && (
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Cerca"
-              onClick={() => setShowSearch(true)}
-            >
-              <Search className="w-5 h-5" />
-            </Button>
-          )}
-          {showSearch && (
-            <Input
-              ref={searchInputRef}
-              autoFocus
-              className="w-48"
-              placeholder="Cerca per nome, cognome o email..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              onBlur={() => setShowSearch(false)}
-              onKeyDown={e => {
-                if (e.key === 'Escape') setShowSearch(false);
-              }}
-            />
-          )}
-          <Button 
-            variant="ghost"
-            size="icon"
-            className="md:variant-outline md:border-black text-black hover:bg-gray-50" 
-            onClick={() => { setEditingPerson(null); resetForm(); setShowAddForm(true); }}
-          >
-            <Plus className="w-5 h-5" />
-          </Button>
-        </div>
-      </CardHeader>
+
       <CardContent>
         {isLoading ? (<p>Caricamento...</p>) : (
           <>
-            <div className="mb-4 text-sm text-gray-600 flex items-center justify-between">
-              <span>{people.length} persone</span>
-              <div className="flex items-center gap-2 md:hidden">
-                {!showSearch && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Cerca"
-                    onClick={() => setShowSearch(true)}
-                  >
-                    <Search className="w-5 h-5" />
-                  </Button>
-                )}
-                {showSearch && (
-                  <Input
-                    ref={searchInputRef}
-                    autoFocus
-                    className="w-32"
-                    placeholder="Cerca..."
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                    onBlur={() => setShowSearch(false)}
-                    onKeyDown={e => {
-                      if (e.key === 'Escape') setShowSearch(false);
-                    }}
-                  />
-                )}
-                <Button 
-                  variant="ghost"
-                  size="icon"
-                  className="md:variant-outline md:border-black text-black hover:bg-gray-50" 
-                  onClick={() => { setEditingPerson(null); resetForm(); setShowAddForm(true); }}
-                >
-                  <Plus className="w-5 h-5" />
-                </Button>
-              </div>
-            </div>
             <div className="overflow-x-auto">
                           <table className="w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -382,39 +315,41 @@ const PersonManagement: React.FC<PersonManagementProps> = () => {
               </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredPeople.map(person => (
-                    <tr key={person.id} onClick={() => handleEdit(person)} className="cursor-pointer hover:bg-gray-50">
+                    <tr key={person.id} onClick={!readOnly ? () => handleEdit(person) : undefined} className={!readOnly ? "cursor-pointer hover:bg-gray-50" : "hover:bg-gray-50"}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{`${person.surname} ${person.name}`}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{person.email}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{person.companies?.name || 'N/A'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{person.sellingPoints?.name || 'N/A'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{person.personRoles?.name || 'N/A'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEdit(person);
-                            }}
-                            aria-label="Modifica"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (confirm('Sei sicuro di voler eliminare questa persona?')) {
-                                handleSoftDelete(person);
-                              }
-                            }}
-                            aria-label="Elimina"
-                          >
-                            <Trash2 className="w-4 h-4 text-red-600" />
-                          </Button>
-                        </div>
+                        {!readOnly && (
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEdit(person);
+                              }}
+                              aria-label="Modifica"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm('Sei sicuro di voler eliminare questa persona?')) {
+                                  handleSoftDelete(person);
+                                }
+                              }}
+                              aria-label="Elimina"
+                            >
+                              <Trash2 className="w-4 h-4 text-red-600" />
+                            </Button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}

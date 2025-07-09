@@ -15,14 +15,17 @@ type Company = Database['public']['Tables']['companies']['Row'];
 type Address = Database['public']['Tables']['addresses']['Row'];
 
 interface SellingPointManagementProps {
-  // Props will be added later if needed
+  readOnly?: boolean;
+  searchTerm?: string;
+  triggerAddForm?: boolean;
+  onAddFormShown?: () => void;
 }
 
-const SellingPointManagement: React.FC<SellingPointManagementProps> = () => {
+const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnly = false, searchTerm = '', triggerAddForm = false, onAddFormShown }) => {
   const { toast } = useToast();
   const [sellingPoints, setSellingPoints] = useState<(SellingPoint & { addresses: Address, companies: Company })[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingSellingPoint, setEditingSellingPoint] = useState<(SellingPoint & { addresses: Address, companies: Company }) | null>(null);
 
@@ -50,9 +53,6 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = () => {
     longitude: ''
   });
   const [isGeocoding, setIsGeocoding] = useState(false);
-
-  const [showSearch, setShowSearch] = useState(false);
-  const searchInputRef = React.useRef<HTMLInputElement>(null);
 
   const fetchSellingPoints = async () => {
     setIsLoading(true);
@@ -263,6 +263,13 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = () => {
     );
   }, [sellingPoints, searchTerm]);
 
+  useEffect(() => {
+    if (triggerAddForm) {
+      setShowAddForm(true);
+      if (onAddFormShown) onAddFormShown();
+    }
+  }, [triggerAddForm, onAddFormShown]);
+
   if (showAddForm || editingSellingPoint) {
     return (
       <Card>
@@ -351,85 +358,12 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = () => {
 
   return (
     <Card className="overflow-x-hidden">
-      <CardHeader className="hidden md:flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <h2 className="hidden md:block text-lg md:text-3xl font-bold text-gray-800">Punti Vendita</h2>
-        </div>
-        <div className="hidden md:flex items-center gap-2">
-          {!showSearch && (
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Cerca"
-              onClick={() => setShowSearch(true)}
-            >
-              <Search className="w-5 h-5" />
-            </Button>
-          )}
-          {showSearch && (
-            <Input
-              ref={searchInputRef}
-              autoFocus
-              className="w-48"
-              placeholder="Cerca per nome..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              onBlur={() => setShowSearch(false)}
-              onKeyDown={e => {
-                if (e.key === 'Escape') setShowSearch(false);
-              }}
-            />
-          )}
-          <Button 
-            variant="ghost"
-            size="icon"
-            className="md:variant-outline md:border-black text-black hover:bg-gray-50" 
-            onClick={() => { setEditingSellingPoint(null); resetForm(); setShowAddForm(true); }}
-          >
-            <Plus className="w-5 h-5" />
-          </Button>
-        </div>
-      </CardHeader>
+
       <CardContent>
-        {isLoading ? (<p>Caricamento...</p>) : (
+        {isLoading ? (
+          <p>Caricamento punti vendita...</p>
+        ) : (
           <>
-            <div className="mb-4 text-sm text-gray-600 flex items-center justify-between">
-              <span>{sellingPoints.length} punti vendita</span>
-              <div className="flex items-center gap-2 md:hidden">
-                {!showSearch && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Cerca"
-                    onClick={() => setShowSearch(true)}
-                  >
-                    <Search className="w-5 h-5" />
-                  </Button>
-                )}
-                {showSearch && (
-                  <Input
-                    ref={searchInputRef}
-                    autoFocus
-                    className="w-32"
-                    placeholder="Cerca..."
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                    onBlur={() => setShowSearch(false)}
-                    onKeyDown={e => {
-                      if (e.key === 'Escape') setShowSearch(false);
-                    }}
-                  />
-                )}
-                <Button 
-                  variant="ghost"
-                  size="icon"
-                  className="md:variant-outline md:border-black text-black hover:bg-gray-50" 
-                  onClick={() => { setEditingSellingPoint(null); resetForm(); setShowAddForm(true); }}
-                >
-                  <Plus className="w-5 h-5" />
-                </Button>
-              </div>
-            </div>
             <div className="overflow-x-auto">
             <table className="w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -446,38 +380,40 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = () => {
                   const address = sp.addresses;
                   const company = sp.companies;
                   return (
-                    <tr key={sp.id} onClick={() => handleEdit(sp)} className="cursor-pointer hover:bg-gray-50">
+                    <tr key={sp.id} onClick={!readOnly ? () => handleEdit(sp) : undefined} className={!readOnly ? "cursor-pointer hover:bg-gray-50" : "hover:bg-gray-50"}>
                       <td className="px-4 py-4 text-sm font-medium text-gray-900 break-words">{sp.name}</td>
                       <td className="px-4 py-4 text-sm text-gray-500 break-words">{company?.name || 'N/A'}</td>
                       <td className="px-4 py-4 text-sm text-gray-500 break-words">{address ? `${address.addressLine1 || ''}${address.addressLine1 && address.city ? ', ' : ''}${address.city || ''}` : 'N/A'}</td>
                       <td className="px-4 py-4 text-sm text-gray-500 break-words">{sp.phoneNumber || 'N/A'}</td>
                       <td className="px-4 py-4 text-sm text-gray-500">
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={e => {
-                              e.stopPropagation();
-                              handleEdit(sp);
-                            }}
-                            aria-label="Modifica"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={e => {
-                              e.stopPropagation();
-                              if (confirm('Sei sicuro di voler eliminare questo punto vendita?')) {
-                                handleSoftDelete(sp);
-                              }
-                            }}
-                            aria-label="Elimina"
-                          >
-                            <Trash2 className="w-4 h-4 text-red-600" />
-                          </Button>
-                        </div>
+                        {!readOnly && (
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleEdit(sp);
+                              }}
+                              aria-label="Modifica"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={e => {
+                                e.stopPropagation();
+                                if (confirm('Sei sicuro di voler eliminare questo punto vendita?')) {
+                                  handleSoftDelete(sp);
+                                }
+                              }}
+                              aria-label="Elimina"
+                            >
+                              <Trash2 className="w-4 h-4 text-red-600" />
+                            </Button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   );
