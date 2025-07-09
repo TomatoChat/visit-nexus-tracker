@@ -165,7 +165,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
   // Only show sidebar if logged in
   return session ? (
-    <SidebarProvider defaultOpen={false}>
+    <SidebarProvider defaultOpen={false} hoverToExpand={true}>
       <div className="flex min-h-screen w-full">
         <Sidebar collapsible="icon">
           <div className="flex flex-col h-full">
