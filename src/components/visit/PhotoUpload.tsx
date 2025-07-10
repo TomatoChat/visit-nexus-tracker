@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Camera, Upload, X, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { usePerformanceTracking } from '@/lib/performance';
 
 interface PhotoFile {
   id: string;
@@ -31,6 +32,7 @@ export const PhotoUpload = forwardRef<PhotoUploadRef, PhotoUploadProps>(({
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const { trackRender, trackInteraction } = usePerformanceTracking('PhotoUpload');
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -41,6 +43,7 @@ export const PhotoUpload = forwardRef<PhotoUploadRef, PhotoUploadProps>(({
   const handleFileSelect = (files: FileList | null) => {
     if (!files) return;
 
+    const endTimer = trackInteraction('file_selection');
     const newPhotos: PhotoFile[] = Array.from(files).map(file => ({
       id: generateId(),
       file,
@@ -51,6 +54,7 @@ export const PhotoUpload = forwardRef<PhotoUploadRef, PhotoUploadProps>(({
     const updatedPhotos = [...photos, ...newPhotos];
     setPhotos(updatedPhotos);
     onPhotosChange?.(updatedPhotos);
+    endTimer();
   };
 
   const handleGalleryUpload = () => {
@@ -80,6 +84,7 @@ export const PhotoUpload = forwardRef<PhotoUploadRef, PhotoUploadProps>(({
     console.log('Starting photo upload for visitId:', visitId);
     console.log('Photos to upload:', photos.length);
     
+    const endTimer = trackInteraction('photo_upload');
     setIsUploading(true);
     const uploadedUrls: string[] = [];
 
@@ -157,9 +162,11 @@ export const PhotoUpload = forwardRef<PhotoUploadRef, PhotoUploadProps>(({
 
       console.log('Photo records inserted successfully:', dbData);
 
+      endTimer();
       return uploadedUrls;
     } catch (error) {
       console.error('Error uploading photos:', error);
+      endTimer();
       throw error;
     } finally {
       setIsUploading(false);

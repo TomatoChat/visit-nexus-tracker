@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useUserVisits } from '@/hooks/use-data';
 import { formatDateShort } from '@/lib/date-utils';
+import { usePerformanceTracking } from '@/lib/performance';
 
 interface Visit {
   id: string;
@@ -14,13 +15,21 @@ interface Visit {
 
 const MyVisitsList: React.FC = () => {
   const [userId, setUserId] = useState<string | null>(null);
+  const { trackRender, trackInteraction } = usePerformanceTracking('MyVisitsList');
+
+  useEffect(() => {
+    const endTimer = trackRender();
+    return () => endTimer();
+  }, []);
 
   useEffect(() => {
     const fetchUser = async () => {
+      const endTimer = trackInteraction('fetch_user');
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
       }
+      endTimer();
     };
     fetchUser();
   }, []);

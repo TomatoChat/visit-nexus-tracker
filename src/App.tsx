@@ -11,6 +11,8 @@ import Companies from "@/pages/Companies";
 import SellingPoints from "@/pages/SellingPoints";
 import People from "@/pages/People";
 import Activities from "@/pages/Activities";
+import { usePerformanceTracking } from "@/lib/performance";
+import PerformanceDashboard from "@/components/PerformanceDashboard";
 import {
   SidebarProvider,
   Sidebar,
@@ -37,7 +39,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Layout from '@/components/Layout';
 import { RoleDisplay } from '@/components/ui/role-display';
@@ -300,28 +302,39 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AppLayout>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/my-visits" element={<MyVisits />} />
-            <Route path="/companies" element={<Companies />} />
-            <Route path="/selling-points" element={<SellingPoints />} />
-            <Route path="/people" element={<People />} />
-            <Route path="/activities" element={<Activities />} />
+const App = () => {
+  const { trackRender } = usePerformanceTracking('App');
+  
+  // Track initial app render
+  React.useEffect(() => {
+    const endTimer = trackRender();
+    return () => endTimer();
+  }, []);
 
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AppLayout>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AppLayout>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/my-visits" element={<MyVisits />} />
+              <Route path="/companies" element={<Companies />} />
+              <Route path="/selling-points" element={<SellingPoints />} />
+              <Route path="/people" element={<People />} />
+              <Route path="/activities" element={<Activities />} />
+
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AppLayout>
+        </BrowserRouter>
+        <PerformanceDashboard />
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
