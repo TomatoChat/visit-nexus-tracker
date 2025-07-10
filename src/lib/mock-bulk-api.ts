@@ -25,8 +25,8 @@ export const mockBulkUploadCompanies = (data: any[]): Promise<MockApiResponse> =
 
         // --- Address related validation (applies if new address is created) ---
         const city = String(row['Città'] || '').trim();
-        let latitude = row['Latitude (Opzionale)'];
-        let longitude = row['Longitude (Opzionale)'];
+        let latitude = row['Latitude'];
+        let longitude = row['Longitude'];
 
         if (latitude === undefined || latitude === null || String(latitude).trim() === '' ||
             longitude === undefined || longitude === null || String(longitude).trim() === '') {
@@ -35,9 +35,9 @@ export const mockBulkUploadCompanies = (data: any[]): Promise<MockApiResponse> =
             errors.push({ row: userRowIndex, error: `Geocoding fallito per ${city}. Latitudine e Longitudine sono obbligatorie.` });
           } else if (city) {
             // Simulate successful geocoding for other cities
-            row['Latitude (Opzionale)'] = (Math.random() * 180 - 90).toFixed(6); // Mocked Lat
-            row['Longitude (Opzionale)'] = (Math.random() * 360 - 180).toFixed(6); // Mocked Lng
-            console.log(`Mock geocoding for ${city}: Lat ${row['Latitude (Opzionale)']}, Lng ${row['Longitude (Opzionale)']}`);
+            row['Latitude'] = (Math.random() * 180 - 90).toFixed(6); // Mocked Lat
+            row['Longitude'] = (Math.random() * 360 - 180).toFixed(6); // Mocked Lng
+            console.log(`Mock geocoding for ${city}: Lat ${row['Latitude']}, Lng ${row['Longitude']}`);
           } else {
             // City itself is missing, which is caught by client-side validation, but double check
             errors.push({ row: userRowIndex, error: `Città mancante, impossibile geocodificare. Latitudine e Longitudine sono obbligatorie.` });
@@ -92,17 +92,17 @@ export const mockBulkUploadSellingPoints = (data: any[]): Promise<MockApiRespons
 
         // --- Address related validation (applies if new address is created) ---
         const city = String(row['Città'] || '').trim();
-        let latitude = row['Latitude (Opzionale)'];
-        let longitude = row['Longitude (Opzionale)'];
+        let latitude = row['Latitude'];
+        let longitude = row['Longitude'];
 
         if (latitude === undefined || latitude === null || String(latitude).trim() === '' ||
             longitude === undefined || longitude === null || String(longitude).trim() === '') {
           if (city.toLowerCase() === 'geocode fail city') {
             errors.push({ row: userRowIndex, error: `Geocoding fallito per ${city}. Latitudine e Longitudine sono obbligatorie.` });
           } else if (city) {
-            row['Latitude (Opzionale)'] = (Math.random() * 180 - 90).toFixed(6);
-            row['Longitude (Opzionale)'] = (Math.random() * 360 - 180).toFixed(6);
-             console.log(`Mock geocoding for SP ${city}: Lat ${row['Latitude (Opzionale)']}, Lng ${row['Longitude (Opzionale)']}`);
+            row['Latitude'] = (Math.random() * 180 - 90).toFixed(6);
+            row['Longitude'] = (Math.random() * 360 - 180).toFixed(6);
+             console.log(`Mock geocoding for SP ${city}: Lat ${row['Latitude']}, Lng ${row['Longitude']}`);
           } else {
             errors.push({ row: userRowIndex, error: `Città mancante, impossibile geocodificare per SP. Latitudine e Longitudine sono obbligatorie.` });
           }

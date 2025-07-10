@@ -8,8 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Plus, UploadCloud } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { generateAndDownloadXlsxTemplate, parseXlsxFile } from '@/lib/xlsx-utils';
+import { generateAndDownloadXlsxTemplate, parseXlsxFile, parseCsvFile } from '@/lib/xlsx-utils';
 import { mockBulkUploadPeople } from '@/lib/mock-bulk-api'; // Import mock API
+import { supabase } from '@/integrations/supabase/client';
 
 const PEOPLE_TEMPLATE_HEADERS = [
   'Nome', // name
@@ -42,17 +43,35 @@ const People = () => {
   }, [loading, checkCanManageData]);
 
   // Placeholder handlers for the dialog
-  const handleDownloadTemplate = useCallback(() => {
-    generateAndDownloadXlsxTemplate(PEOPLE_TEMPLATE_HEADERS, 'People');
+  const handleDownloadTemplate = useCallback(async () => {
+    // Fetch latest companies and person roles for the reference tabs
+    const { data: freshCompanies } = await supabase.from('companies').select('id, name').eq('isActive', true).order('name', { ascending: true });
+    const { data: freshRoles } = await supabase.from('personRoles').select('id, name').eq('isactive', true).order('name', { ascending: true });
+    const companiesList = freshCompanies || [];
+    const rolesList = freshRoles || [];
+    const referenceData = {
+      'Aziende': [
+        ['ID Azienda', 'Nome Azienda'],
+        ...companiesList.map(c => [c.id, c.name])
+      ],
+      'Ruoli Persona': [
+        ['ID Ruolo', 'Nome Ruolo'],
+        ...rolesList.map(r => [r.id, r.name])
+      ]
+    };
+    generateAndDownloadXlsxTemplate(PEOPLE_TEMPLATE_HEADERS, 'People', 'Data', referenceData);
     toast({ title: 'Template Downloaded', description: 'Il file template_people.xlsx è stato scaricato.' });
   }, [toast]);
 
   const handleFileUpload = useCallback(async (file: File) => {
-    toast({ title: 'Elaborazione file...', description: 'Lettura e validazione del file XLSX caricato per Persone.' });
-
+    toast({ title: 'Elaborazione file...', description: 'Lettura e validazione del file caricato per Persone.' });
     try {
-      const rows = await parseXlsxFile<any>(file);
-
+      let rows: any[] = [];
+      if (file.name.endsWith('.csv')) {
+        rows = await parseCsvFile<any>(file);
+      } else {
+        rows = await parseXlsxFile<any>(file);
+      }
       if (!rows || rows.length === 0) {
         toast({ variant: 'destructive', title: 'Errore di Validazione', description: 'Il file caricato è vuoto o non contiene righe di dati.' });
         return;

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Plus, UploadCloud } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { generateAndDownloadXlsxTemplate, parseXlsxFile } from '@/lib/xlsx-utils';
+import { generateAndDownloadXlsxTemplate, parseXlsxFile, parseCsvFile } from '@/lib/xlsx-utils';
 import { mockBulkUploadActivities } from '@/lib/mock-bulk-api'; // Import mock API
 
 const ACTIVITY_TEMPLATE_HEADERS = [
@@ -42,11 +42,14 @@ const Activities = () => {
   }, [toast]);
 
   const handleFileUpload = useCallback(async (file: File) => {
-    toast({ title: 'Elaborazione file...', description: 'Lettura e validazione del file XLSX caricato per Attività.' });
-
+    toast({ title: 'Elaborazione file...', description: 'Lettura e validazione del file caricato per Attività.' });
     try {
-      const rows = await parseXlsxFile<any>(file);
-
+      let rows: any[] = [];
+      if (file.name.endsWith('.csv')) {
+        rows = await parseCsvFile<any>(file);
+      } else {
+        rows = await parseXlsxFile<any>(file);
+      }
       if (!rows || rows.length === 0) {
         toast({ variant: 'destructive', title: 'Errore di Validazione', description: 'Il file caricato è vuoto o non contiene righe di dati.' });
         return;

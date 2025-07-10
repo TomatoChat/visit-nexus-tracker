@@ -8,22 +8,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Plus, UploadCloud } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { generateAndDownloadXlsxTemplate, parseXlsxFile } from '@/lib/xlsx-utils';
+import { generateAndDownloadXlsxTemplate, parseXlsxFile, parseCsvFile } from '@/lib/xlsx-utils';
 import { mockBulkUploadCompanies } from '@/lib/mock-bulk-api'; // Import mock API
+import { useCompanyCategories } from '@/hooks/use-data';
+import { supabase } from '@/integrations/supabase/client';
 
 const COMPANY_TEMPLATE_HEADERS = [
   'Nome Azienda', // companyName (Required)
   'Partita IVA', // companyVat (Required)
-  'Tipo Azienda (supplier/seller)', // currentCompanyType: 'supplier' | 'seller' (Required)
+  'È Fornitore (Sì/No)', // isSupplier: boolean (Required)
+  'È Venditore (Sì/No)', // isSeller: boolean (Required)
   'Via', // addressForm.addressLine1 (Required if new address - which is assumed)
-  'Civico', // addressForm.addressLine2 (optional, but good to have a column)
+  'Civico (Opzionale)', // addressForm.addressLine2 (optional)
   'Città', // addressForm.city (Required)
   'Provincia', // addressForm.stateProvince (Required)
-  'CAP', // addressForm.postalCode (Optional)
+  'CAP (Opzionale)', // addressForm.postalCode (Optional)
   'Nazione', // addressForm.country (Required)
-  'Latitude (Opzionale)', // addressForm.latitude
-  'Longitude (Opzionale)', // addressForm.longitude
-  'ID Categoria (Opzionale)', // selectedCategoryId
+  'Latitude', // addressForm.latitude (Required in database)
+  'Longitude', // addressForm.longitude (Required in database)
+  'ID Categoria', // selectedCategoryId (Required in database)
 ];
 
 const Companies = () => {
@@ -35,6 +38,9 @@ const Companies = () => {
   const searchInputRef = React.useRef<HTMLInputElement>(null);
   const [canManage, setCanManage] = useState(false); // State for RBAC result
   const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false); // State for dialog
+  
+  // Fetch company categories for dropdown
+  const { data: categories = [], isLoading: isLoadingCategories, refetch: refetchCategories } = useCompanyCategories();
 
   useEffect(() => {
     const verifyPermissions = async () => {
@@ -47,30 +53,48 @@ const Companies = () => {
   }, [loading, checkCanManageData]);
 
   // Placeholder handlers for the dialog
-  const handleDownloadTemplate = useCallback(() => {
-    generateAndDownloadXlsxTemplate(COMPANY_TEMPLATE_HEADERS, 'Companies');
+  const handleDownloadTemplate = useCallback(async () => {
+    // Force refetch categories to get the latest data
+    const { data: freshCategories } = await refetchCategories();
+    const currentCategories = freshCategories || categories;
+    
+    // Create reference data for categories
+    const referenceData = {
+      'Categorie Aziende': [
+        ['ID Categoria', 'Nome Categoria', 'Tipo Fornitore', 'Tipo Venditore'],
+        ...currentCategories.map(cat => [
+          cat.id,
+          cat.name,
+          cat.supplierCategory ? 'Sì' : 'No',
+          cat.sellerCategory ? 'Sì' : 'No'
+        ])
+      ]
+    };
+    
+    generateAndDownloadXlsxTemplate(COMPANY_TEMPLATE_HEADERS, 'Companies', 'Data', referenceData);
     toast({ title: 'Template Downloaded', description: 'Il file template_companies.xlsx è stato scaricato.' });
-  }, [toast]);
+  }, [toast, categories, refetchCategories]);
 
   const handleFileUpload = useCallback(async (file: File) => {
-    toast({ title: 'Elaborazione file...', description: 'Lettura e validazione del file XLSX caricato.' });
-    // Dialog state will be managed based on outcomes.
-
+    toast({ title: 'Elaborazione file...', description: 'Lettura e validazione del file caricato.' });
     try {
-      const rows = await parseXlsxFile<any>(file);
-
+      let rows: any[] = [];
+      if (file.name.endsWith('.csv')) {
+        rows = await parseCsvFile<any>(file);
+      } else {
+        rows = await parseXlsxFile<any>(file);
+      }
       if (!rows || rows.length === 0) {
         toast({ variant: 'destructive', title: 'Errore di Validazione', description: 'Il file caricato è vuoto o non contiene righe di dati.' });
-        // setIsBulkUploadOpen(false); // Keep dialog open to show error, or let user close.
         return;
       }
 
       // Client-side validation for Companies
       // Headers are 1-indexed for user feedback, rows are 0-indexed from parser
-      const requiredCompanyHeaders = ['Nome Azienda', 'Partita IVA', 'Tipo Azienda (supplier/seller)'];
+      const requiredCompanyHeaders = ['Nome Azienda', 'Partita IVA', 'È Fornitore (Sì/No)', 'È Venditore (Sì/No)', 'ID Categoria'];
       // Per "Crucial Assumption": For Companies and Selling Points, the template must include all necessary address fields...
       // The system should assume a new address is created for every row.
-      const requiredAddressHeaders = ['Via', 'Città', 'Provincia', 'Nazione'];
+      const requiredAddressHeaders = ['Via', 'Città', 'Provincia', 'Nazione', 'Latitude', 'Longitude'];
 
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
@@ -84,10 +108,19 @@ const Companies = () => {
           }
         }
 
-        // Validate 'Tipo Azienda (supplier/seller)'
-        const tipoAzienda = String(row['Tipo Azienda (supplier/seller)']).toLowerCase().trim();
-        if (tipoAzienda !== 'supplier' && tipoAzienda !== 'seller') {
-            toast({ variant: 'destructive', title: 'Errore di Validazione', description: `Errore nella riga ${userRowIndex}: Il campo "Tipo Azienda (supplier/seller)" deve essere 'supplier' o 'seller'. Trovato: "${row['Tipo Azienda (supplier/seller)']}".` });
+        // Validate 'È Fornitore (Sì/No)'
+        const isSupplier = String(row['È Fornitore (Sì/No)']).toLowerCase().trim();
+        if (isSupplier !== 'sì' && isSupplier !== 'si' && isSupplier !== 'yes' && isSupplier !== 'true' && isSupplier !== '1' && 
+            isSupplier !== 'no' && isSupplier !== 'false' && isSupplier !== '0') {
+            toast({ variant: 'destructive', title: 'Errore di Validazione', description: `Errore nella riga ${userRowIndex}: Il campo "È Fornitore (Sì/No)" deve essere 'Sì' o 'No'. Trovato: "${row['È Fornitore (Sì/No)']}".` });
+            return;
+        }
+
+        // Validate 'È Venditore (Sì/No)'
+        const isSeller = String(row['È Venditore (Sì/No)']).toLowerCase().trim();
+        if (isSeller !== 'sì' && isSeller !== 'si' && isSeller !== 'yes' && isSeller !== 'true' && isSeller !== '1' && 
+            isSeller !== 'no' && isSeller !== 'false' && isSeller !== '0') {
+            toast({ variant: 'destructive', title: 'Errore di Validazione', description: `Errore nella riga ${userRowIndex}: Il campo "È Venditore (Sì/No)" deve essere 'Sì' o 'No'. Trovato: "${row['È Venditore (Sì/No)']}".` });
             return;
         }
 
@@ -100,44 +133,49 @@ const Companies = () => {
         }
       }
 
-      // If client-side validation passes, proceed to mock API call
-      toast({ title: 'Validazione OK', description: `${rows.length} righe pronte. Inizio caricamento simulato...` });
-
-      const apiResponse = await mockBulkUploadCompanies(rows);
-
-      if (apiResponse.success) {
-        toast({ title: 'Successo!', description: apiResponse.message });
-        setIsBulkUploadOpen(false); // Close dialog on success
-        // Here you might want to trigger a refresh of the main data table
-        // e.g., by calling a prop function or a context update
-      } else {
-        let errorMessage = apiResponse.message;
-        if (apiResponse.errors && apiResponse.errors.length > 0) {
-          // For simplicity, show the first error in detail, or a summary.
-          // A more complex UI could list all errors.
-          const firstError = apiResponse.errors[0];
-          errorMessage = `Errore principale: ${apiResponse.message}. Primo errore dettaglio: Riga ${firstError.row}: ${firstError.error}`;
-           toast({
-            variant: 'destructive',
-            title: 'Caricamento Fallito',
-            description: errorMessage,
-            duration: 10000, // Longer duration for detailed errors
-          });
-          console.error('API Errors:', apiResponse.errors);
-        } else {
-           toast({
-            variant: 'destructive',
-            title: 'Caricamento Fallito',
-            description: errorMessage,
-          });
+      // --- REAL BULK UPLOAD LOGIC ---
+      // All-or-nothing: if any insert fails, abort and show error
+      let insertedCompanies = [];
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        // 1. Insert address
+        const { data: address, error: addressError } = await supabase.from('addresses').insert({
+          addressLine1: row['Via'],
+          addressLine2: row['Civico (Opzionale)'] || null,
+          city: row['Città'],
+          stateProvince: row['Provincia'],
+          postalCode: row['CAP (Opzionale)'] || null,
+          country: row['Nazione'],
+          latitude: parseFloat(row['Latitude']),
+          longitude: parseFloat(row['Longitude']),
+          isactive: true,
+        }).select().single();
+        if (addressError) {
+          toast({ variant: 'destructive', title: 'Errore inserimento indirizzo', description: `Riga ${i+2}: ${addressError.message}` });
+          return;
         }
-        // Keep dialog open if there are errors from API
+        // 2. Insert company
+        const { data: company, error: companyError } = await supabase.from('companies').insert({
+          name: row['Nome Azienda'],
+          codeVAT: row['Partita IVA'],
+          isSupplier: ['sì','si','yes','true','1'].includes(String(row['È Fornitore (Sì/No)']).toLowerCase()),
+          isSeller: ['sì','si','yes','true','1'].includes(String(row['È Venditore (Sì/No)']).toLowerCase()),
+          addressId: address.id,
+          categoryId: row['ID Categoria'],
+          isActive: true,
+        }).select().single();
+        if (companyError) {
+          toast({ variant: 'destructive', title: 'Errore inserimento azienda', description: `Riga ${i+2}: ${companyError.message}` });
+          return;
+        }
+        insertedCompanies.push(company);
       }
-
-    } catch (error: any) { // Catches errors from parseXlsxFile or other unexpected issues
-      console.error("Errore durante l'elaborazione del file XLSX o chiamata API:", error);
+      toast({ title: 'Successo!', description: `${insertedCompanies.length} aziende caricate con successo.` });
+      setIsBulkUploadOpen(false);
+      // Optionally, refresh the companies list here
+    } catch (error: any) {
+      console.error('Errore durante il bulk upload:', error);
       toast({ variant: 'destructive', title: 'Errore Critico', description: error.message || 'Impossibile completare l\'operazione.' });
-      // Keep dialog open
     }
   }, [toast, setIsBulkUploadOpen]);
 
@@ -308,6 +346,7 @@ const Companies = () => {
             onClose={() => setIsBulkUploadOpen(false)}
             onDownloadTemplate={handleDownloadTemplate}
             onFileUpload={handleFileUpload}
+            isLoading={isLoadingCategories}
           />
         )}
       </div>

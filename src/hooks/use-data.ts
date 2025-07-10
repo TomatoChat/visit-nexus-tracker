@@ -21,6 +21,7 @@ type Visit = Database['public']['Tables']['visits']['Row'] & {
   supplierCompany?: { name: string };
   sellingPoint?: { name: string };
 };
+type CompanyCategory = Database['public']['Tables']['companyCategories']['Row'];
 
 // Query Keys
 export const queryKeys = {
@@ -33,6 +34,7 @@ export const queryKeys = {
   visits: ['visits'] as const,
   suppliers: ['suppliers'] as const,
   sellers: ['sellers'] as const,
+  companyCategories: ['companyCategories'] as const,
   sellingPointsBySeller: (sellerId: string) => ['sellingPoints', 'seller', sellerId] as const,
   sellingPointsBySupplier: (supplierId: string, sellerId: string) => 
     ['sellingPoints', 'supplier', supplierId, 'seller', sellerId] as const,
@@ -57,6 +59,26 @@ export const useCompanies = () => {
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+};
+
+// Company Categories
+export const useCompanyCategories = () => {
+  return useQuery({
+    queryKey: queryKeys.companyCategories,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('companyCategories')
+        .select('*')
+        .eq('isactive', true)
+        .order('name', { ascending: true });
+      if (error) throw error;
+      return data as CompanyCategory[];
+    },
+    staleTime: 0, // Always fetch fresh data
+    gcTime: 0, // Don't cache
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 };
 

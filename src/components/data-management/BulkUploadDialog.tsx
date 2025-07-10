@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -24,6 +24,8 @@ interface BulkUploadDialogProps {
   onDownloadTemplate: () => void;
   /** Callback function triggered when a file is selected for upload. */
   onFileUpload: (file: File) => void;
+  /** Optional loading state for template generation. */
+  isLoading?: boolean;
 }
 
 /**
@@ -36,11 +38,30 @@ const BulkUploadDialog: React.FC<BulkUploadDialogProps> = ({
   onClose,
   onDownloadTemplate,
   onFileUpload,
+  isLoading = false,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [hasDownloaded, setHasDownloaded] = useState(false);
+
+  // Auto-close dialog after 5 seconds when template is downloaded
+  useEffect(() => {
+    if (hasDownloaded) {
+      const timer = setTimeout(() => {
+        onClose();
+        setHasDownloaded(false);
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [hasDownloaded, onClose]);
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleDownloadClick = () => {
+    onDownloadTemplate();
+    setHasDownloaded(true);
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,8 +92,8 @@ const BulkUploadDialog: React.FC<BulkUploadDialogProps> = ({
           </p>
         </div>
         <DialogFooter className="flex-col sm:flex-row gap-2">
-          <Button variant="outline" onClick={onDownloadTemplate}>
-            Download Template
+          <Button variant="outline" onClick={handleDownloadClick} disabled={isLoading}>
+            {isLoading ? 'Caricamento...' : 'Download Template'}
           </Button>
           <Button onClick={handleUploadClick}>Upload File</Button>
           <DialogClose asChild>
@@ -82,7 +103,7 @@ const BulkUploadDialog: React.FC<BulkUploadDialogProps> = ({
         <input
           type="file"
           ref={fileInputRef}
-          accept=".xlsx, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+          accept=".xlsx, .csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, text/csv"
           style={{ display: 'none' }}
           onChange={handleFileChange}
         />
