@@ -43,7 +43,20 @@ import Layout from '@/components/Layout';
 import { RoleDisplay } from '@/components/ui/role-display';
 import { useRoles } from '@/hooks/use-roles';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      retry: 2,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+    },
+    mutations: {
+      retry: 1,
+    },
+  },
+});
 
 function SidebarMenuContent() {
   const location = useLocation();

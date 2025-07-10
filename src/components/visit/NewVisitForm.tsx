@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { Toggle } from '@/components/ui/toggle';
 import { Switch } from '@/components/ui/switch';
+import { formatDateForDisplay } from '@/lib/date-utils';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -23,6 +24,16 @@ import {
 } from '@/components/ui/alert-dialog';
 import { AgentOrAbove } from '@/components/ui/role-guard';
 import { PhotoUpload, PhotoUploadRef } from './PhotoUpload';
+import { 
+  useSuppliers, 
+  useSellersBySupplier, 
+  useSellingPointsBySupplier, 
+  useActivities, 
+  usePeopleByCompanies,
+  useCreateVisit,
+  useUploadPhotos
+} from '@/hooks/use-data';
+import { formatDateForDatabase } from '@/lib/date-utils';
 
 type Company = Database['public']['Tables']['companies']['Row'];
 type SellingPointWithAddress = Database['public']['Tables']['sellingPoints']['Row'] & { addresses?: Database['public']['Tables']['addresses']['Row'] };
@@ -32,10 +43,6 @@ type Person = Database['public']['Tables']['people']['Row'];
 interface NewVisitFormProps {}
 
 export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
-  const [suppliers, setSuppliers] = useState<Company[]>([]);
-  const [sellers, setSellers] = useState<Company[]>([]);
-  const [sellingPoints, setSellingPoints] = useState<SellingPointWithAddress[]>([]);
-  const [activities, setActivities] = useState<VisitActivity[]>([]);
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
   
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>('');
@@ -53,14 +60,23 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
   // Add state for visited person
   const [visitedPerson, setVisitedPerson] = useState(false);
   const [personVisitedId, setPersonVisitedId] = useState<string | null>(null);
-  const [people, setPeople] = useState<Person[]>([]);
 
   // Add state for photos
   const [photos, setPhotos] = useState<any[]>([]);
   const photoUploadRef = useRef<PhotoUploadRef>(null);
+  
+  // Data fetching hooks
+  const { data: suppliers = [], isLoading: isLoadingSuppliers } = useSuppliers();
+  const { data: sellers = [], isLoading: isLoadingSellers } = useSellersBySupplier(selectedSupplierId);
+  const { data: sellingPoints = [], isLoading: isLoadingSellingPoints } = useSellingPointsBySupplier(selectedSupplierId, selectedSellerId);
+  const { data: activities = [], isLoading: isLoadingActivities } = useActivities();
+  const { data: people = [], isLoading: isLoadingPeople } = usePeopleByCompanies([selectedSupplierId, selectedSellerId].filter(Boolean));
+  
+  // Mutations
+  const createVisitMutation = useCreateVisit();
+  const uploadPhotosMutation = useUploadPhotos();
 
   useEffect(() => {
-    fetchSuppliers();
     fetchUser();
   }, []);
 
@@ -74,36 +90,27 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
   // Load sellers when supplier is selected
   useEffect(() => {
     if (selectedSupplierId) {
-      fetchSellers();
       // Reset subsequent selections
       setSelectedSellerId('');
       setSelectedSellingPointId('');
       setSelectedActivityId('');
-      setSellers([]);
-      setSellingPoints([]);
-      setActivities([]);
     }
   }, [selectedSupplierId]);
 
   // Load selling points when seller is selected
   useEffect(() => {
     if (selectedSellerId && selectedSupplierId) {
-      fetchSellingPoints();
       // Reset subsequent selections
       setSelectedSellingPointId('');
       setSelectedActivityId('');
-      setSellingPoints([]);
-      setActivities([]);
     }
   }, [selectedSellerId, selectedSupplierId]);
 
   // Load activities when selling point is selected
   useEffect(() => {
     if (selectedSellingPointId) {
-      fetchActivities();
       // Reset subsequent selections
       setSelectedActivityId('');
-      setActivities([]);
     }
   }, [selectedSellingPointId]);
 
@@ -111,122 +118,6 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
   useEffect(() => {
     if (selectedActivityId) setPlacedOrder(false);
   }, [selectedActivityId]);
-
-  // Fetch people when selling point is selected
-  useEffect(() => {
-    if (selectedSupplierId || selectedSellerId) {
-      let query = supabase.from('people').select('*');
-      if (selectedSupplierId && selectedSellerId) {
-        query = query.in('companyId', [selectedSupplierId, selectedSellerId]);
-      } else if (selectedSupplierId) {
-        query = query.eq('companyId', selectedSupplierId);
-      } else if (selectedSellerId) {
-        query = query.eq('companyId', selectedSellerId);
-      }
-      query.then(({ data }) => setPeople(data || []));
-    } else {
-      setPeople([]);
-    }
-  }, [selectedSupplierId, selectedSellerId]);
-
-  const fetchSuppliers = async () => {
-    setLoading(prev => ({ ...prev, suppliers: true }));
-    try {
-      const { data, error } = await supabase
-        .from('companies')
-        .select('*')
-        .eq('isSupplier', true);
-
-      if (error) throw error;
-      setSuppliers(data || []);
-    } catch (error) {
-      console.error('Error fetching suppliers:', error);
-    } finally {
-      setLoading(prev => ({ ...prev, suppliers: false }));
-    }
-  };
-
-  const fetchSellers = async () => {
-    setLoading(prev => ({ ...prev, sellers: true }));
-    try {
-      // First, get all selling companies
-      const { data: allSellers, error: sellersError } = await supabase
-        .from('companies')
-        .select('*')
-        .eq('isSeller', true);
-
-      if (sellersError) throw sellersError;
-
-      // Then, filter sellers that have selling points connected to the selected supplier
-      const { data: relationships, error: relationshipsError } = await supabase
-        .from('companySellingPoint')
-        .select(`
-          sellingPointId,
-          sellingPoints!inner(sellerCompanyId)
-        `)
-        .eq('supplierCompanyId', selectedSupplierId);
-
-      if (relationshipsError) throw relationshipsError;
-
-      // Get unique seller company IDs that have relationships with the supplier
-      const connectedSellerIds = [
-        ...new Set(
-          relationships?.map(rel => rel.sellingPoints?.sellerCompanyId).filter(Boolean) || []
-        )
-      ];
-
-      // Filter sellers to only include those with connected selling points
-      const filteredSellers = allSellers?.filter(seller => 
-        connectedSellerIds.includes(seller.id)
-      ) || [];
-
-      setSellers(filteredSellers);
-    } catch (error) {
-      console.error('Error fetching sellers:', error);
-    } finally {
-      setLoading(prev => ({ ...prev, sellers: false }));
-    }
-  };
-
-  const fetchSellingPoints = async () => {
-    setLoading(prev => ({ ...prev, sellingPoints: true }));
-    try {
-      const { data, error } = await supabase
-        .from('sellingPoints')
-        .select('*, addresses(*)')
-        .eq('sellerCompanyId', selectedSellerId)
-        .in('id', 
-          await supabase
-            .from('companySellingPoint')
-            .select('sellingPointId')
-            .eq('supplierCompanyId', selectedSupplierId)
-            .then(({ data }) => data?.map(item => item.sellingPointId) || [])
-        );
-
-      if (error) throw error;
-      setSellingPoints((data || []) as SellingPointWithAddress[]);
-    } catch (error) {
-      console.error('Error fetching selling points:', error);
-    } finally {
-      setLoading(prev => ({ ...prev, sellingPoints: false }));
-    }
-  };
-
-  const fetchActivities = async () => {
-    setLoading(prev => ({ ...prev, activities: true }));
-    try {
-      const { data, error } = await supabase
-        .from('visitActivities')
-        .select('*');
-
-      if (error) throw error;
-      setActivities(data || []);
-    } catch (error) {
-      console.error('Error fetching activities:', error);
-    } finally {
-      setLoading(prev => ({ ...prev, activities: false }));
-    }
-  };
 
   const supplierOptions = suppliers
     .slice()
@@ -272,29 +163,26 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
   const handleSubmit = async () => {
     if (!canSubmit) return;
     setLoading(prev => ({ ...prev, submitting: true }));
+    
     try {
-      const { data, error } = await supabase
-        .from('visits')
-        .insert({
-          supplierCompanyId: selectedSupplierId,
-          sellingPointId: selectedSellingPointId,
-          activityId: selectedActivityId,
-          agentId: user!.id,
-          visitDate: selectedDate.toISOString().split('T')[0],
-          personVisitedId: visitedPerson ? personVisitedId : null,
-          placedOrder: placedOrder
-        })
-        .select()
-        .single();
-      if (error) throw error;
+      const visitData = {
+        supplierCompanyId: selectedSupplierId,
+        sellingPointId: selectedSellingPointId,
+        activityId: selectedActivityId,
+        agentId: user!.id,
+        visitDate: formatDateForDatabase(selectedDate),
+        personVisitedId: visitedPerson ? personVisitedId : null,
+        placedOrder: placedOrder
+      };
 
-      // Visit created successfully
+      const result = await createVisitMutation.mutateAsync(visitData);
 
       // Upload photos if any
-      if (photos.length > 0 && data) {
-        console.log('Attempting to upload photos for visit:', data.id);
+      if (photos.length > 0 && result) {
+        console.log('Attempting to upload photos for visit:', result.id);
         try {
-          await photoUploadRef.current?.uploadPhotos(data.id);
+          const photoFiles = photos.map(p => p.file);
+          await uploadPhotosMutation.mutateAsync({ visitId: result.id, photos: photoFiles });
         } catch (photoError) {
           console.error('Error uploading photos:', photoError);
           // Don't fail the entire submission if photos fail to upload
@@ -311,9 +199,6 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
       setSelectedSellingPointId('');
       setSelectedActivityId('');
       setSelectedDate(new Date());
-      setSellers([]);
-      setSellingPoints([]);
-      setActivities([]);
       setPlacedOrder(null);
       setPhotos([]);
     } catch (error) {
@@ -388,7 +273,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {selectedDate ? format(selectedDate, "PPP") : <span>Scegli una data</span>}
+                    {selectedDate ? formatDateForDisplay(selectedDate) : <span>Scegli una data</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -415,7 +300,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                 onSelect={setSelectedSupplierId}
                 placeholder="Scegli un'azienda fornitrice..."
                 searchPlaceholder="Cerca fornitori..."
-                disabled={loading.suppliers}
+                disabled={isLoadingSuppliers}
               />
             </div>
 
@@ -432,7 +317,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                   onSelect={setSelectedSellerId}
                   placeholder="Scegli un'azienda venditrice..."
                   searchPlaceholder="Cerca aziende venditrici..."
-                  disabled={loading.sellers}
+                  disabled={isLoadingSellers}
                 />
               </div>
             )}
@@ -450,7 +335,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                   onSelect={setSelectedSellingPointId}
                   placeholder="Scegli un punto vendita..."
                   searchPlaceholder="Cerca punti vendita..."
-                  disabled={loading.sellingPoints}
+                  disabled={isLoadingSellingPoints}
                 />
               </div>
             )}
@@ -468,7 +353,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                   onSelect={setSelectedActivityId}
                   placeholder="Scegli un'attività..."
                   searchPlaceholder="Cerca attività..."
-                  disabled={loading.activities}
+                  disabled={isLoadingActivities}
                 />
               </div>
             )}
@@ -490,24 +375,26 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                       onCheckedChange={setVisitedPerson}
                     />
                   </div>
-                  {visitedPerson && (
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium flex items-center gap-2">
-                        Seleziona persona visitata
-                      </label>
-                      <SearchableSelect
-                        options={personOptions}
-                        value={personVisitedId || ''}
-                        onSelect={setPersonVisitedId}
-                        placeholder="Cerca persona..."
-                        searchPlaceholder="Digita nome o cognome..."
-                        disabled={people.length === 0}
-                      />
-                    </div>
-                  )}
                 </div>
 
-                {/* Ordine completato Switch */}
+                {/* Person selection */}
+                {visitedPerson && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      Persona visitata
+                    </label>
+                    <SearchableSelect
+                      options={personOptions}
+                      value={personVisitedId || ''}
+                      onSelect={setPersonVisitedId}
+                      placeholder="Scegli una persona..."
+                      searchPlaceholder="Cerca persone..."
+                      disabled={isLoadingPeople}
+                    />
+                  </div>
+                )}
+
                 <div className="space-y-2 mt-6">
                   <label className="text-sm font-medium flex items-center gap-2" htmlFor="ordine-completato-switch">
                     Ordine completato
@@ -536,7 +423,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                     <h3 className="font-medium text-blue-900">Riepilogo visita</h3>
                     <div className="space-y-1 text-sm">
                       <p><span className="font-medium">Email utente:</span> {user?.email}</p>
-                      <p><span className="font-medium">Data:</span> {format(selectedDate, "PPP")}</p>
+                      <p><span className="font-medium">Data:</span> {formatDateForDisplay(selectedDate)}</p>
                       <p><span className="font-medium">Fornitore:</span> {selectedSupplier?.name}</p>
                       <p><span className="font-medium">Azienda venditrice:</span> {selectedSeller?.name}</p>
                       <p><span className="font-medium">Punto vendita:</span> {selectedSellingPoint?.name}</p>

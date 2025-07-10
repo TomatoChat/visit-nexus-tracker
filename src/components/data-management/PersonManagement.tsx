@@ -8,6 +8,15 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, Pencil, Search, Plus } from 'lucide-react';
+import { 
+  usePeople, 
+  useCompanies, 
+  usePersonRoles, 
+  useSellingPointsBySeller,
+  useCreatePerson,
+  useUpdatePerson,
+  useDeletePerson
+} from '@/hooks/use-data';
 
 type Person = Database['public']['Tables']['people']['Row'] & {
   companies: Database['public']['Tables']['companies']['Row'] | null,
@@ -27,12 +36,7 @@ interface PersonManagementProps {
 
 const PersonManagement: React.FC<PersonManagementProps> = ({ readOnly = false, searchTerm = '', triggerAddForm = false, onAddFormShown }) => {
   const { toast } = useToast();
-  const [people, setPeople] = useState<Person[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [editingPerson, setEditingPerson] = useState<Person | null>(null);
-
+  
   // Form State
   const [name, setName] = useState('');
   const [surname, setSurname] = useState('');
@@ -42,67 +46,24 @@ const PersonManagement: React.FC<PersonManagementProps> = ({ readOnly = false, s
   const [selectedSellingPointId, setSelectedSellingPointId] = useState<string | undefined>(undefined);
   const [selectedRoleId, setSelectedRoleId] = useState<string | undefined>(undefined);
 
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [sellingPoints, setSellingPoints] = useState<SellingPoint[]>([]);
-  const [personRoles, setPersonRoles] = useState<PersonRole[]>([]);
-  const [isLoadingCompanies, setIsLoadingCompanies] = useState(false);
-  const [isLoadingSellingPoints, setIsLoadingSellingPoints] = useState(false);
-  const [isLoadingPersonRoles, setIsLoadingPersonRoles] = useState(false);
   const [isSellingPointDropdownEnabled, setIsSellingPointDropdownEnabled] = useState(false);
 
   const [showNewRoleForm, setShowNewRoleForm] = useState(false);
   const [newRole, setNewRole] = useState({ name: '', isAgent: false, isExternal: false });
 
-  const fetchPeople = async () => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('people')
-        .select(`
-          *,
-          companies (*),
-          sellingPoints (*),
-          personRoles (*)
-        `)
-        .eq('isActive', true)
-        .order('surname', { ascending: true })
-        .order('name', { ascending: true });
-      if (error) throw error;
-      setPeople(data as Person[] || []);
-    } catch (error: any) {
-      toast({ title: 'Error fetching people', description: error.message, variant: 'destructive' });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Data fetching hooks
+  const { data: people = [], isLoading, error: peopleError } = usePeople();
+  const { data: companies = [], isLoading: isLoadingCompanies } = useCompanies();
+  const { data: personRoles = [], isLoading: isLoadingPersonRoles } = usePersonRoles();
+  const { data: sellingPoints = [], isLoading: isLoadingSellingPoints } = useSellingPointsBySeller(selectedCompanyId || '');
 
-  useEffect(() => {
-    fetchPeople();
-  }, []);
+  // Mutations
+  const createPersonMutation = useCreatePerson();
+  const updatePersonMutation = useUpdatePerson();
+  const deletePersonMutation = useDeletePerson();
 
-  // Fetch companies
-  useEffect(() => {
-    const fetchCompanies = async () => {
-      setIsLoadingCompanies(true);
-      const { data, error } = await supabase.from('companies').select('*').order('name', { ascending: true });
-      if (error) toast({ title: 'Error fetching companies', variant: 'destructive' });
-      else setCompanies(data || []);
-      setIsLoadingCompanies(false);
-    };
-    fetchCompanies();
-  }, [toast]);
-
-  // Fetch person roles
-  useEffect(() => {
-    const fetchPersonRoles = async () => {
-      setIsLoadingPersonRoles(true);
-      const { data, error } = await supabase.from('personRoles').select('*').eq('isactive', true).order('name', { ascending: true });
-      if (error) toast({ title: 'Error fetching person roles', variant: 'destructive' });
-      else setPersonRoles(data || []);
-      setIsLoadingPersonRoles(false);
-    };
-    fetchPersonRoles();
-  }, [toast]);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingPerson, setEditingPerson] = useState<Person | null>(null);
 
   // Handle company selection logic for selling points
   useEffect(() => {
@@ -114,22 +75,6 @@ const PersonManagement: React.FC<PersonManagementProps> = ({ readOnly = false, s
       setIsSellingPointDropdownEnabled(false);
     }
   }, [selectedCompanyId, companies]);
-
-  // Fetch selling points when selected company is a seller
-  useEffect(() => {
-    if (selectedCompanyId && isSellingPointDropdownEnabled) {
-      const fetchSellingPoints = async () => {
-        setIsLoadingSellingPoints(true);
-        const { data, error } = await supabase.from('sellingPoints').select('*').eq('sellerCompanyId', selectedCompanyId).order('name', { ascending: true });
-        if (error) toast({ title: 'Error fetching selling points', variant: 'destructive' });
-        else setSellingPoints(data || []);
-        setIsLoadingSellingPoints(false);
-      };
-      fetchSellingPoints();
-    } else {
-      setSellingPoints([]);
-    }
-  }, [selectedCompanyId, isSellingPointDropdownEnabled, toast]);
 
   useEffect(() => {
     if (triggerAddForm) {
@@ -150,7 +95,6 @@ const PersonManagement: React.FC<PersonManagementProps> = ({ readOnly = false, s
     try {
       const { data, error } = await supabase.from('personRoles').insert(newRole).select().single();
       if (error) throw error;
-      setPersonRoles(prev => [...prev, data]);
       setSelectedRoleId(data.id);
       setShowNewRoleForm(false);
       setNewRole({ name: '', isAgent: false, isExternal: false });
@@ -188,7 +132,7 @@ const PersonManagement: React.FC<PersonManagementProps> = ({ readOnly = false, s
       }
       if (error) throw error;
       toast({ title: 'Successo!', description: `Persona ${editingPerson ? 'aggiornata' : 'creata'}!` });
-      setShowAddForm(false); resetForm(); fetchPeople();
+      setShowAddForm(false); resetForm();
     } catch (error: any) {
       toast({ title: 'Errore', description: error.message || `Impossibile ${editingPerson ? 'aggiornare' : 'creare'} persona.`, variant: 'destructive' });
     }
@@ -215,7 +159,6 @@ const PersonManagement: React.FC<PersonManagementProps> = ({ readOnly = false, s
       if (error) throw error;
       
       toast({ title: 'Successo!', description: 'Persona eliminata con successo!' });
-      fetchPeople(); // Refresh the list
     } catch (error: any) {
       toast({ title: 'Errore', description: error.message || 'Impossibile eliminare la persona.', variant: 'destructive' });
     }
