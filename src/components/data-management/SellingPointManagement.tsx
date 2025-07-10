@@ -19,11 +19,12 @@ type Address = Database['public']['Tables']['addresses']['Row'];
 interface SellingPointManagementProps {
   readOnly?: boolean;
   searchTerm?: string;
+  sellerFilters?: string[];
   triggerAddForm?: boolean;
   onAddFormShown?: () => void;
 }
 
-const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnly = false, searchTerm = '', triggerAddForm = false, onAddFormShown }) => {
+const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnly = false, searchTerm = '', sellerFilters = [], triggerAddForm = false, onAddFormShown }) => {
   const { toast } = useToast();
   const [sellingPoints, setSellingPoints] = useState<(SellingPoint & { addresses: Address, companies: Company })[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -340,12 +341,18 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
   };
 
   const filteredSellingPoints = useMemo(() => {
-    return sellingPoints.filter(sp =>
-      sp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (sp.companies as Company)?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (sp.addresses as Address)?.city.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [sellingPoints, searchTerm]);
+    return sellingPoints.filter(sp => {
+      // Apply search filter
+      const matchesSearch = sp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (sp.companies as Company)?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (sp.addresses as Address)?.city.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Apply seller filters - if no filters selected, show all; otherwise only show selected sellers
+      const matchesSeller = sellerFilters.length === 0 || sellerFilters.includes(sp.sellerCompanyId);
+      
+      return matchesSearch && matchesSeller;
+    });
+  }, [sellingPoints, searchTerm, sellerFilters]);
 
   useEffect(() => {
     if (triggerAddForm) {
