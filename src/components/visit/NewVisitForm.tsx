@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MapPin, Building, Users, Activity, User, CalendarIcon, Power } from 'lucide-react';
@@ -22,6 +22,7 @@ import {
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
 import { AgentOrAbove } from '@/components/ui/role-guard';
+import { PhotoUpload, PhotoUploadRef } from './PhotoUpload';
 
 type Company = Database['public']['Tables']['companies']['Row'];
 type SellingPointWithAddress = Database['public']['Tables']['sellingPoints']['Row'] & { addresses?: Database['public']['Tables']['addresses']['Row'] };
@@ -53,6 +54,10 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
   const [visitedPerson, setVisitedPerson] = useState(false);
   const [personVisitedId, setPersonVisitedId] = useState<string | null>(null);
   const [people, setPeople] = useState<Person[]>([]);
+
+  // Add state for photos
+  const [photos, setPhotos] = useState<any[]>([]);
+  const photoUploadRef = useRef<PhotoUploadRef>(null);
 
   useEffect(() => {
     fetchSuppliers();
@@ -282,6 +287,17 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
         .select()
         .single();
       if (error) throw error;
+
+      // Upload photos if any
+      if (photos.length > 0 && data) {
+        try {
+          await photoUploadRef.current?.uploadPhotos();
+        } catch (photoError) {
+          console.error('Error uploading photos:', photoError);
+          // Don't fail the entire submission if photos fail to upload
+        }
+      }
+
       setResultDialogContent('Visita registrata correttamente!');
       setShowResultDialog(true);
       // Reset form after successful submission
@@ -294,6 +310,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
       setSellingPoints([]);
       setActivities([]);
       setPlacedOrder(null);
+      setPhotos([]);
     } catch (error) {
       console.error('Error submitting visit:', error);
       setResultDialogContent('Errore nell\'invio della visita. Per favore riprova più tardi.');
@@ -502,6 +519,13 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                   </div>
                 </div>
 
+                {/* Photo Upload Section */}
+                <PhotoUpload
+                  ref={photoUploadRef}
+                  onPhotosChange={setPhotos}
+                  disabled={loading.submitting}
+                />
+
                 {canSubmit && (
                   <div className="space-y-3 p-4 bg-blue-50 rounded-lg">
                     <h3 className="font-medium text-blue-900">Riepilogo visita</h3>
@@ -513,6 +537,9 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                       <p><span className="font-medium">Punto vendita:</span> {selectedSellingPoint?.name}</p>
                       <p><span className="font-medium">Attività:</span> {selectedActivity?.name}</p>
                       <p><span className="font-medium">Ordine completato:</span> {placedOrder ? 'Sì' : 'No'}</p>
+                      {photos.length > 0 && (
+                        <p><span className="font-medium">Foto:</span> {photos.length} foto selezionate</p>
+                      )}
                     </div>
                   </div>
                 )}
