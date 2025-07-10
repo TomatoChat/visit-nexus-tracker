@@ -331,7 +331,7 @@ const App = () => {
             </Routes>
           </AppLayout>
         </BrowserRouter>
-        <PerformanceDashboard />
+        {/* <PerformanceDashboard /> */} {/* Removed as per user request */}
       </TooltipProvider>
     </QueryClientProvider>
   );

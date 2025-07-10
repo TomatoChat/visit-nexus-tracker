@@ -1,28 +1,133 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import Layout from '@/components/Layout';
 import SellingPointManagement from '@/components/data-management/SellingPointManagement';
+import BulkUploadDialog from '@/components/data-management/BulkUploadDialog';
 import { useRoles } from '@/hooks/use-roles';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Plus, Filter } from 'lucide-react';
+import { Search, Plus, Filter, UploadCloud } from 'lucide-react';
 import { useSellers } from '@/hooks/use-data';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import { useToast } from '@/hooks/use-toast';
+import { generateAndDownloadXlsxTemplate, parseXlsxFile } from '@/lib/xlsx-utils';
+import { mockBulkUploadSellingPoints } from '@/lib/mock-bulk-api'; // Import mock API
+
+const SELLING_POINT_TEMPLATE_HEADERS = [
+  'Nome Punto Vendita', // name
+  'ID Azienda Venditrice', // selectedSellerCompanyId (user needs to provide existing company ID)
+  'Telefono (Opzionale)', // phoneNumber
+  'Via', // addressForm.addressLine1
+  'Civico', // addressForm.addressLine2
+  'Città', // addressForm.city
+  'Provincia', // addressForm.stateProvince
+  'CAP', // addressForm.postalCode
+  'Nazione', // addressForm.country
+  'Latitude (Opzionale)', // addressForm.latitude
+  'Longitude (Opzionale)', // addressForm.longitude
+];
 
 const SellingPoints = () => {
-  const { userRole, loading } = useRoles();
+  const { userRole, loading, checkCanManageData } = useRoles();
+  const { toast } = useToast();
   const [showSearch, setShowSearch] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const searchInputRef = React.useRef<HTMLInputElement>(null);
   const [triggerAddForm, setTriggerAddForm] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [selectedSellerFilters, setSelectedSellerFilters] = useState<string[]>([]);
+  const [canManage, setCanManage] = useState(false); // State for RBAC
+  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false); // State for dialog
   
   // Fetch seller companies for filter
   const { data: sellers = [], isLoading: isLoadingSellers } = useSellers();
 
-  // Show loading state while determining user role
-  if (loading) {
+  useEffect(() => {
+    const verifyPermissions = async () => {
+      const result = await checkCanManageData();
+      setCanManage(result);
+    };
+    if (!loading) { // Ensure roles are loaded before checking
+      verifyPermissions();
+    }
+  }, [loading, checkCanManageData]);
+
+  // Placeholder handlers for the dialog
+  const handleDownloadTemplate = useCallback(() => {
+    generateAndDownloadXlsxTemplate(SELLING_POINT_TEMPLATE_HEADERS, 'Selling_Points');
+    toast({ title: 'Template Downloaded', description: 'Il file template_selling_points.xlsx è stato scaricato.' });
+  }, [toast]);
+
+  const handleFileUpload = useCallback(async (file: File) => {
+    toast({ title: 'Elaborazione file...', description: 'Lettura e validazione del file XLSX caricato per Punti Vendita.' });
+
+    try {
+      const rows = await parseXlsxFile<any>(file);
+
+      if (!rows || rows.length === 0) {
+        toast({ variant: 'destructive', title: 'Errore di Validazione', description: 'Il file caricato è vuoto o non contiene righe di dati.' });
+        return;
+      }
+
+      // Client-side validation for Selling Points
+      const requiredSellingPointHeaders = ['Nome Punto Vendita', 'ID Azienda Venditrice'];
+      const requiredAddressHeaders = ['Via', 'Città', 'Provincia', 'Nazione']; // New address assumed
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const userRowIndex = i + 2; // Excel row number
+
+        for (const header of requiredSellingPointHeaders) {
+          if (row[header] === undefined || row[header] === null || String(row[header]).trim() === '') {
+            toast({ variant: 'destructive', title: 'Errore di Validazione', description: `Errore nella riga ${userRowIndex}: Il campo "${header}" è mancante o vuoto.` });
+            return;
+          }
+        }
+
+        for (const header of requiredAddressHeaders) {
+          if (row[header] === undefined || row[header] === null || String(row[header]).trim() === '') {
+            toast({ variant: 'destructive', title: 'Errore di Validazione', description: `Errore nella riga ${userRowIndex}: Il campo indirizzo "${header}" è mancante o vuoto.` });
+            return;
+          }
+        }
+      }
+
+      toast({ title: 'Validazione OK', description: `${rows.length} righe analizzate per Punti Vendita. Inizio caricamento simulato...` });
+
+      const apiResponse = await mockBulkUploadSellingPoints(rows);
+
+      if (apiResponse.success) {
+        toast({ title: 'Successo!', description: apiResponse.message });
+        setIsBulkUploadOpen(false);
+      } else {
+        let errorMessage = apiResponse.message;
+        if (apiResponse.errors && apiResponse.errors.length > 0) {
+          const firstError = apiResponse.errors[0];
+          errorMessage = `Errore principale: ${apiResponse.message}. Primo errore dettaglio: Riga ${firstError.row}: ${firstError.error}`;
+          toast({
+            variant: 'destructive',
+            title: 'Caricamento Fallito',
+            description: errorMessage,
+            duration: 10000,
+          });
+          console.error('API Errors (Selling Points):', apiResponse.errors);
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Caricamento Fallito',
+            description: errorMessage,
+          });
+        }
+      }
+
+    } catch (error: any) {
+      console.error("Errore durante l'elaborazione del file XLSX o chiamata API (Punti Vendita):", error);
+      toast({ variant: 'destructive', title: 'Errore Critico', description: error.message || 'Impossibile completare l\'operazione.' });
+    }
+  }, [toast, setIsBulkUploadOpen]);
+
+  // Show loading state while determining user role or sellers
+  if (loading || isLoadingSellers) {
     return (
       <Layout>
         <div className="min-h-screen w-full pb-2 md:p-8">
@@ -110,13 +215,25 @@ const SellingPoints = () => {
               <Filter className="w-5 h-5" />
             </Button>
             {!userRole?.includes('internalAgent') && (
-              <Button 
+              <Button
                 variant="ghost"
                 size="icon"
-                className="border-black text-black hover:bg-gray-50" 
+                className="border-black text-black hover:bg-gray-50"
                 onClick={() => setTriggerAddForm(true)}
+                aria-label="Aggiungi Punto Vendita"
               >
                 <Plus className="w-5 h-5" />
+              </Button>
+            )}
+            {canManage && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="border-black text-black hover:bg-gray-50"
+                onClick={() => setIsBulkUploadOpen(true)}
+                aria-label="Caricamento Massivo Punti Vendita"
+              >
+                <UploadCloud className="w-5 h-5" />
               </Button>
             )}
           </div>
@@ -159,18 +276,30 @@ const SellingPoints = () => {
               <Filter className="w-5 h-5" />
             </Button>
             {!userRole?.includes('internalAgent') && (
-              <Button 
+              <Button
                 variant="ghost"
                 size="icon"
-                className="border-black text-black hover:bg-gray-50" 
+                className="border-black text-black hover:bg-gray-50"
                 onClick={() => setTriggerAddForm(true)}
+                aria-label="Aggiungi Punto Vendita"
               >
                 <Plus className="w-5 h-5" />
               </Button>
             )}
+            {canManage && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="border-black text-black hover:bg-gray-50"
+                onClick={() => setIsBulkUploadOpen(true)}
+                aria-label="Caricamento Massivo Punti Vendita"
+              >
+                <UploadCloud className="w-5 h-5" />
+              </Button>
+            )}
           </div>
         </div>
-        
+
         {/* Filter Dropdown */}
         {showFilter && (
           <div className="mb-4 p-4 bg-gray-50 rounded-lg border">
@@ -224,6 +353,15 @@ const SellingPoints = () => {
           triggerAddForm={triggerAddForm}
           onAddFormShown={() => setTriggerAddForm(false)}
         />
+        {canManage && (
+          <BulkUploadDialog
+            entityName="Punti Vendita" // Consistent name
+            isOpen={isBulkUploadOpen}
+            onClose={() => setIsBulkUploadOpen(false)}
+            onDownloadTemplate={handleDownloadTemplate}
+            onFileUpload={handleFileUpload}
+          />
+        )}
       </div>
     </Layout>
   );
