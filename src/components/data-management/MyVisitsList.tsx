@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { useUserVisits } from '@/hooks/use-data';
+import { formatDateShort } from '@/lib/date-utils';
 
 interface Visit {
   id: string;
@@ -11,54 +13,29 @@ interface Visit {
 }
 
 const MyVisitsList: React.FC = () => {
-  const [visits, setVisits] = useState<Visit[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchVisits = async () => {
-      setLoading(true);
-      setError(null);
+    const fetchUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      console.log('User:', user);
-      if (!user) {
-        setError('Utente non autenticato.');
-        setLoading(false);
-        return;
+      if (user) {
+        setUserId(user.id);
       }
-      const { data, error } = await supabase
-        .from('visits')
-        .select(`
-          id,
-          visitDate,
-          activity:activityId ( name ),
-          supplierCompany:supplierCompanyId ( name ),
-          sellingPoint:sellingPointId ( name )
-        `)
-        .eq('agentId', user.id)
-        .order('visitDate', { ascending: false });
-      console.log('Visits data:', data);
-      console.log('Visits error:', error);
-      if (error) {
-        setError('Errore nel caricamento delle visite.');
-        setLoading(false);
-        return;
-      }
-      setVisits(data || []);
-      setLoading(false);
     };
-    fetchVisits();
+    fetchUser();
   }, []);
 
-  console.log('Component state:', { loading, error, visitsCount: visits.length });
+  const { data: visits = [], isLoading, error } = useUserVisits(userId || '');
+
+  console.log('Component state:', { isLoading, error, visitsCount: visits.length });
 
   return (
     <Card className="overflow-x-hidden">
       <CardContent>
-        {loading ? (
+        {isLoading ? (
           <p>Caricamento visite...</p>
         ) : error ? (
-          <div className="text-red-500">{error}</div>
+          <div className="text-red-500">Errore nel caricamento delle visite.</div>
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -74,7 +51,7 @@ const MyVisitsList: React.FC = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {visits.map((visit) => (
                     <tr key={visit.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{visit.visitDate}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDateShort(visit.visitDate)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{visit.activity?.name || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{visit.supplierCompany?.name || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{visit.sellingPoint?.name || '-'}</td>
@@ -85,7 +62,7 @@ const MyVisitsList: React.FC = () => {
             </div>
           </>
         )}
-        {visits.length === 0 && !loading && !error && <p>Nessuna visita trovata.</p>}
+        {visits.length === 0 && !isLoading && !error && <p>Nessuna visita trovata.</p>}
       </CardContent>
     </Card>
   );

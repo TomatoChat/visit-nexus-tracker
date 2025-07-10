@@ -8,7 +8,9 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { geocodeAddress } from '@/lib/utils';
-import { Trash2, Pencil, Search, Plus } from 'lucide-react';
+import { Trash2, Pencil, Search, Plus, Link, Building } from 'lucide-react';
+import SupplierRelationships from './SupplierRelationships';
+import { useSuppliers, useCompanySellingPoints, useCreateCompanySellingPoint, useDeleteCompanySellingPoint } from '@/hooks/use-data';
 
 type SellingPoint = Database['public']['Tables']['sellingPoints']['Row'];
 type Company = Database['public']['Tables']['companies']['Row'];
@@ -28,15 +30,29 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingSellingPoint, setEditingSellingPoint] = useState<(SellingPoint & { addresses: Address, companies: Company }) | null>(null);
+  const [viewingRelationships, setViewingRelationships] = useState<string | null>(null);
 
   // Add New/Edit Form State
   const [name, setName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [selectedSellerCompanyId, setSelectedSellerCompanyId] = useState<string | undefined>(undefined);
   const [selectedAddressId, setSelectedAddressId] = useState<string | undefined>(undefined);
+  
+  // Supplier relationships state
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string>('');
+  const [relationshipStartDate, setRelationshipStartDate] = useState<Date>(new Date());
+  const [relationshipEndDate, setRelationshipEndDate] = useState<Date | undefined>(undefined);
+  const [sellerCode, setSellerCode] = useState<string>('');
+  const [showAddRelationshipForm, setShowAddRelationshipForm] = useState(false);
 
   const [sellerCompanies, setSellerCompanies] = useState<Company[]>([]);
   const [isLoadingSellerCompanies, setIsLoadingSellerCompanies] = useState(false);
+  
+  // Data hooks for supplier relationships
+  const { data: suppliers = [], isLoading: isLoadingSuppliers } = useSuppliers();
+  const { data: relationships = [], isLoading: isLoadingRelationships } = useCompanySellingPoints(editingSellingPoint?.id || '');
+  const createRelationshipMutation = useCreateCompanySellingPoint();
+  const deleteRelationshipMutation = useDeleteCompanySellingPoint();
 
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [addressOptions, setAddressOptions] = useState<Array<{ value: string; label: string; subtitle?: string }>>([]);
@@ -146,6 +162,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
   }, [addressForm, showAddressForm, isGeocoding]);
 
   const sellerCompanyOptions = useMemo(() => sellerCompanies.map(c => ({ value: c.id, label: c.name })), [sellerCompanies]);
+  const supplierOptions = useMemo(() => suppliers.map(s => ({ value: s.id, label: s.name })), [suppliers]);
 
   const handleCreateAddress = async () => {
     if (!addressForm.city || !addressForm.stateProvince || !addressForm.country) {
@@ -194,6 +211,13 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
     setShowAddressForm(false);
     setAddressForm({ addressLine1: '', addressLine2: '', city: '', stateProvince: '', postalCode: '', country: '', latitude: '', longitude: '' });
     setEditingSellingPoint(null);
+    setViewingRelationships(null);
+    // Reset supplier relationship form
+    setSelectedSupplierId('');
+    setRelationshipStartDate(new Date());
+    setRelationshipEndDate(undefined);
+    setSellerCode('');
+    setShowAddRelationshipForm(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -255,6 +279,66 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
     }
   };
 
+  const handleViewRelationships = (sellingPointId: string, sellingPointName: string) => {
+    setViewingRelationships(sellingPointId);
+  };
+
+  const handleAddSupplierRelationship = async () => {
+    if (!selectedSupplierId || !editingSellingPoint) {
+      toast({ 
+        title: 'Errore di validazione', 
+        description: 'Seleziona un fornitore per creare la relazione.', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    try {
+      const relationshipData = {
+        supplierCompanyId: selectedSupplierId,
+        sellingPointId: editingSellingPoint.id,
+        startDate: relationshipStartDate.toISOString().split('T')[0],
+        endDate: relationshipEndDate ? relationshipEndDate.toISOString().split('T')[0] : null,
+        sellerSellingPointCode: sellerCode || null,
+      };
+
+      await createRelationshipMutation.mutateAsync(relationshipData);
+      
+      // Reset form
+      setSelectedSupplierId('');
+      setRelationshipStartDate(new Date());
+      setRelationshipEndDate(undefined);
+      setSellerCode('');
+      setShowAddRelationshipForm(false);
+      
+      toast({ title: 'Successo!', description: 'Relazione fornitore creata!' });
+    } catch (error: any) {
+      toast({ 
+        title: 'Errore', 
+        description: error.message || 'Impossibile creare la relazione fornitore.', 
+        variant: 'destructive' 
+      });
+    }
+  };
+
+  const handleDeleteSupplierRelationship = async (relationshipId: string) => {
+    if (!editingSellingPoint || !confirm('Sei sicuro di voler eliminare questa relazione?')) return;
+
+    try {
+      await deleteRelationshipMutation.mutateAsync({
+        id: relationshipId,
+        sellingPointId: editingSellingPoint.id
+      });
+      toast({ title: 'Successo!', description: 'Relazione fornitore eliminata!' });
+    } catch (error: any) {
+      toast({ 
+        title: 'Errore', 
+        description: error.message || 'Impossibile eliminare la relazione fornitore.', 
+        variant: 'destructive' 
+      });
+    }
+  };
+
   const filteredSellingPoints = useMemo(() => {
     return sellingPoints.filter(sp =>
       sp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -269,6 +353,27 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
       if (onAddFormShown) onAddFormShown();
     }
   }, [triggerAddForm, onAddFormShown]);
+
+  if (viewingRelationships) {
+    const sellingPoint = sellingPoints.find(sp => sp.id === viewingRelationships);
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => setViewingRelationships(null)}
+            size="sm"
+          >
+            ← Torna ai punti vendita
+          </Button>
+        </div>
+        <SupplierRelationships 
+          sellingPointId={viewingRelationships} 
+          sellingPointName={sellingPoint?.name || 'Punto Vendita'}
+        />
+      </div>
+    );
+  }
 
   if (showAddForm || editingSellingPoint) {
     return (
@@ -327,6 +432,139 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                 </>
               )}
             </div>
+            
+            {/* Supplier Relationships Section - only show when editing */}
+            {editingSellingPoint && (
+              <div className="space-y-4 border-t pt-4">
+                <div className="flex items-center gap-2">
+                  <Building className="w-5 h-5 text-gray-500" />
+                  <h3 className="text-lg font-medium">Relazioni Fornitori</h3>
+                </div>
+                
+                {/* Existing Relationships */}
+                {isLoadingRelationships ? (
+                  <p className="text-sm text-gray-500">Caricamento relazioni...</p>
+                ) : relationships.length > 0 ? (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-gray-700">Relazioni esistenti:</h4>
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                      {relationships.map((relationship) => (
+                        <div key={relationship.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
+                          <div>
+                            <span className="font-medium">{relationship.supplierCompany?.name}</span>
+                            <span className="text-gray-500 ml-2">
+                              Dal: {new Date(relationship.startDate).toLocaleDateString('it-IT')}
+                              {relationship.endDate && (
+                                <span> - Al: {new Date(relationship.endDate).toLocaleDateString('it-IT')}</span>
+                              )}
+                            </span>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDeleteSupplierRelationship(relationship.id)}
+                              className="text-red-600 hover:bg-red-50"
+                              title="Elimina relazione"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">Nessuna relazione fornitore configurata.</p>
+                )}
+                
+                {/* Add New Relationship Button */}
+                <div className="flex justify-center">
+                  <Button
+                    type="button"
+                    onClick={() => setShowAddRelationshipForm(true)}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Aggiungi Relazione Fornitore
+                  </Button>
+                </div>
+                
+                {/* Add New Relationship Form - only show when button is clicked */}
+                {showAddRelationshipForm && (
+                  <div className="space-y-3 border rounded-lg p-3 bg-gray-50">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-medium text-gray-700">Nuova relazione fornitore:</h4>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowAddRelationshipForm(false)}
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="supplier-select">Fornitore <span className="text-red-500">*</span></Label>
+                      <SearchableSelect
+                        options={supplierOptions}
+                        value={selectedSupplierId}
+                        onSelect={setSelectedSupplierId}
+                        placeholder="Seleziona fornitore..."
+                        searchPlaceholder="Cerca fornitori..."
+                        disabled={isLoadingSuppliers}
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="start-date">Data inizio <span className="text-red-500">*</span></Label>
+                      <Input
+                        id="start-date"
+                        type="date"
+                        value={relationshipStartDate.toISOString().split('T')[0]}
+                        onChange={(e) => setRelationshipStartDate(new Date(e.target.value))}
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="seller-code">Codice punto vendita fornitore</Label>
+                      <Input
+                        id="seller-code"
+                        value={sellerCode}
+                        onChange={(e) => setSellerCode(e.target.value)}
+                        placeholder="Codice opzionale..."
+                      />
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        onClick={() => setShowAddRelationshipForm(false)}
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                      >
+                        Annulla
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={handleAddSupplierRelationship}
+                        disabled={!selectedSupplierId}
+                        size="sm"
+                        className="flex-1"
+                      >
+                        Aggiungi
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
             <div className="flex justify-between items-center space-x-2">
               <div>
                 {editingSellingPoint && (
@@ -372,7 +610,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">Azienda Venditrice</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/5">Indirizzo</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">Telefono</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Azioni</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Azioni</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
