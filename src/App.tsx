@@ -10,7 +10,7 @@ import MyVisits from "@/pages/MyVisits";
 import Companies from "@/pages/Companies";
 import SellingPoints from "@/pages/SellingPoints";
 import People from "@/pages/People";
-import Activities from "@/pages/Activities";
+import GeneralCategories from "@/pages/GeneralCategories";
 import { usePerformanceTracking } from "@/lib/performance";
 import PerformanceDashboard from "@/components/PerformanceDashboard";
 import {
@@ -154,12 +154,13 @@ function SidebarMenuContent() {
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
-              
+
+              {/* General Categories - only visible to admins and internal agents */}
               <SidebarMenuItem>
-                <Link to="/activities" onClick={handleNavigationClick}>
-                  <SidebarMenuButton isActive={location.pathname === "/activities"}>
-                    <Activity className="w-5 h-5 flex-shrink-0" />
-                    {(state === 'expanded' || isMobile) && <span className="truncate">Attività</span>}
+                <Link to="/general-categories" onClick={handleNavigationClick}>
+                  <SidebarMenuButton isActive={location.pathname === "/general-categories"}>
+                    <DatabaseZap className="w-5 h-5 flex-shrink-0" />
+                    {(state === 'expanded' || isMobile) && <span className="truncate">Categorie Generali</span>}
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
@@ -324,14 +325,14 @@ const App = () => {
               <Route path="/companies" element={<Companies />} />
               <Route path="/selling-points" element={<SellingPoints />} />
               <Route path="/people" element={<People />} />
-              <Route path="/activities" element={<Activities />} />
+              <Route path="/general-categories" element={<GeneralCategories />} />
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AppLayout>
         </BrowserRouter>
-        <PerformanceDashboard />
+        {/* <PerformanceDashboard /> */} {/* Removed as per user request */}
       </TooltipProvider>
     </QueryClientProvider>
   );
