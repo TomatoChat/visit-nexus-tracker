@@ -58,7 +58,6 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
   // Add state for photos
   const [photos, setPhotos] = useState<any[]>([]);
   const photoUploadRef = useRef<PhotoUploadRef>(null);
-  const [createdVisitId, setCreatedVisitId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSuppliers();
@@ -289,14 +288,13 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
         .single();
       if (error) throw error;
 
-      // Set the created visit ID for photo upload
-      setCreatedVisitId(data.id);
+      // Visit created successfully
 
       // Upload photos if any
       if (photos.length > 0 && data) {
         console.log('Attempting to upload photos for visit:', data.id);
         try {
-          await photoUploadRef.current?.uploadPhotos();
+          await photoUploadRef.current?.uploadPhotos(data.id);
         } catch (photoError) {
           console.error('Error uploading photos:', photoError);
           // Don't fail the entire submission if photos fail to upload
@@ -318,7 +316,6 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
       setActivities([]);
       setPlacedOrder(null);
       setPhotos([]);
-      setCreatedVisitId(null);
     } catch (error) {
       console.error('Error submitting visit:', error);
       setResultDialogContent('Errore nell\'invio della visita. Per favore riprova più tardi.');
@@ -530,7 +527,6 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                 {/* Photo Upload Section */}
                 <PhotoUpload
                   ref={photoUploadRef}
-                  visitId={createdVisitId}
                   onPhotosChange={setPhotos}
                   disabled={loading.submitting}
                 />
