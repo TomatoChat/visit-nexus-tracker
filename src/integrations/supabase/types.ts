@@ -465,6 +465,47 @@ export type Database = {
           },
         ]
       }
+      visitPhotos: {
+        Row: {
+          id: string
+          visitId: string
+          photoUrl: string
+          fileName: string
+          fileSize: number
+          mimeType: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          visitId: string
+          photoUrl: string
+          fileName: string
+          fileSize: number
+          mimeType: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          visitId?: string
+          photoUrl?: string
+          fileName?: string
+          fileSize?: number
+          mimeType?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visitPhotos_visitId_fkey"
+            columns: ["visitId"]
+            isOneToOne: false
+            referencedRelation: "visits"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

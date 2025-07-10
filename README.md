@@ -25,6 +25,14 @@ Visit Nexus Tracker is a full-stack application that enables users to:
   - **External Agent**: Can create visits and view their own visits, limited to "My Visits" only
   - **Guest**: Read-only access to view data
 
+### 📸 Photo Upload & Documentation
+- **Visit Photo Documentation**: Upload multiple photos per visit
+- **Dual Upload Options**: Upload from gallery or take photos with camera
+- **Photo Management**: Preview, select, and organize photos before upload
+- **Data Integrity**: Photos become permanent once uploaded (no deletion)
+- **Storage Organization**: Photos organized by visit ID in Supabase Storage
+- **Audit Trail**: Complete photo documentation for visit records
+
 ### 🏢 Business Relationship Management
 - **Multi-level Company Structure**: Suppliers → Sellers → Selling Points
 - **Complex Relationships**: Track which suppliers work with which sellers at specific locations
@@ -117,7 +125,7 @@ pip install -r requirements.txt
 
 Create a `.env` file in the project root:
 
-#### 4. Frontend Environment Variables
+#### Frontend Environment Variables
 ```env
 # Supabase Configuration
 VITE_SUPABASE_URL=your_supabase_project_url
@@ -140,6 +148,14 @@ SUPABASE_KEY=your_supabase_service_key
 GOOGLE_MAPS_KEY=your_google_maps_api_key
 ```
 
+### 4. Setup Storage (Required for Photo Upload)
+
+In your Supabase dashboard:
+1. Go to **Storage** section
+2. Create a new bucket called `visits-photos`
+3. Set it to **Public** for read access
+4. Add storage policies for authenticated users
+
 ### 5. Start Development Server
 ```bash
 npm run dev
@@ -153,7 +169,8 @@ The application uses the following main entities:
 - **Selling Points**: Retail locations with addresses
 - **People**: Contacts associated with companies
 - **Visit Activities**: Types of business activities
-- **Visits**: Individual visit records
+- **Visits**: Individual visit records with photo documentation
+- **Visit Photos**: Photo metadata and storage references
 - **Addresses**: Location data with geocoding
 - **UserRoles**: User role assignments for RBAC
 
@@ -190,6 +207,7 @@ pytest src/backend/
 - **User Isolation**: Users can only access their own data
 - **Admin Controls**: Only admins can modify system data
 - **Audit Trail**: Visit tracking with user attribution
+- **Photo Security**: Photos stored securely with user-specific access controls
 
 ## 🌐 Deployment
 
