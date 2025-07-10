@@ -624,4 +624,6 @@ export const useDeleteCompanySellingPoint = () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.sellingPoints });
     },
   });
-}; 
+};
+
+export type { Activity, PersonRole, CompanyCategory }; 

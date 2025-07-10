@@ -44,11 +44,13 @@ const People = () => {
 
   // Placeholder handlers for the dialog
   const handleDownloadTemplate = useCallback(async () => {
-    // Fetch latest companies and person roles for the reference tabs
+    // Fetch latest companies, person roles, and selling points for the reference tabs
     const { data: freshCompanies } = await supabase.from('companies').select('id, name').eq('isActive', true).order('name', { ascending: true });
     const { data: freshRoles } = await supabase.from('personRoles').select('id, name').eq('isactive', true).order('name', { ascending: true });
+    const { data: freshSellingPoints } = await supabase.from('sellingPoints').select('id, name').eq('isactive', true).order('name', { ascending: true });
     const companiesList = freshCompanies || [];
     const rolesList = freshRoles || [];
+    const sellingPointsList = freshSellingPoints || [];
     const referenceData = {
       'Aziende': [
         ['ID Azienda', 'Nome Azienda'],
@@ -57,6 +59,10 @@ const People = () => {
       'Ruoli Persona': [
         ['ID Ruolo', 'Nome Ruolo'],
         ...rolesList.map(r => [r.id, r.name])
+      ],
+      'Punti Vendita': [
+        ['ID Punto Vendita', 'Nome Punto Vendita'],
+        ...sellingPointsList.map(sp => [sp.id, sp.name])
       ]
     };
     generateAndDownloadXlsxTemplate(PEOPLE_TEMPLATE_HEADERS, 'People', 'Data', referenceData);
