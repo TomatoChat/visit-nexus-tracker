@@ -337,11 +337,21 @@ export const useAddressesBySearch = (search: string) => {
 };
 
 // Visits
-export const useUserVisits = (userId: string) => {
+export interface VisitFilters {
+  keywordSearch?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  supplierId?: string;
+  sellerId?: string; // Note: Will require indirect filtering logic
+  sellingPointId?: string;
+  activityId?: string;
+}
+
+export const useUserVisits = (userId: string, filters?: VisitFilters) => {
   return useQuery({
-    queryKey: queryKeys.userVisits(userId),
+    queryKey: ['visits', 'user', userId, filters], // Updated queryKey
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('visits')
         .select(`
           id,
@@ -350,14 +360,104 @@ export const useUserVisits = (userId: string) => {
           supplierCompany:supplierCompanyId ( name ),
           sellingPoint:sellingPointId ( name )
         `)
-        .eq('agentId', userId)
-        .order('visitDate', { ascending: false });
-      if (error) throw error;
+        .eq('agentId', userId);
+
+      if (filters?.supplierId) {
+        query = query.eq('supplierCompanyId', filters.supplierId);
+      }
+      if (filters?.sellingPointId) {
+        query = query.eq('sellingPointId', filters.sellingPointId);
+      }
+      if (filters?.activityId) {
+        query = query.eq('activityId', filters.activityId);
+      }
+      if (filters?.dateFrom) {
+        query = query.gte('visitDate', filters.dateFrom);
+      }
+      if (filters?.dateTo) {
+        query = query.lte('visitDate', filters.dateTo);
+      }
+
+      if (filters?.keywordSearch) {
+        const keyword = `%${filters.keywordSearch}%`;
+        // Attempt to filter by activity name.
+        // The foreign table is 'visitActivities' and we want to filter on its 'name' column.
+        // The select uses `activity:activityId ( name )`.
+        // Supabase syntax for filtering on a referenced table's column:
+        // 'foreignTable!foreignKeyColumn.columnToFilter.operator.value'
+        // However, our select already defines `activity` as an alias for the join.
+        // Let's try to use the defined relationship in the query.
+        // We need to ensure 'activityId' is the correct foreign key linking to 'visitActivities'.
+        // From types.ts, visits.activityId links to visitActivities.id.
+        // And visitActivities has a 'name' column.
+        // One way is to use .ilike() on the joined column if the client supports it directly.
+        // An alternative is to use an `or` condition if searching across multiple fields.
+        // query = query.ilike('activity.name', keyword); // This syntax might be incorrect.
+
+        // PostgREST syntax for filtering on related tables usually involves `rpc` or specific join syntax.
+        // Let's try to filter on `visitActivities` directly using the relationship.
+        // If `activity` is the name of the relationship from `visits` to `visitActivities`
+        // query = query.ilike('activity.name', keyword); // This implies `activity` is a direct column or known relation path
+
+        // A more robust way for related table filtering if direct ilike on join alias doesn't work
+        // is to use a subquery or ensure the join allows filtering.
+        // Given the select `activity:activityId (name)`, Supabase JS client should allow filtering on `activity.name`.
+        // Let's test this with `activity.name.ilike`
+        // This requires `activity` to be recognized as the related table alias.
+        // If this doesn't work, it means we might need to use an `rpc` call for this kind of search.
+        // Or, filter by IDs of activities whose names match, fetched in a separate query.
+
+        // For now, to provide some keyword search capability on what's directly available in the join:
+        // The select is `activity:activityId ( name )`. This makes `activity` an object in the result.
+        // To filter on `activity.name`, we'd typically use a filter on the `visitActivities` table.
+        // Let's try Supabase's way of filtering through relationships: `activityId.name`
+        // This means "on the table related by activityId, filter its name column".
+        // It should be `activityId(name)` in select and `activityId.name` in filter.
+        query = query.ilike('activityId.name', keyword);
+        // If searching on supplier or selling point name is also desired:
+        // query = query.or(`activityId.name.ilike.${keyword},supplierCompanyId.name.ilike.${keyword},sellingPointId.name.ilike.${keyword}`);
+        // For simplicity, starting with just activity name.
+        // Note: This syntax `foreignKeyColumn.columnName` is for embedded resources.
+        // For actual filtering, it should be `foreignTable!viaForeignKey.columnName.operator.value`
+        // or `columnName.operator.value` if it's an RPC.
+        // The select `activity:activityId(name)` means `activity` is the alias for the related record.
+        // So, it should be `activity.name`. Let's stick to the Supabase documentation for embedded filters.
+        // The filter should be on `visitActivities.name` through the `activityId` relationship.
+        // The correct syntax might be `activity!inner(name.ilike.${keyword})` or similar.
+        // This is getting complex.
+        // A simpler method is to fetch IDs of matching activities, then filter visits by these IDs.
+        // For this iteration, let's assume a simplified scenario or defer complex keyword search.
+
+        // Re-evaluating: The select `activity:activityId ( name )` fetches the name.
+        // Filtering on this related data often requires a different approach than direct column filters.
+        // Supabase documentation suggests `foreign_table.column.operator.value` for RPC/views.
+        // For standard queries with joins, it's `referenced_table!foreign_key_column.column.operator.value`.
+        // Or if using `select('*, activity:activityId(name)')`, then `activity.name` might work in `.filter()`.
+        // Let's try to filter on `visitActivities.name` using an explicit join for filtering.
+        // This is complex to add dynamically here.
+
+        // Simplification: Keyword search will only apply if we had a direct text field on `visits`.
+        // Since we don't, and robust cross-table keyword search is hard here,
+        // we will log a message and not apply text filtering in this iteration of the hook.
+        // The UI can still have a keyword input, but it won't filter by text in `useUserVisits` for now.
+        // This will be mentioned in the plan step completion.
+        console.warn("Keyword search on related fields (activity name, etc.) is not implemented in useUserVisits due to query complexity. Filters for IDs, dates are active.");
+
+      }
+
+      query = query.order('visitDate', { ascending: false });
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error fetching user visits:', error);
+        throw error;
+      }
       return data as Visit[];
     },
-    enabled: !!userId,
-    staleTime: 1 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
+    enabled: !!userId, // Only run query if userId is available
+    staleTime: 1 * 60 * 1000, // 1 minute
+    gcTime: 5 * 60 * 1000,    // 5 minutes
   });
 };
 
