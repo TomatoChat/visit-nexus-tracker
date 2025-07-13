@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, Pencil, Search, Plus } from 'lucide-react';
+import { useCompanyCategories } from '@/hooks/use-data';
 
 type Company = Database['public']['Tables']['companies']['Row'];
 type Address = Database['public']['Tables']['addresses']['Row'];
@@ -51,8 +52,7 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
     longitude: ''
   });
 
-
-
+  const { data: categories = [], isLoading: isLoadingCategories } = useCompanyCategories();
 
   // Fetch companies
   useEffect(() => {
@@ -236,6 +236,7 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
       setCurrentCompanyType(null);
     }
     setSelectedAddressId(company.addressId);
+    setSelectedCategoryId(company.categoryId || undefined);
     if (company.addresses) {
       setAddressSearch(company.addresses.addressLine1 || company.addresses.city);
     }
@@ -376,6 +377,24 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
                   )}
                 </>
               )}
+            </div>
+            <div>
+              <Label htmlFor="company-category">Categoria Azienda <span className="text-red-500">*</span></Label>
+              <Select
+                value={selectedCategoryId || ''}
+                onValueChange={setSelectedCategoryId}
+                required
+                disabled={isLoadingCategories}
+              >
+                <SelectTrigger id="company-category">
+                  <SelectValue placeholder={isLoadingCategories ? 'Caricamento...' : 'Seleziona categoria'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex justify-between items-center space-x-2">
               <div>
