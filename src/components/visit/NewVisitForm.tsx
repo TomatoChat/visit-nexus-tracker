@@ -365,15 +365,21 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                   <label className="text-sm font-medium flex items-center gap-2">
                     Hai visitato una persona?
                   </label>
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm font-medium w-6 text-center">
-                      {visitedPerson ? 'Sì' : 'No'}
-                    </span>
-                    <Switch
-                      id="visited-person-switch"
-                      checked={visitedPerson}
-                      onCheckedChange={setVisitedPerson}
-                    />
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant={visitedPerson ? 'default' : 'outline'}
+                      onClick={() => setVisitedPerson(true)}
+                    >
+                      Sì
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={!visitedPerson ? 'default' : 'outline'}
+                      onClick={() => setVisitedPerson(false)}
+                    >
+                      No
+                    </Button>
                   </div>
                 </div>
 
@@ -399,15 +405,21 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                   <label className="text-sm font-medium flex items-center gap-2" htmlFor="ordine-completato-switch">
                     Ordine completato
                   </label>
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm font-medium w-6 text-center">
-                      {placedOrder ? 'Sì' : 'No'}
-                    </span>
-                    <Switch
-                      id="ordine-completato-switch"
-                      checked={placedOrder === true}
-                      onCheckedChange={setPlacedOrder}
-                    />
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant={placedOrder === true ? 'default' : 'outline'}
+                      onClick={() => setPlacedOrder(true)}
+                    >
+                      Sì
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={placedOrder === false ? 'default' : 'outline'}
+                      onClick={() => setPlacedOrder(false)}
+                    >
+                      No
+                    </Button>
                   </div>
                 </div>
 
