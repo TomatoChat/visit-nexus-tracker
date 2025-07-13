@@ -103,3 +103,32 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  /* Prevent layout shift for dynamic content */
+  .content-visibility-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 500px;
+  }
+  
+  /* Reserve space for dynamic elements */
+  .reserve-space {
+    min-height: 1rem;
+  }
+  
+  /* Prevent layout shift for buttons */
+  .btn-stable {
+    min-height: 2.5rem;
+    min-width: 2.5rem;
+  }
+  
+  /* Prevent layout shift for tables */
+  .table-stable {
+    min-height: 200px;
+  }
+  
+  /* Prevent layout shift for cards */
+  .card-stable {
+    min-height: 100px;
+  }
+}

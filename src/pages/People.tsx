@@ -146,7 +146,7 @@ const People = () => {
   if (loading) {
     return (
       <Layout>
-        <div className="min-h-screen w-full pb-2 md:p-8">
+        <div className="w-full pb-2 md:p-8">
           <div className="flex items-center justify-center py-8">
             <div className="text-lg">Loading...</div>
           </div>
@@ -159,7 +159,7 @@ const People = () => {
   if (!userRole || userRole === 'guest') {
     return (
       <Layout>
-        <div className="min-h-screen w-full pb-2 md:p-8">
+        <div className="w-full pb-2 md:p-8">
           <div className="flex items-center justify-center py-8">
             <div className="text-lg text-red-600">Access Denied</div>
           </div>
@@ -172,7 +172,7 @@ const People = () => {
   if (userRole === 'externalAgent') {
     return (
       <Layout>
-        <div className="min-h-screen w-full pb-2 md:p-8">
+        <div className="w-full pb-2 md:p-8">
           <div className="flex items-center justify-center py-8">
             <div className="text-lg text-red-600">Access Denied</div>
           </div>

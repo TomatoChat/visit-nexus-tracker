@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
-import { geocodeAddress } from '@/lib/utils';
 import { Trash2, Pencil, Search, Plus } from 'lucide-react';
 
 type Company = Database['public']['Tables']['companies']['Row'];
@@ -51,7 +50,7 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
     latitude: '',
     longitude: ''
   });
-  const [isGeocoding, setIsGeocoding] = useState(false);
+
 
 
 
@@ -116,35 +115,7 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
     }
   }, [addressSearch, showAddressForm]);
 
-  // Auto-geocode when mandatory fields are filled
-  useEffect(() => {
-    const hasMandatoryFields = addressForm.city && addressForm.stateProvince && addressForm.country;
-    const hasCoordinates = addressForm.latitude && addressForm.longitude;
 
-    if (hasMandatoryFields && !hasCoordinates && !isGeocoding && showAddressForm) {
-      setIsGeocoding(true);
-      geocodeAddress({
-        addressLine1: addressForm.addressLine1,
-        city: addressForm.city,
-        stateProvince: addressForm.stateProvince,
-        country: addressForm.country,
-        postalCode: addressForm.postalCode,
-      }, import.meta.env.VITE_GOOGLE_MAPS_KEY)
-        .then(({ lat, lng }) => {
-          setAddressForm(prev => ({
-            ...prev,
-            latitude: lat.toString(),
-            longitude: lng.toString()
-          }));
-        })
-        .catch((err) => {
-          console.log('Geocoding failed:', err.message);
-        })
-        .finally(() => {
-          setIsGeocoding(false);
-        });
-    }
-  }, [addressForm.city, addressForm.stateProvince, addressForm.country, addressForm.addressLine1, addressForm.postalCode, showAddressForm, isGeocoding]);
 
 
   const handleCreateAddress = async () => {
@@ -157,34 +128,17 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
       return;
     }
 
-    let latitude = addressForm.latitude;
-    let longitude = addressForm.longitude;
-
-    if (!latitude || !longitude) {
-      setIsGeocoding(true);
-      try {
-        const geoResult = await geocodeAddress({
-          addressLine1: addressForm.addressLine1,
-          city: addressForm.city,
-          stateProvince: addressForm.stateProvince,
-          country: addressForm.country,
-          postalCode: addressForm.postalCode,
-        }, import.meta.env.VITE_GOOGLE_MAPS_KEY);
-        latitude = geoResult.lat.toString();
-        longitude = geoResult.lng.toString();
-        setAddressForm(prev => ({ ...prev, latitude, longitude }));
-      } catch (err: any) {
-        toast({
-          title: 'Errore Geocoding',
-          description: err.message || 'Impossibile ottenere coordinate.',
-          variant: 'destructive',
-        });
-        setIsGeocoding(false);
-        return;
-      } finally {
-        setIsGeocoding(false);
-      }
+    if (!addressForm.latitude || !addressForm.longitude) {
+      toast({
+        title: 'Errore di validazione',
+        description: 'Latitudine e Longitudine sono obbligatorie per l\'indirizzo.',
+        variant: 'destructive',
+      });
+      return;
     }
+
+    const latitude = addressForm.latitude;
+    const longitude = addressForm.longitude;
 
     try {
       const { data, error } = await supabase
@@ -411,12 +365,12 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
                       <div><Label htmlFor="address-postal">CAP</Label><Input id="address-postal" type="number" step="1" value={addressForm.postalCode} onChange={(e) => setAddressForm(prev => ({ ...prev, postalCode: e.target.value }))} placeholder="CAP" /></div>
                       <div><Label htmlFor="address-country">Nazione <span className="text-red-500">*</span></Label><Input id="address-country" value={addressForm.country} onChange={(e) => setAddressForm(prev => ({ ...prev, country: e.target.value }))} placeholder="Nazione" required /></div>
                       <div className="flex gap-2">
-                        <div className="flex-1"><Label htmlFor="address-lat">Latitudine</Label><Input id="address-lat" type="number" step="any" value={addressForm.latitude} onChange={(e) => setAddressForm(prev => ({ ...prev, latitude: e.target.value }))} placeholder={isGeocoding ? "Caricamento..." : "Latitudine"} disabled={isGeocoding} /></div>
-                        <div className="flex-1"><Label htmlFor="address-lng">Longitudine</Label><Input id="address-lng" type="number" step="any" value={addressForm.longitude} onChange={(e) => setAddressForm(prev => ({ ...prev, longitude: e.target.value }))} placeholder={isGeocoding ? "Caricamento..." : "Longitudine"} disabled={isGeocoding} /></div>
+                        <div className="flex-1"><Label htmlFor="address-lat">Latitudine <span className="text-red-500">*</span></Label><Input id="address-lat" type="number" step="any" value={addressForm.latitude} onChange={(e) => setAddressForm(prev => ({ ...prev, latitude: e.target.value }))} placeholder="Latitudine" required /></div>
+                        <div className="flex-1"><Label htmlFor="address-lng">Longitudine <span className="text-red-500">*</span></Label><Input id="address-lng" type="number" step="any" value={addressForm.longitude} onChange={(e) => setAddressForm(prev => ({ ...prev, longitude: e.target.value }))} placeholder="Longitudine" required /></div>
                       </div>
                       <div className="flex gap-2">
-                        <Button type="button" variant="outline" onClick={() => { setShowAddressForm(false); setAddressForm({ addressLine1: '', addressLine2: '', city: '', stateProvince: '', postalCode: '', country: '', latitude: '', longitude: '' }); setIsGeocoding(false); }}>Annulla</Button>
-                        <Button type="button" disabled={isGeocoding} onClick={handleCreateAddress}>{isGeocoding ? 'Caricamento...' : 'Salva Indirizzo'}</Button>
+                        <Button type="button" variant="outline" onClick={() => { setShowAddressForm(false); setAddressForm({ addressLine1: '', addressLine2: '', city: '', stateProvince: '', postalCode: '', country: '', latitude: '', longitude: '' }); }}>Annulla</Button>
+                        <Button type="button" onClick={handleCreateAddress}>Salva Indirizzo</Button>
                       </div>
                     </div>
                   )}

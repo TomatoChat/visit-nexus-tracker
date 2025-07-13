@@ -286,7 +286,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   // Only show sidebar if logged in
   return (
     <SidebarProvider defaultOpen={false} hoverToExpand={true}>
-      <div className="flex min-h-screen w-full">
+      <div className="flex w-full">
         <Sidebar collapsible="icon">
           <div className="flex flex-col h-full">
             <div className="flex items-start justify-end p-2">
@@ -295,7 +295,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
             <SidebarMenuContent />
           </div>
         </Sidebar>
-        <main className="flex-1 w-full min-h-screen bg-gray-100 p-0 md:p-8 relative md:pt-0">
+        <main className="flex-1 w-full bg-gray-100 p-0 md:p-8 relative md:pt-0">
           <Layout>{children}</Layout>
         </main>
       </div>
