@@ -16,6 +16,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
 import { Pencil, Trash2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
 
 const GeneralCategories = () => {
   const { userRole, loading, checkCanManageData } = useRoles();
@@ -206,14 +207,14 @@ const GeneralCategories = () => {
           </div>
         </div>
         
-        <Tabs value={tab} onValueChange={setTab} className="w-full">
+        <Tabs value={tab} onValueChange={setTab} className="w-full content-visibility-auto">
           <TabsList>
             <TabsTrigger value="activities">Attività</TabsTrigger>
             <TabsTrigger value="roles">Ruoli Persona</TabsTrigger>
             <TabsTrigger value="categories">Categorie Azienda</TabsTrigger>
           </TabsList>
           <TabsContent value="activities">
-            {activitiesQuery.isLoading ? <p>Caricamento attività...</p> : activitiesQuery.isError ? <div className="text-red-600">Errore: {String(activitiesQuery.error)}</div> : (
+            {activitiesQuery.isLoading ? <TableSkeleton rows={5} columns={2} /> : activitiesQuery.isError ? <div className="text-red-600">Errore: {String(activitiesQuery.error)}</div> : (
               <Card className="overflow-x-hidden">
                 <CardContent>
                   <div className="overflow-x-auto">
@@ -259,7 +260,7 @@ const GeneralCategories = () => {
             )}
           </TabsContent>
           <TabsContent value="roles">
-            {rolesQuery.isLoading ? <p>Caricamento ruoli...</p> : rolesQuery.isError ? <div className="text-red-600">Errore: {String(rolesQuery.error)}</div> : (
+            {rolesQuery.isLoading ? <TableSkeleton rows={5} columns={4} /> : rolesQuery.isError ? <div className="text-red-600">Errore: {String(rolesQuery.error)}</div> : (
               <Card className="overflow-x-hidden">
                 <CardContent>
                   <div className="overflow-x-auto">
@@ -329,7 +330,7 @@ const GeneralCategories = () => {
             )}
           </TabsContent>
           <TabsContent value="categories">
-            {categoriesQuery.isLoading ? <p>Caricamento categorie...</p> : categoriesQuery.isError ? <div className="text-red-600">Errore: {String(categoriesQuery.error)}</div> : (
+            {categoriesQuery.isLoading ? <TableSkeleton rows={5} columns={4} /> : categoriesQuery.isError ? <div className="text-red-600">Errore: {String(categoriesQuery.error)}</div> : (
               <Card className="overflow-x-hidden">
                 <CardContent>
                   <div className="overflow-x-auto">
