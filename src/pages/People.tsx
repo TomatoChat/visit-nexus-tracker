@@ -188,7 +188,7 @@ const People = () => {
         <div className="flex flex-row items-center justify-between gap-2 md:hidden mb-4">
           <div className="flex items-center gap-2">
             <SidebarTrigger />
-            <h1 className="text-lg font-bold text-gray-800">Persone</h1>
+            <h1 className="text-lg font-bold text-foreground">Persone</h1>
           </div>
           <div className="flex items-center gap-2">
             {!showSearch && (
@@ -219,7 +219,7 @@ const People = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="border-black text-black hover:bg-gray-50"
+                className="border-border text-foreground hover:bg-muted/50"
                 onClick={() => setTriggerAddForm(true)}
                 aria-label="Aggiungi Persona"
               >
@@ -230,7 +230,7 @@ const People = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="border-black text-black hover:bg-gray-50"
+                className="border-border text-foreground hover:bg-muted/50"
                 onClick={() => setIsBulkUploadOpen(true)}
                 aria-label="Caricamento Massivo Persone"
               >
@@ -241,7 +241,7 @@ const People = () => {
         </div>
         {/* Desktop: Title and actions */}
         <div className="hidden md:flex items-center justify-between gap-4 mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 text-left">Persone</h1>
+          <h1 className="text-3xl font-bold text-foreground text-left">Persone</h1>
           <div className="flex items-center gap-2">
             {!showSearch && (
               <Button
@@ -271,7 +271,7 @@ const People = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="border-black text-black hover:bg-gray-50"
+                className="border-border text-foreground hover:bg-muted/50"
                 onClick={() => setTriggerAddForm(true)}
                 aria-label="Aggiungi Persona"
               >
@@ -282,7 +282,7 @@ const People = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="border-black text-black hover:bg-gray-50"
+                className="border-border text-foreground hover:bg-muted/50"
                 onClick={() => setIsBulkUploadOpen(true)}
                 aria-label="Caricamento Massivo Persone"
               >

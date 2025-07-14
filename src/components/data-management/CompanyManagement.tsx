@@ -332,16 +332,16 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
               <Label>Indirizzo <span className="text-red-500">*</span></Label>
               {editingCompany ? (
                 // Show current address as read-only when editing
-                <div className="p-3 bg-gray-50 rounded border">
+                <div className="p-3 bg-muted rounded border">
                   {editingCompany.addresses ? (
-                    <div className="text-sm text-gray-700">
+                    <div className="text-sm text-foreground">
                       <div>{editingCompany.addresses.addressLine1 || ''}</div>
                       <div>{editingCompany.addresses.addressLine2 || ''}</div>
                       <div>{editingCompany.addresses.city || ''}, {editingCompany.addresses.stateProvince || ''}</div>
                       <div>{editingCompany.addresses.postalCode || ''} {editingCompany.addresses.country || ''}</div>
                     </div>
                   ) : (
-                    <div className="text-sm text-gray-500">Nessun indirizzo associato</div>
+                    <div className="text-sm text-muted-foreground">Nessun indirizzo associato</div>
                   )}
                 </div>
               ) : (
@@ -446,24 +446,24 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
         ) : (
           <>
             <div className="overflow-x-auto">
-            <table className="w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="w-full divide-border divide-border">
+              <thead className="bg-muted">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">Nome</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">P.IVA</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">Tipo</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/5">Indirizzo</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Azioni</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/5">Nome</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/5">P.IVA</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/5">Tipo</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-2/5">Indirizzo</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-24">Azioni</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-background divide-border divide-border">
                 {filteredCompanies.map((company) => {
                   const address = company.addresses; // No longer need cast due to state type
                   return (
-                    <tr key={company.id} onClick={!readOnly ? () => handleEdit(company) : undefined} className={!readOnly ? "cursor-pointer hover:bg-gray-50" : "hover:bg-gray-50"}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{company.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.codeVAT}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <tr key={company.id} onClick={!readOnly ? () => handleEdit(company) : undefined} className={!readOnly ? "cursor-pointer hover:bg-muted/50" : "hover:bg-muted/50"}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{company.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{company.codeVAT}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                         {company.isSeller && company.isSupplier ? (
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                             Fornitore & Cliente
@@ -477,15 +477,15 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
                             Fornitore
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-background text-foreground">
                             N/A
                           </span>
                         )}
                       </td>
-                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                       <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                         {address ? `${address.addressLine1 || ''}${address.addressLine1 && address.city ? ', ' : ''}${address.city || ''}` : 'N/A'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                         {!readOnly && (
                           <div className="flex gap-2">
                             <Button

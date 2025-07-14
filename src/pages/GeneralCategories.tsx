@@ -186,7 +186,7 @@ const GeneralCategories = () => {
         <div className="flex flex-row items-center justify-between gap-2 md:hidden mb-4">
           <div className="flex items-center gap-2">
             <SidebarTrigger />
-            <h1 className="text-lg font-bold text-gray-800">Categorie Generali</h1>
+            <h1 className="text-lg font-bold text-foreground">Categorie Generali</h1>
           </div>
           <div className="flex items-center gap-2">
             {!showSearch && (
@@ -226,7 +226,7 @@ const GeneralCategories = () => {
         </div>
         {/* Desktop: Title and actions */}
         <div className="hidden md:flex items-center justify-between gap-4 mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 text-left">Categorie Generali</h1>
+          <h1 className="text-3xl font-bold text-foreground text-left">Categorie Generali</h1>
           <div className="flex items-center gap-2">
             {!showSearch && (
               <Button
@@ -265,7 +265,7 @@ const GeneralCategories = () => {
         </div>
         
         <Tabs value={tab} onValueChange={setTab} className="w-full content-visibility-auto">
-          <TabsList>
+          <TabsList className="overflow-hidden rounded-md">
             <TabsTrigger value="activities">Attività</TabsTrigger>
             <TabsTrigger value="roles">Ruoli Persona</TabsTrigger>
             <TabsTrigger value="categories">Categorie Azienda</TabsTrigger>
@@ -275,18 +275,18 @@ const GeneralCategories = () => {
               <Card className="overflow-x-hidden">
                 <CardContent>
                   <div className="overflow-x-auto">
-                    <table className="w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
+                    <table className="w-full divide-y divide-border">
+                      <thead className="bg-muted">
                         <tr>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Azioni</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Nome</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-24">Azioni</th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody className="bg-background divide-y divide-border">
                         {activitiesQuery.data?.map((a: Activity) => (
-                          <tr key={a.id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{a.name}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <tr key={a.id} className="hover:bg-muted/50">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{a.name}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                               <div className="flex gap-2">
                                 <Button
                                   size="sm"
@@ -321,20 +321,20 @@ const GeneralCategories = () => {
               <Card className="overflow-x-hidden">
                 <CardContent>
                   <div className="overflow-x-auto">
-                    <table className="w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
+                    <table className="w-full divide-y divide-border">
+                      <thead className="bg-muted">
                         <tr>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Personale Interno</th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Personale Esterno</th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Azioni</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Nome</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Personale Interno</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Personale Esterno</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-24">Azioni</th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody className="bg-background divide-y divide-border">
                         {rolesQuery.data?.map((r: PersonRole) => (
-                          <tr key={r.id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{r.name}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <tr key={r.id} className="hover:bg-muted/50">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{r.name}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                               {r.isAgent ? (
                                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                   Sì
@@ -345,7 +345,7 @@ const GeneralCategories = () => {
                                 </span>
                               )}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                               {r.isExternal ? (
                                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                                   Sì
@@ -356,7 +356,7 @@ const GeneralCategories = () => {
                                 </span>
                               )}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                               <div className="flex gap-2">
                                 <Button
                                   size="sm"
@@ -391,20 +391,20 @@ const GeneralCategories = () => {
               <Card className="overflow-x-hidden">
                 <CardContent>
                   <div className="overflow-x-auto">
-                    <table className="w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
+                    <table className="w-full divide-y divide-border">
+                      <thead className="bg-muted">
                         <tr>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fornitore</th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Azioni</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Nome</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Fornitore</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Cliente</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-24">Azioni</th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody className="bg-background divide-y divide-border">
                         {categoriesQuery.data?.map((c: CompanyCategory) => (
-                          <tr key={c.id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{c.name}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <tr key={c.id} className="hover:bg-muted/50">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{c.name}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                               {c.supplierCategory ? (
                                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                                   Sì
@@ -415,7 +415,7 @@ const GeneralCategories = () => {
                                 </span>
                               )}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                               {c.sellerCategory ? (
                                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                   Sì
@@ -426,7 +426,7 @@ const GeneralCategories = () => {
                                 </span>
                               )}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                               <div className="flex gap-2">
                                 <Button
                                   size="sm"

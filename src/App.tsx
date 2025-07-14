@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Link, useLocation, Navigate } from "react-router-dom";
 import Index from "@/pages/Index";
 import NotFound from "@/pages/NotFound";
+import Profile from './pages/Profile';
 
 import MyVisits from "@/pages/MyVisits";
 import Companies from "@/pages/Companies";
@@ -34,7 +35,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Car, DatabaseZap, LogOut, Power, Lock, Building, MapPin, Users, Activity, FileText } from "lucide-react";
+import { Car, DatabaseZap, LogOut, Power, Lock, Building, MapPin, Users, Activity, FileText, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -168,13 +169,21 @@ function SidebarMenuContent() {
           )}
         </SidebarMenu>
       </div>
-      <button
-        onClick={handleLogoutClick}
-        className="w-full flex items-center gap-2 px-4 py-3 text-base font-normal rounded-lg transition-colors hover:bg-gray-100 focus:outline-none focus:bg-gray-100 text-gray-900"
-      >
-        <Power className="w-5 h-5 flex-shrink-0" />
-        {(state === 'expanded' || isMobile) && <span className="truncate text-base">Logout</span>}
-      </button>
+      <div className="flex flex-col gap-2 p-2">
+        <Link to="/profile">
+          <button className="w-full flex items-center gap-2 px-4 py-3 text-base font-normal rounded-lg transition-colors hover:bg-background focus:outline-none focus:bg-background text-foreground">
+            <User className="w-5 h-5 flex-shrink-0" />
+            {(state === 'expanded' || isMobile) && <span className="truncate text-base">Profilo</span>}
+          </button>
+        </Link>
+        <button
+          onClick={handleLogoutClick}
+          className="w-full flex items-center gap-2 px-4 py-3 text-base font-normal rounded-lg transition-colors hover:bg-background focus:outline-none focus:bg-background text-foreground"
+        >
+          <Power className="w-5 h-5 flex-shrink-0" />
+          {(state === 'expanded' || isMobile) && <span className="truncate text-base">Logout</span>}
+        </button>
+      </div>
       <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -206,7 +215,7 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gray-100 flex items-center justify-center p-4">
+    <div className="min-h-screen w-full bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl text-center flex items-center justify-center gap-2">
@@ -272,7 +281,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   // Show loading state while checking session
   if (session === undefined) {
     return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="flex min-h-screen w-full items-center justify-center bg-background">
         <div className="text-lg">Loading...</div>
       </div>
     );
@@ -295,7 +304,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
             <SidebarMenuContent />
           </div>
         </Sidebar>
-        <main className="flex-1 w-full bg-gray-100 p-0 md:p-8 relative md:pt-0">
+        <main className="flex-1 w-full bg-background p-0 md:p-8 relative md:pt-0">
           <Layout>{children}</Layout>
         </main>
       </div>
@@ -326,6 +335,7 @@ const App = () => {
               <Route path="/selling-points" element={<SellingPoints />} />
               <Route path="/people" element={<People />} />
               <Route path="/general-categories" element={<GeneralCategories />} />
+              <Route path="/profile" element={<Profile />} />
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
