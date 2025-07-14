@@ -52,7 +52,9 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
     longitude: ''
   });
 
-  const { data: categories = [], isLoading: isLoadingCategories } = useCompanyCategories();
+  const categoriesQuery = useCompanyCategories();
+  const categories = categoriesQuery.data || [];
+  const isLoadingCategories = categoriesQuery.isLoading;
 
   // Fetch companies
   useEffect(() => {
@@ -175,6 +177,7 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
     setCompanyVat('');
     setCurrentCompanyType(null);
     setSelectedAddressId(undefined);
+    setSelectedCategoryId(undefined);
     setShowAddressForm(false);
     setAddressForm({ addressLine1: '', addressLine2: '', city: '', stateProvince: '', postalCode: '', country: '', latitude: '', longitude: '' });
     setEditingCompany(null);
@@ -182,7 +185,7 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
 
   const handleAddOrUpdateCompany = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!companyName || !companyVat || !currentCompanyType || !selectedAddressId) {
+    if (!companyName || !companyVat || !currentCompanyType || !selectedAddressId || !selectedCategoryId) {
       toast({ title: 'Errore di validazione', description: 'Compila tutti i campi obbligatori (*).', variant: 'destructive' });
       return;
     }
@@ -193,7 +196,7 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
       isSupplier: currentCompanyType === 'supplier',
       isSeller: currentCompanyType === 'seller',
       addressId: selectedAddressId,
-      categoryId: selectedCategoryId || 'default-category-id', // TODO: Add proper category selection
+      categoryId: selectedCategoryId,
     };
 
     try {
@@ -380,21 +383,30 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
             </div>
             <div>
               <Label htmlFor="company-category">Categoria Azienda <span className="text-red-500">*</span></Label>
-              <Select
-                value={selectedCategoryId || ''}
-                onValueChange={setSelectedCategoryId}
-                required
-                disabled={isLoadingCategories}
-              >
-                <SelectTrigger id="company-category">
-                  <SelectValue placeholder={isLoadingCategories ? 'Caricamento...' : 'Seleziona categoria'} />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {categoriesQuery.error ? (
+                <div className="text-red-600 text-sm">Errore nel caricamento delle categorie: {String(categoriesQuery.error)}</div>
+              ) : (
+                <Select
+                  value={selectedCategoryId || ''}
+                  onValueChange={setSelectedCategoryId}
+                  required
+                  disabled={isLoadingCategories}
+                >
+                  <SelectTrigger id="company-category">
+                    <SelectValue placeholder={isLoadingCategories ? 'Caricamento...' : categories.length === 0 ? 'Nessuna categoria disponibile' : 'Seleziona categoria'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {categories.length === 0 && !isLoadingCategories && !categoriesQuery.error && (
+                <div className="text-orange-600 text-sm mt-1">
+                  Nessuna categoria disponibile. Vai su "Categorie Generali" per crearne una.
+                </div>
+              )}
             </div>
             <div className="flex justify-between items-center space-x-2">
               <div>
