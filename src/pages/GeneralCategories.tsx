@@ -15,7 +15,6 @@ import { Dialog, DialogContent, DialogTitle, DialogFooter } from '@/components/u
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
 import { Pencil, Trash2 } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 
 const GeneralCategories = () => {
@@ -44,21 +43,39 @@ const GeneralCategories = () => {
       const { error } = await supabase.from('visitActivities').insert({ name: data.name, isactive: true });
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['activities'] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
+      toast({ title: 'Successo!', description: 'Attività creata con successo!' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Errore', description: error.message || 'Impossibile creare l\'attività.', variant: 'destructive' });
+    }
   });
   const updateActivity = useMutation({
     mutationFn: async (data: Activity) => {
       const { error } = await supabase.from('visitActivities').update({ name: data.name }).eq('id', data.id);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['activities'] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
+      toast({ title: 'Successo!', description: 'Attività aggiornata con successo!' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Errore', description: error.message || 'Impossibile aggiornare l\'attività.', variant: 'destructive' });
+    }
   });
   const deleteActivity = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('visitActivities').update({ isactive: false }).eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['activities'] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
+      toast({ title: 'Successo!', description: 'Attività eliminata con successo!' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Errore', description: error.message || 'Impossibile eliminare l\'attività.', variant: 'destructive' });
+    }
   });
 
   // Mutations for roles
@@ -67,44 +84,84 @@ const GeneralCategories = () => {
       const { error } = await supabase.from('personRoles').insert({ ...data, isactive: true });
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['personRoles'] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['personRoles'] });
+      toast({ title: 'Successo!', description: 'Ruolo creato con successo!' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Errore', description: error.message || 'Impossibile creare il ruolo.', variant: 'destructive' });
+    }
   });
   const updateRole = useMutation({
     mutationFn: async (data: PersonRole) => {
       const { error } = await supabase.from('personRoles').update({ name: data.name, isAgent: data.isAgent, isExternal: data.isExternal }).eq('id', data.id);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['personRoles'] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['personRoles'] });
+      toast({ title: 'Successo!', description: 'Ruolo aggiornato con successo!' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Errore', description: error.message || 'Impossibile aggiornare il ruolo.', variant: 'destructive' });
+    }
   });
   const deleteRole = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('personRoles').update({ isactive: false }).eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['personRoles'] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['personRoles'] });
+      toast({ title: 'Successo!', description: 'Ruolo eliminato con successo!' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Errore', description: error.message || 'Impossibile eliminare il ruolo.', variant: 'destructive' });
+    }
   });
 
   // Mutations for categories
   const createCategory = useMutation({
     mutationFn: async (data: { name: string; supplierCategory: boolean; sellerCategory: boolean }) => {
+      console.log('Creating category with data:', data);
       const { error } = await supabase.from('companyCategories').insert({ ...data, isactive: true });
+      console.log('Supabase response error:', error);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['companyCategories'] })
+    onSuccess: () => {
+      console.log('Category created successfully');
+      queryClient.invalidateQueries({ queryKey: ['companyCategories'] });
+      toast({ title: 'Successo!', description: 'Categoria creata con successo!' });
+    },
+    onError: (error: any) => {
+      console.log('Category creation error:', error);
+      toast({ title: 'Errore', description: error.message || 'Impossibile creare la categoria.', variant: 'destructive' });
+    }
   });
   const updateCategory = useMutation({
     mutationFn: async (data: CompanyCategory) => {
       const { error } = await supabase.from('companyCategories').update({ name: data.name, supplierCategory: data.supplierCategory, sellerCategory: data.sellerCategory }).eq('id', data.id);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['companyCategories'] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companyCategories'] });
+      toast({ title: 'Successo!', description: 'Categoria aggiornata con successo!' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Errore', description: error.message || 'Impossibile aggiornare la categoria.', variant: 'destructive' });
+    }
   });
   const deleteCategory = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('companyCategories').update({ isactive: false }).eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['companyCategories'] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companyCategories'] });
+      toast({ title: 'Successo!', description: 'Categoria eliminata con successo!' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Errore', description: error.message || 'Impossibile eliminare la categoria.', variant: 'destructive' });
+    }
   });
 
   React.useEffect(() => {
@@ -404,7 +461,7 @@ const GeneralCategories = () => {
         {/* Modal for add/edit */}
         <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
           <DialogContent>
-            <DialogTitle>{editItem ? 'Modifica' : 'Aggiungi'} {modalTab === 'activities' ? 'Attività' : modalTab === 'roles' ? 'Ruolo Persona' : 'Categoria Azienda'}</DialogTitle>
+            <DialogTitle>{editItem ? 'Modifica' : 'Aggiungi'} {modalTab === 'activities' ? 'Attività' : modalTab === 'roles' ? 'Ruolo Persona' : modalTab === 'categories' ? 'Categoria Azienda' : ''}</DialogTitle>
             {modalTab === 'activities' && (
               <Input placeholder="Nome attività" value={form.name || ''} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
             )}
@@ -413,41 +470,129 @@ const GeneralCategories = () => {
                 <Input placeholder="Nome ruolo" value={form.name || ''} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
                 <div className="flex items-center justify-between mt-4">
                   <label className="text-sm font-medium">Agente</label>
-                  <Switch 
-                    checked={!!form.isAgent} 
-                    onCheckedChange={v => setForm(f => ({ ...f, isAgent: !!v }))} 
-                  />
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant={form.isAgent ? 'default' : 'outline'}
+                      onClick={() => setForm(f => ({ ...f, isAgent: true }))}
+                    >
+                      Sì
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={!form.isAgent ? 'default' : 'outline'}
+                      onClick={() => setForm(f => ({ ...f, isAgent: false }))}
+                    >
+                      No
+                    </Button>
+                  </div>
                 </div>
                 <div className="flex items-center justify-between mt-4">
                   <label className="text-sm font-medium">Esterno</label>
-                  <Switch 
-                    checked={!!form.isExternal} 
-                    onCheckedChange={v => setForm(f => ({ ...f, isExternal: !!v }))} 
-                  />
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant={form.isExternal ? 'default' : 'outline'}
+                      onClick={() => setForm(f => ({ ...f, isExternal: true }))}
+                    >
+                      Sì
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={!form.isExternal ? 'default' : 'outline'}
+                      onClick={() => setForm(f => ({ ...f, isExternal: false }))}
+                    >
+                      No
+                    </Button>
+                  </div>
                 </div>
               </>
             )}
             {modalTab === 'categories' && (
               <>
                 <Input placeholder="Nome categoria" value={form.name || ''} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-                <div className="flex gap-4 mt-2">
-                  <label><Checkbox checked={!!form.supplierCategory} onCheckedChange={v => setForm(f => ({ ...f, supplierCategory: !!v }))} /> Fornitore</label>
-                  <label><Checkbox checked={!!form.sellerCategory} onCheckedChange={v => setForm(f => ({ ...f, sellerCategory: !!v }))} /> Venditore</label>
+                <div className="flex gap-8 mt-4 items-center">
+                  <div className="flex flex-col items-center gap-2 font-medium">
+                    <span>Fornitore</span>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant={form.supplierCategory ? 'default' : 'outline'}
+                        onClick={() => setForm(f => ({ ...f, supplierCategory: true }))}
+                      >
+                        Sì
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={!form.supplierCategory ? 'default' : 'outline'}
+                        onClick={() => setForm(f => ({ ...f, supplierCategory: false }))}
+                      >
+                        No
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center gap-2 font-medium">
+                    <span>Venditore</span>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant={form.sellerCategory ? 'default' : 'outline'}
+                        onClick={() => setForm(f => ({ ...f, sellerCategory: true }))}
+                      >
+                        Sì
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={!form.sellerCategory ? 'default' : 'outline'}
+                        onClick={() => setForm(f => ({ ...f, sellerCategory: false }))}
+                      >
+                        No
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </>
             )}
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowAddModal(false)}>Annulla</Button>
               <Button onClick={() => {
+                // Validation
                 if (modalTab === 'activities') {
+                  if (!form.name || form.name.trim() === '') {
+                    toast({ title: 'Errore', description: 'Il nome dell\'attività è obbligatorio.', variant: 'destructive' });
+                    return;
+                  }
                   if (editItem) updateActivity.mutate({ ...editItem, ...form });
                   else createActivity.mutate(form);
                 } else if (modalTab === 'roles') {
+                  if (!form.name || form.name.trim() === '') {
+                    toast({ title: 'Errore', description: 'Il nome del ruolo è obbligatorio.', variant: 'destructive' });
+                    return;
+                  }
                   if (editItem) updateRole.mutate({ ...editItem, ...form });
                   else createRole.mutate(form);
                 } else if (modalTab === 'categories') {
-                  if (editItem) updateCategory.mutate({ ...editItem, ...form });
-                  else createCategory.mutate(form);
+                  console.log('Submitting category form:', form, 'editItem:', editItem);
+                  if (!form.name || form.name.trim() === '') {
+                    toast({ title: 'Errore', description: 'Il nome della categoria è obbligatorio.', variant: 'destructive' });
+                    return;
+                  }
+                  if (!form.supplierCategory && !form.sellerCategory) {
+                    toast({ title: 'Errore', description: 'Seleziona almeno un tipo (Fornitore o Venditore).', variant: 'destructive' });
+                    return;
+                  }
+                  const payload = {
+                    ...form,
+                    supplierCategory: !!form.supplierCategory,
+                    sellerCategory: !!form.sellerCategory,
+                  };
+                  if (editItem) {
+                    console.log('Updating category:', { ...editItem, ...payload });
+                    updateCategory.mutate({ ...editItem, ...payload });
+                  } else {
+                    console.log('Creating category:', payload);
+                    createCategory.mutate(payload);
+                  }
                 }
                 setShowAddModal(false);
               }}>{editItem ? 'Salva' : 'Crea'}</Button>
