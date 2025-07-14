@@ -425,10 +425,10 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                     <h4 className="text-sm font-medium text-gray-700">Relazioni esistenti:</h4>
                     <div className="space-y-2 max-h-32 overflow-y-auto">
                       {relationships.map((relationship) => (
-                        <div key={relationship.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
+                        <div key={relationship.id} className="flex items-center justify-between p-2 bg-muted rounded text-sm">
                           <div>
                             <span className="font-medium">{relationship.supplierCompany?.name}</span>
-                            <span className="text-gray-500 ml-2">
+                            <span className="text-muted-foreground ml-2">
                               Dal: {new Date(relationship.startDate).toLocaleDateString('it-IT')}
                               {relationship.endDate && (
                                 <span> - Al: {new Date(relationship.endDate).toLocaleDateString('it-IT')}</span>
@@ -440,7 +440,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                               size="sm"
                               variant="outline"
                               onClick={() => handleDeleteSupplierRelationship(relationship.id)}
-                              className="text-red-600 hover:bg-red-50"
+                              className="text-red-600 hover:bg-red-100 dark:hover:bg-red-900"
                               title="Elimina relazione"
                             >
                               <Trash2 className="w-3 h-3" />
@@ -451,7 +451,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500">Nessuna relazione fornitore configurata.</p>
+                  <p className="text-sm text-muted-foreground">Nessuna relazione fornitore configurata.</p>
                 )}
                 
                 {/* Add New Relationship Button */}
@@ -470,9 +470,9 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                 
                 {/* Add New Relationship Form - only show when button is clicked */}
                 {showAddRelationshipForm && (
-                  <div className="space-y-3 border rounded-lg p-3 bg-gray-50">
+                  <div className="space-y-3 border rounded-lg p-3 bg-muted">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-medium text-gray-700">Nuova relazione fornitore:</h4>
+                      <h4 className="text-sm font-medium text-foreground">Nuova relazione fornitore:</h4>
                       <Button
                         type="button"
                         variant="ghost"
@@ -547,7 +547,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                   <Button
                     type="button"
                     variant="ghost"
-                    className="text-red-600 hover:bg-red-50"
+                    className="text-red-600 hover:bg-red-100 dark:hover:bg-red-900"
                     aria-label="Elimina"
                     onClick={() => {
                       if (confirm("Sei sicuro di voler eliminare questo punto vendita?")) {
@@ -579,27 +579,27 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
         ) : (
           <>
             <div className="overflow-x-auto">
-            <table className="w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="w-full divide-y divide-border">
+              <thead className="bg-muted">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">Nome</th>
-                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">Azienda Cliente</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/5">Indirizzo</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">Telefono</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Azioni</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/5">Nome</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/5">Azienda Cliente</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-2/5">Indirizzo</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/5">Telefono</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-32">Azioni</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-background divide-y divide-border">
                 {filteredSellingPoints.map(sp => {
                   const address = sp.addresses;
                   const company = sp.companies;
                   return (
-                    <tr key={sp.id} onClick={!readOnly ? () => handleEdit(sp) : undefined} className={!readOnly ? "cursor-pointer hover:bg-gray-50" : "hover:bg-gray-50"}>
-                      <td className="px-4 py-4 text-sm font-medium text-gray-900 break-words">{sp.name}</td>
-                      <td className="px-4 py-4 text-sm text-gray-500 break-words">{company?.name || 'N/A'}</td>
-                      <td className="px-4 py-4 text-sm text-gray-500 break-words">{address ? `${address.addressLine1 || ''}${address.addressLine1 && address.city ? ', ' : ''}${address.city || ''}` : 'N/A'}</td>
-                      <td className="px-4 py-4 text-sm text-gray-500 break-words">{sp.phoneNumber || 'N/A'}</td>
-                      <td className="px-4 py-4 text-sm text-gray-500">
+                    <tr key={sp.id} onClick={!readOnly ? () => handleEdit(sp) : undefined} className={!readOnly ? "cursor-pointer hover:bg-muted/50" : "hover:bg-muted/50"}>
+                      <td className="px-4 py-4 text-sm font-medium text-foreground break-words">{sp.name}</td>
+                      <td className="px-4 py-4 text-sm text-muted-foreground break-words">{company?.name || 'N/A'}</td>
+                      <td className="px-4 py-4 text-sm text-muted-foreground break-words">{address ? `${address.addressLine1 || ''}${address.addressLine1 && address.city ? ', ' : ''}${address.city || ''}` : 'N/A'}</td>
+                      <td className="px-4 py-4 text-sm text-muted-foreground break-words">{sp.phoneNumber || 'N/A'}</td>
+                      <td className="px-4 py-4 text-sm text-muted-foreground">
                         {!readOnly && (
                           <div className="flex gap-2">
                             <Button

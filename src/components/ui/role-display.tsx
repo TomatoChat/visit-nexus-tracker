@@ -7,7 +7,7 @@ const roleColors: Record<string, string> = {
   admin: 'bg-red-100 text-red-800 border-red-200',
   internalAgent: 'bg-blue-100 text-blue-800 border-blue-200',
   externalAgent: 'bg-green-100 text-green-800 border-green-200',
-  guest: 'bg-gray-100 text-gray-800 border-gray-200'
+  guest: 'bg-muted text-muted-foreground border-gray-200'
 };
 
 const roleIcons: Record<string, React.ReactNode> = {
@@ -42,7 +42,7 @@ export function RoleDisplay({ showIcon = true, className = '' }: RoleDisplayProp
 
   if (!userRole) {
     return (
-      <Badge variant="outline" className={`text-gray-500 ${className}`}>
+      <Badge variant="outline" className={`text-muted-foreground ${className}`}>
         Nessun ruolo
       </Badge>
     );

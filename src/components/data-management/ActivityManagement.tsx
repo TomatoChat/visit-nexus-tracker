@@ -185,18 +185,18 @@ const ActivityManagement: React.FC<ActivityManagementProps> = ({ readOnly = fals
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="w-full divide-y divide-border">
+                <thead className="bg-muted">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-full">Nome</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Azioni</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-full">Nome</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-24">Azioni</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-background divide-y divide-border">
                   {filteredActivities.map((activity) => (
-                    <tr key={activity.id} onClick={!readOnly ? () => handleEdit(activity) : undefined} className={!readOnly ? "cursor-pointer hover:bg-gray-50" : "hover:bg-gray-50"}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{activity.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <tr key={activity.id} onClick={!readOnly ? () => handleEdit(activity) : undefined} className={!readOnly ? "cursor-pointer hover:bg-muted/50" : "hover:bg-muted/50"}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{activity.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                         {!readOnly && (
                           <div className="flex gap-2">
                             <Button
