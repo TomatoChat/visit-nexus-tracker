@@ -325,8 +325,8 @@ const GeneralCategories = () => {
                       <thead className="bg-gray-50">
                         <tr>
                           <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Agente</th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Esterno</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Personale Interno</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Personale Esterno</th>
                           <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Azioni</th>
                         </tr>
                       </thead>
@@ -469,7 +469,7 @@ const GeneralCategories = () => {
               <>
                 <Input placeholder="Nome ruolo" value={form.name || ''} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
                 <div className="flex items-center justify-between mt-4">
-                  <label className="text-sm font-medium">Agente</label>
+                  <label className="text-sm font-medium">Personale Interno</label>
                   <div className="flex gap-2">
                     <Button
                       type="button"
@@ -488,7 +488,7 @@ const GeneralCategories = () => {
                   </div>
                 </div>
                 <div className="flex items-center justify-between mt-4">
-                  <label className="text-sm font-medium">Esterno</label>
+                  <label className="text-sm font-medium">Personale Esterno</label>
                   <div className="flex gap-2">
                     <Button
                       type="button"

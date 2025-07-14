@@ -199,8 +199,8 @@ const PersonManagement: React.FC<PersonManagementProps> = ({ readOnly = false, s
                 <div className="space-y-2 border rounded p-2 mt-2">
                   <div><Label htmlFor="role-name">Nome ruolo <span className="text-red-500">*</span></Label><Input id="role-name" value={newRole.name} onChange={e => setNewRole(p => ({ ...p, name: e.target.value }))} required /></div>
                   <div className="flex gap-4 items-center">
-                    <label className="flex items-center gap-2"><input type="checkbox" checked={newRole.isAgent} onChange={e => setNewRole(p => ({ ...p, isAgent: e.target.checked }))} /> Agente</label>
-                    <label className="flex items-center gap-2"><input type="checkbox" checked={newRole.isExternal} onChange={e => setNewRole(p => ({ ...p, isExternal: e.target.checked }))} /> Esterno</label>
+                    <label className="flex items-center gap-2"><input type="checkbox" checked={newRole.isAgent} onChange={e => setNewRole(p => ({ ...p, isAgent: e.target.checked }))} /> Personale Interno</label>
+                    <label className="flex items-center gap-2"><input type="checkbox" checked={newRole.isExternal} onChange={e => setNewRole(p => ({ ...p, isExternal: e.target.checked }))} /> Personale Esterno</label>
                   </div>
                   <div className="flex gap-2">
                     <Button type="button" variant="outline" onClick={() => { setShowNewRoleForm(false); setNewRole({ name: '', isAgent: false, isExternal: false }); }}>Annulla</Button>
