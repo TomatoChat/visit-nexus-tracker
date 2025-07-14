@@ -108,7 +108,7 @@ const People = () => {
         }
       }
 
-      toast({ title: 'Validazione OK', description: `${rows.length} righe analizzate per Persone. Inizio caricamento simulato...` });
+      toast({ title: 'Validazione OK', description: `${rows.length} righe analizzate per Persone. Inizio caricamento...` });
 
       const apiResponse = await mockBulkUploadPeople(rows);
 

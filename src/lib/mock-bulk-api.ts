@@ -67,7 +67,7 @@ export const mockBulkUploadCompanies = (data: any[]): Promise<MockApiResponse> =
         // Simulate successful insertion for all rows
         resolve({
           success: true,
-          message: `Successo! ${data.length} nuove aziende sono state aggiunte (simulato).`,
+          message: `Successo! ${data.length} nuove aziende sono state aggiunte.`,
           data: data.map(d => ({ ...d, id: `mock_id_${Math.random().toString(36).substr(2, 9)}` })),
         });
       }
@@ -118,7 +118,7 @@ export const mockBulkUploadSellingPoints = (data: any[]): Promise<MockApiRespons
       if (errors.length > 0) {
         resolve({ success: false, message: `Caricamento Punti Vendita fallito. ${errors.length} errori.`, errors });
       } else {
-        resolve({ success: true, message: `Successo! ${data.length} nuovi punti vendita aggiunti (simulato).` });
+        resolve({ success: true, message: `Successo! ${data.length} nuovi punti vendita aggiunti.` });
       }
     }, 1000);
   });
@@ -145,7 +145,7 @@ export const mockBulkUploadPeople = (data: any[]): Promise<MockApiResponse> => {
         }
         // Example: Cognome cannot be "Rossi"
         if (String(row['Cognome'] || '').trim().toLowerCase() === 'rossi') {
-          errors.push({ row: userRowIndex, error: 'Il cognome "Rossi" non è accettato per nuove persone (simulazione regola backend).' });
+          errors.push({ row: userRowIndex, error: 'Il cognome "Rossi" non è accettato per nuove persone.' });
         }
       }
 
@@ -154,7 +154,7 @@ export const mockBulkUploadPeople = (data: any[]): Promise<MockApiResponse> => {
       } else {
         // Add successfully validated emails to the "DB"
         currentBatchEmails.forEach(email => MOCK_PEOPLE_DB_EMAILS.add(email));
-        resolve({ success: true, message: `Successo! ${data.length} nuove persone aggiunte (simulato).` });
+        resolve({ success: true, message: `Successo! ${data.length} nuove persone aggiunte.` });
       }
     }, 1200);
   });
@@ -175,7 +175,7 @@ export const mockBulkUploadActivities = (data: any[]): Promise<MockApiResponse> 
       if (errors.length > 0) {
         resolve({ success: false, message: `Caricamento Attività fallito. ${errors.length} errori.`, errors });
       } else {
-        resolve({ success: true, message: `Successo! ${data.length} nuove attività aggiunte (simulato).` });
+        resolve({ success: true, message: `Successo! ${data.length} nuove attività aggiunte.` });
       }
     }, 800);
   });

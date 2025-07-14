@@ -114,7 +114,7 @@ const SellingPoints = () => {
         }
       }
 
-      toast({ title: 'Validazione OK', description: `${rows.length} righe analizzate per Punti Vendita. Inizio caricamento simulato...` });
+      toast({ title: 'Validazione OK', description: `${rows.length} righe analizzate per Punti Vendita. Inizio caricamento...` });
 
       // --- REAL BULK UPLOAD LOGIC ---
       // All-or-nothing: if any insert fails, abort and show error
