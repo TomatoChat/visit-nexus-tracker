@@ -57,7 +57,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
   const [showResultDialog, setShowResultDialog] = useState(false);
   const [resultDialogContent, setResultDialogContent] = useState<string>('');
 
-  // Add state for visited person
+  // Person selection state (hidden)
   const [visitedPerson, setVisitedPerson] = useState(false);
   const [personVisitedId, setPersonVisitedId] = useState<string | null>(null);
 
@@ -116,7 +116,11 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
 
   // Set default for placedOrder to false when an activity is selected
   useEffect(() => {
-    if (selectedActivityId) setPlacedOrder(false);
+    if (selectedActivityId) {
+      setPlacedOrder(false);
+      setVisitedPerson(false);
+      setPersonVisitedId(null);
+    }
   }, [selectedActivityId]);
 
   const supplierOptions = suppliers
@@ -304,19 +308,19 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
               />
             </div>
 
-            {/* Step 2: Azienda Venditrice */}
+            {/* Step 2: Cliente */}
             {selectedSupplierId && (
               <div className="space-y-2">
                 <label className="text-sm font-medium flex items-center gap-2">
                   <Users className="w-4 h-4" />
-                  Azienda venditrice
+                  Cliente
                 </label>
                 <SearchableSelect
                   options={sellerOptions}
                   value={selectedSellerId}
                   onSelect={setSelectedSellerId}
-                  placeholder="Scegli un'azienda venditrice..."
-                  searchPlaceholder="Cerca aziende venditrici..."
+                  placeholder="Scegli un cliente..."
+                  searchPlaceholder="Cerca clienti..."
                   disabled={isLoadingSellers}
                 />
               </div>
@@ -358,52 +362,13 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
               </div>
             )}
 
-            {/* Step 5: Hai visitato una persona? */}
+            {/* Person selection section - hidden */}
             {selectedActivityId && (
               <>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium flex items-center gap-2">
-                    Hai visitato una persona?
-                  </label>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant={visitedPerson ? 'default' : 'outline'}
-                      onClick={() => setVisitedPerson(true)}
-                    >
-                      Sì
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={!visitedPerson ? 'default' : 'outline'}
-                      onClick={() => setVisitedPerson(false)}
-                    >
-                      No
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Person selection */}
-                {visitedPerson && (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium flex items-center gap-2">
-                      <User className="w-4 h-4" />
-                      Persona visitata
-                    </label>
-                    <SearchableSelect
-                      options={personOptions}
-                      value={personVisitedId || ''}
-                      onSelect={setPersonVisitedId}
-                      placeholder="Scegli una persona..."
-                      searchPlaceholder="Cerca persone..."
-                      disabled={isLoadingPeople}
-                    />
-                  </div>
-                )}
 
                 <div className="space-y-2 mt-6">
                   <label className="text-sm font-medium flex items-center gap-2" htmlFor="ordine-completato-switch">
-                    Ordine completato
+                    Ordine
                   </label>
                   <div className="flex gap-2">
                     <Button
@@ -437,10 +402,10 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                       <p><span className="font-medium">Email utente:</span> {user?.email}</p>
                       <p><span className="font-medium">Data:</span> {formatDateForDisplay(selectedDate)}</p>
                       <p><span className="font-medium">Fornitore:</span> {selectedSupplier?.name}</p>
-                      <p><span className="font-medium">Azienda venditrice:</span> {selectedSeller?.name}</p>
+                      <p><span className="font-medium">Cliente:</span> {selectedSeller?.name}</p>
                       <p><span className="font-medium">Punto vendita:</span> {selectedSellingPoint?.name}</p>
                       <p><span className="font-medium">Attività:</span> {selectedActivity?.name}</p>
-                      <p><span className="font-medium">Ordine completato:</span> {placedOrder ? 'Sì' : 'No'}</p>
+                      <p><span className="font-medium">Ordine:</span> {placedOrder ? 'Sì' : 'No'}</p>
                       {photos.length > 0 && (
                         <p><span className="font-medium">Foto:</span> {photos.length} foto selezionate</p>
                       )}

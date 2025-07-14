@@ -15,7 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 const SELLING_POINT_TEMPLATE_HEADERS = [
   'Nome Punto Vendita', // name
-  'ID Azienda Venditrice', // selectedSellerCompanyId (user needs to provide existing company ID)
+  'ID Azienda Cliente', // selectedSellerCompanyId (user needs to provide existing company ID)
   'Telefono (Opzionale)', // phoneNumber
   'Via', // addressForm.addressLine1
   'Civico (Opzionale)', // addressForm.addressLine2
@@ -92,7 +92,7 @@ const SellingPoints = () => {
       }
 
       // Client-side validation for Selling Points
-      const requiredSellingPointHeaders = ['Nome Punto Vendita', 'ID Azienda Venditrice'];
+      const requiredSellingPointHeaders = ['Nome Punto Vendita', 'ID Azienda Cliente'];
       const requiredAddressHeaders = ['Via', 'Città', 'Provincia', 'Nazione', 'Latitude', 'Longitude']; // New address assumed
 
       for (let i = 0; i < rows.length; i++) {
@@ -143,7 +143,7 @@ const SellingPoints = () => {
         const { data: sellingPoint, error: sellingPointError } = await supabase.from('sellingPoints').insert({
           name: row['Nome Punto Vendita'],
           phoneNumber: row['Telefono (Opzionale)'] || null,
-          sellerCompanyId: row['ID Azienda Venditrice'],
+          sellerCompanyId: row['ID Azienda Cliente'],
           addressId: address.id,
           isactive: true,
         }).select().single();
@@ -261,7 +261,7 @@ const SellingPoints = () => {
             <Button
               variant="ghost"
               size="icon"
-              aria-label="Filtra per azienda venditrice"
+              aria-label="Filtra per azienda cliente"
               onClick={() => setShowFilter(!showFilter)}
               className={showFilter ? "bg-blue-50 text-blue-600" : ""}
             >
@@ -322,7 +322,7 @@ const SellingPoints = () => {
             <Button
               variant="ghost"
               size="icon"
-              aria-label="Filtra per azienda venditrice"
+              aria-label="Filtra per azienda cliente"
               onClick={() => setShowFilter(!showFilter)}
               className={showFilter ? "bg-blue-50 text-blue-600" : ""}
             >
@@ -359,7 +359,7 @@ const SellingPoints = () => {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Filter className="w-4 h-4 text-gray-600" />
-                <span className="text-sm font-medium text-gray-700">Filtra per azienda venditrice</span>
+                <span className="text-sm font-medium text-gray-700">Filtra per azienda cliente</span>
               </div>
               <Button
                 variant="ghost"
