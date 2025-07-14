@@ -396,7 +396,7 @@ const GeneralCategories = () => {
                         <tr>
                           <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
                           <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fornitore</th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Venditore</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
                           <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Azioni</th>
                         </tr>
                       </thead>
@@ -532,7 +532,7 @@ const GeneralCategories = () => {
                     </div>
                   </div>
                   <div className="flex flex-col items-center gap-2 font-medium">
-                    <span>Venditore</span>
+                    <span>Cliente</span>
                     <div className="flex gap-2">
                       <Button
                         type="button"
@@ -578,7 +578,7 @@ const GeneralCategories = () => {
                     return;
                   }
                   if (!form.supplierCategory && !form.sellerCategory) {
-                    toast({ title: 'Errore', description: 'Seleziona almeno un tipo (Fornitore o Venditore).', variant: 'destructive' });
+                    toast({ title: 'Errore', description: 'Seleziona almeno un tipo (Fornitore o Cliente).', variant: 'destructive' });
                     return;
                   }
                   const payload = {

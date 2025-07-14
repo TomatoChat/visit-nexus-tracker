@@ -17,7 +17,7 @@ const COMPANY_TEMPLATE_HEADERS = [
   'Nome Azienda', // companyName (Required)
   'Partita IVA', // companyVat (Required)
   'È Fornitore (Sì/No)', // isSupplier: boolean (Required)
-  'È Venditore (Sì/No)', // isSeller: boolean (Required)
+  'È Cliente (Sì/No)', // isSeller: boolean (Required)
   'Via', // addressForm.addressLine1 (Required if new address - which is assumed)
   'Civico (Opzionale)', // addressForm.addressLine2 (optional)
   'Città', // addressForm.city (Required)
@@ -61,7 +61,7 @@ const Companies = () => {
     // Create reference data for categories
     const referenceData = {
       'Categorie Aziende': [
-        ['ID Categoria', 'Nome Categoria', 'Tipo Fornitore', 'Tipo Venditore'],
+        ['ID Categoria', 'Nome Categoria', 'Tipo Fornitore', 'Tipo Cliente'],
         ...currentCategories.map(cat => [
           cat.id,
           cat.name,
@@ -91,7 +91,7 @@ const Companies = () => {
 
       // Client-side validation for Companies
       // Headers are 1-indexed for user feedback, rows are 0-indexed from parser
-      const requiredCompanyHeaders = ['Nome Azienda', 'Partita IVA', 'È Fornitore (Sì/No)', 'È Venditore (Sì/No)', 'ID Categoria'];
+      const requiredCompanyHeaders = ['Nome Azienda', 'Partita IVA', 'È Fornitore (Sì/No)', 'È Cliente (Sì/No)', 'ID Categoria'];
       // Per "Crucial Assumption": For Companies and Selling Points, the template must include all necessary address fields...
       // The system should assume a new address is created for every row.
       const requiredAddressHeaders = ['Via', 'Città', 'Provincia', 'Nazione', 'Latitude', 'Longitude'];
@@ -116,11 +116,11 @@ const Companies = () => {
             return;
         }
 
-        // Validate 'È Venditore (Sì/No)'
-        const isSeller = String(row['È Venditore (Sì/No)']).toLowerCase().trim();
+        // Validate 'È Cliente (Sì/No)'
+        const isSeller = String(row['È Cliente (Sì/No)']).toLowerCase().trim();
         if (isSeller !== 'sì' && isSeller !== 'si' && isSeller !== 'yes' && isSeller !== 'true' && isSeller !== '1' && 
             isSeller !== 'no' && isSeller !== 'false' && isSeller !== '0') {
-            toast({ variant: 'destructive', title: 'Errore di Validazione', description: `Errore nella riga ${userRowIndex}: Il campo "È Venditore (Sì/No)" deve essere 'Sì' o 'No'. Trovato: "${row['È Venditore (Sì/No)']}".` });
+            toast({ variant: 'destructive', title: 'Errore di Validazione', description: `Errore nella riga ${userRowIndex}: Il campo "È Cliente (Sì/No)" deve essere 'Sì' o 'No'. Trovato: "${row['È Cliente (Sì/No)']}".` });
             return;
         }
 
@@ -159,7 +159,7 @@ const Companies = () => {
           name: row['Nome Azienda'],
           codeVAT: row['Partita IVA'],
           isSupplier: ['sì','si','yes','true','1'].includes(String(row['È Fornitore (Sì/No)']).toLowerCase()),
-          isSeller: ['sì','si','yes','true','1'].includes(String(row['È Venditore (Sì/No)']).toLowerCase()),
+          isSeller: ['sì','si','yes','true','1'].includes(String(row['È Cliente (Sì/No)']).toLowerCase()),
           addressId: address.id,
           categoryId: row['ID Categoria'],
           isActive: true,

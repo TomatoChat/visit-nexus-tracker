@@ -324,7 +324,7 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
                   <input type="radio" name="companyType" value="supplier" checked={currentCompanyType === 'supplier'} onChange={() => setCurrentCompanyType('supplier')} /> Fornitore
                 </label>
                 <label className="flex items-center gap-2">
-                  <input type="radio" name="companyType" value="seller" checked={currentCompanyType === 'seller'} onChange={() => setCurrentCompanyType('seller')} /> Venditore
+                  <input type="radio" name="companyType" value="seller" checked={currentCompanyType === 'seller'} onChange={() => setCurrentCompanyType('seller')} /> Cliente
                 </label>
               </div>
             </div>
@@ -466,11 +466,11 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {company.isSeller && company.isSupplier ? (
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            Fornitore & Venditore
+                            Fornitore & Cliente
                           </span>
                         ) : company.isSeller ? (
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            Venditore
+                            Cliente
                           </span>
                         ) : company.isSupplier ? (
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">

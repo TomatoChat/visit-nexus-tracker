@@ -16,8 +16,8 @@ export function TableSkeleton({ rows = 5, columns = 4, className }: TableSkeleto
             <thead className="bg-gray-50">
               <tr>
                 {Array.from({ length: columns }).map((_, i) => (
-                  <th key={i} scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <Skeleton className="h-4 w-20" />
+                  <th key={i} scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <Skeleton className="h-6 w-20" />
                   </th>
                 ))}
               </tr>
@@ -26,8 +26,8 @@ export function TableSkeleton({ rows = 5, columns = 4, className }: TableSkeleto
               {Array.from({ length: rows }).map((_, rowIndex) => (
                 <tr key={rowIndex} className="hover:bg-gray-50">
                   {Array.from({ length: columns }).map((_, colIndex) => (
-                    <td key={colIndex} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <Skeleton className="h-4 w-full max-w-[120px]" />
+                    <td key={colIndex} className="px-6 py-6 whitespace-nowrap text-sm text-gray-500">
+                      <Skeleton className="h-6 w-full max-w-[120px]" />
                     </td>
                   ))}
                 </tr>

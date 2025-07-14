@@ -193,7 +193,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !selectedSellerCompanyId || !selectedAddressId) {
-      toast({ title: 'Errore di validazione', description: 'Nome, Azienda Venditrice e Indirizzo sono obbligatori.', variant: 'destructive' });
+      toast({ title: 'Errore di validazione', description: 'Nome, Azienda Cliente e Indirizzo sono obbligatori.', variant: 'destructive' });
       return;
     }
 
@@ -362,7 +362,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
             <div><Label htmlFor="sp-name">Nome Punto Vendita <span className="text-red-500">*</span></Label><Input id="sp-name" value={name} onChange={e => setName(e.target.value)} required /></div>
             <div><Label htmlFor="sp-phone">Telefono</Label><Input id="sp-phone" value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} /></div>
             <div>
-              <Label htmlFor="seller-company">Azienda Venditrice <span className="text-red-500">*</span></Label>
+              <Label htmlFor="seller-company">Azienda Cliente <span className="text-red-500">*</span></Label>
               <SearchableSelect options={sellerCompanyOptions} value={selectedSellerCompanyId} onSelect={setSelectedSellerCompanyId} placeholder={isLoadingSellerCompanies ? "Caricamento..." : "Seleziona azienda"} searchPlaceholder="Cerca azienda..." disabled={isLoadingSellerCompanies} />
             </div>
             <div>
@@ -583,7 +583,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">Nome</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">Azienda Venditrice</th>
+                                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">Azienda Cliente</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/5">Indirizzo</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">Telefono</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Azioni</th>

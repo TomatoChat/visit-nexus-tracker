@@ -84,10 +84,10 @@ export const mockBulkUploadSellingPoints = (data: any[]): Promise<MockApiRespons
         const row = data[i];
         const userRowIndex = i + 2;
 
-        // Example: ID Azienda Venditrice must be a positive number (basic check)
-        const sellerId = String(row['ID Azienda Venditrice'] || '').trim();
-        if (!/^\d+$/.test(sellerId) || parseInt(sellerId, 10) <= 0) {
-           errors.push({ row: userRowIndex, error: `ID Azienda Venditrice "${sellerId}" non è valido.`});
+            // Example: ID Azienda Cliente must be a positive number (basic check)
+    const sellerId = String(row['ID Azienda Cliente'] || '').trim();
+    if (!/^\d+$/.test(sellerId) || parseInt(sellerId, 10) <= 0) {
+      errors.push({ row: userRowIndex, error: `ID Azienda Cliente "${sellerId}" non è valido.`});
         }
 
         // --- Address related validation (applies if new address is created) ---
