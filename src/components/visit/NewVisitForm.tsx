@@ -25,15 +25,17 @@ import {
 import { AgentOrAbove } from '@/components/ui/role-guard';
 import { PhotoUpload, PhotoUploadRef } from './PhotoUpload';
 import { 
-  useSuppliers, 
-  useSellersBySupplier, 
-  useSellingPointsBySupplier, 
+  useAccountManagerSellingPoints,
+  getSellerCompanyIdsFromSellingPoints,
+  getSellingPointIds,
+  getSupplierCompanyIdsFromCompanySellingPoints,
   useActivities, 
   usePeopleByCompanies,
   useCreateVisit,
   useUploadPhotos
 } from '@/hooks/use-data';
 import { formatDateForDatabase } from '@/lib/date-utils';
+import { useQuery } from '@tanstack/react-query';
 
 type Company = Database['public']['Tables']['companies']['Row'];
 type SellingPointWithAddress = Database['public']['Tables']['sellingPoints']['Row'] & { addresses?: Database['public']['Tables']['addresses']['Row'] };
@@ -68,10 +70,66 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
   // Add state for hours spent
   const [hoursSpent, setHoursSpent] = useState<string>('');
   
-  // Data fetching hooks
-  const { data: suppliers = [], isLoading: isLoadingSuppliers } = useSuppliers();
-  const { data: sellers = [], isLoading: isLoadingSellers } = useSellersBySupplier(selectedSupplierId);
-  const { data: sellingPoints = [], isLoading: isLoadingSellingPoints } = useSellingPointsBySupplier(selectedSupplierId, selectedSellerId);
+  // Data fetching hooks (account manager filtered)
+  const { data: amSellingPoints = [], isLoading: isLoadingSellingPoints } = useAccountManagerSellingPoints(user?.id || '');
+
+  // Sellers
+  const sellerCompanyIds = getSellerCompanyIdsFromSellingPoints(amSellingPoints);
+  const { data: amSellers = [], isLoading: isLoadingSellers } = useQuery({
+    queryKey: ['accountManagerSellers', sellerCompanyIds],
+    queryFn: async () => {
+      if (sellerCompanyIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('companies')
+        .select('*')
+        .in('id', sellerCompanyIds)
+        .eq('isSeller', true)
+        .eq('isActive', true);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: sellerCompanyIds.length > 0,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+
+  // Suppliers
+  const sellingPointIds = getSellingPointIds(amSellingPoints);
+  const { data: companySellingPoints = [], isLoading: isLoadingCompanySellingPoints } = useQuery({
+    queryKey: ['accountManagerCompanySellingPoints', sellingPointIds],
+    queryFn: async () => {
+      if (sellingPointIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('companySellingPoint')
+        .select('supplierCompanyId')
+        .in('sellingPointId', sellingPointIds)
+        .eq('isactive', true);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: sellingPointIds.length > 0,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+  const supplierCompanyIds = getSupplierCompanyIdsFromCompanySellingPoints(companySellingPoints);
+  const { data: amSuppliers = [], isLoading: isLoadingSuppliers } = useQuery({
+    queryKey: ['accountManagerSuppliers', supplierCompanyIds],
+    queryFn: async () => {
+      if (supplierCompanyIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('companies')
+        .select('*')
+        .in('id', supplierCompanyIds)
+        .eq('isSupplier', true)
+        .eq('isActive', true);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: supplierCompanyIds.length > 0,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+
   const { data: activities = [], isLoading: isLoadingActivities } = useActivities();
   const { data: people = [], isLoading: isLoadingPeople } = usePeopleByCompanies([selectedSupplierId, selectedSellerId].filter(Boolean));
   
@@ -126,7 +184,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
     }
   }, [selectedActivityId]);
 
-  const supplierOptions = suppliers
+  const supplierOptions = amSuppliers
     .slice()
     .sort((a, b) => a.name.localeCompare(b.name))
     .map(supplier => ({
@@ -134,7 +192,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
       label: supplier.name
     }));
 
-  const sellerOptions = sellers
+  const sellerOptions = amSellers
     .slice()
     .sort((a, b) => a.name.localeCompare(b.name))
     .map(seller => ({
@@ -142,7 +200,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
       label: seller.name
     }));
 
-  const sellingPointOptions = sellingPoints
+  const sellingPointOptions = amSellingPoints
     .slice()
     .sort((a, b) => a.name.localeCompare(b.name))
     .map(point => ({
@@ -160,9 +218,9 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
       subtitle: undefined
     }));
 
-  const selectedSupplier = suppliers.find(s => s.id === selectedSupplierId);
-  const selectedSeller = sellers.find(s => s.id === selectedSellerId);
-  const selectedSellingPoint = sellingPoints.find(p => p.id === selectedSellingPointId);
+  const selectedSupplier = amSuppliers.find(s => s.id === selectedSupplierId);
+  const selectedSeller = amSellers.find(s => s.id === selectedSellerId);
+  const selectedSellingPoint = amSellingPoints.find(p => p.id === selectedSellingPointId);
   const selectedActivity = activities.find(a => a.id === selectedActivityId);
 
   const canSubmit = user && selectedSupplierId && selectedSellerId && selectedSellingPointId && selectedActivityId && placedOrder !== null;
@@ -306,7 +364,9 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
               <SearchableSelect
                 options={supplierOptions}
                 value={selectedSupplierId}
-                onSelect={setSelectedSupplierId}
+                onSelect={value => {
+                  if (typeof value === 'string') setSelectedSupplierId(value);
+                }}
                 placeholder="Scegli un'azienda fornitrice..."
                 searchPlaceholder="Cerca fornitori..."
                 disabled={isLoadingSuppliers}
@@ -323,7 +383,9 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                 <SearchableSelect
                   options={sellerOptions}
                   value={selectedSellerId}
-                  onSelect={setSelectedSellerId}
+                  onSelect={value => {
+                    if (typeof value === 'string') setSelectedSellerId(value);
+                  }}
                   placeholder="Scegli un cliente..."
                   searchPlaceholder="Cerca clienti..."
                   disabled={isLoadingSellers}
@@ -341,7 +403,9 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                 <SearchableSelect
                   options={sellingPointOptions}
                   value={selectedSellingPointId}
-                  onSelect={setSelectedSellingPointId}
+                  onSelect={value => {
+                    if (typeof value === 'string') setSelectedSellingPointId(value);
+                  }}
                   placeholder="Scegli un punto vendita..."
                   searchPlaceholder="Cerca punti vendita..."
                   disabled={isLoadingSellingPoints}
@@ -359,7 +423,9 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                 <SearchableSelect
                   options={activityOptions}
                   value={selectedActivityId}
-                  onSelect={setSelectedActivityId}
+                  onSelect={value => {
+                    if (typeof value === 'string') setSelectedActivityId(value);
+                  }}
                   placeholder="Scegli un'attività..."
                   searchPlaceholder="Cerca attività..."
                   disabled={isLoadingActivities}
