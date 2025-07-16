@@ -65,6 +65,9 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
   const [photos, setPhotos] = useState<any[]>([]);
   const photoUploadRef = useRef<PhotoUploadRef>(null);
   
+  // Add state for hours spent
+  const [hoursSpent, setHoursSpent] = useState<string>('');
+  
   // Data fetching hooks
   const { data: suppliers = [], isLoading: isLoadingSuppliers } = useSuppliers();
   const { data: sellers = [], isLoading: isLoadingSellers } = useSellersBySupplier(selectedSupplierId);
@@ -176,7 +179,8 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
         agentId: user!.id,
         visitDate: formatDateForDatabase(selectedDate),
         personVisitedId: visitedPerson ? personVisitedId : null,
-        placedOrder: placedOrder
+        placedOrder: placedOrder,
+        hoursSpend: hoursSpent ? parseInt(hoursSpent, 10) : null,
       };
 
       const result = await createVisitMutation.mutateAsync(visitData);
@@ -205,6 +209,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
       setSelectedDate(new Date());
       setPlacedOrder(null);
       setPhotos([]);
+      setHoursSpent('');
     } catch (error) {
       console.error('Error submitting visit:', error);
       setResultDialogContent('Errore nell\'invio della visita. Per favore riprova più tardi.');
@@ -365,7 +370,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
             {/* Person selection section - hidden */}
             {selectedActivityId && (
               <>
-
+                {/* Order section */}
                 <div className="space-y-2 mt-6">
                   <label className="text-sm font-medium flex items-center gap-2" htmlFor="ordine-completato-switch">
                     Ordine
@@ -387,7 +392,23 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                     </Button>
                   </div>
                 </div>
-
+                {/* Hours Spent section */}
+                <div className="space-y-2 mt-6">
+                  <label className="text-sm font-medium flex items-center gap-2" htmlFor="hours-spent-input">
+                    Ore trascorse (opzionale)
+                  </label>
+                  <input
+                    id="hours-spent-input"
+                    type="number"
+                    min="0"
+                    step="1"
+                    className="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
+                    placeholder="Quante ore hai trascorso?"
+                    value={hoursSpent}
+                    onChange={e => setHoursSpent(e.target.value.replace(/[^0-9]/g, ''))}
+                    disabled={loading.submitting}
+                  />
+                </div>
                 {/* Photo Upload Section */}
                 <PhotoUpload
                   ref={photoUploadRef}
@@ -396,7 +417,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                 />
 
                 {canSubmit && (
-                  <div className="space-y-3 p-4 bg-blue-50 rounded-lg">
+                  <div className="space-y-3 p-4 bg-blue-50 rounded-lg text-gray-900">
                     <h3 className="font-medium text-blue-900">Riepilogo visita</h3>
                     <div className="space-y-1 text-sm">
                       <p><span className="font-medium">Email utente:</span> {user?.email}</p>
@@ -406,6 +427,9 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                       <p><span className="font-medium">Punto vendita:</span> {selectedSellingPoint?.name}</p>
                       <p><span className="font-medium">Attività:</span> {selectedActivity?.name}</p>
                       <p><span className="font-medium">Ordine:</span> {placedOrder ? 'Sì' : 'No'}</p>
+                      {hoursSpent && (
+                        <p><span className="font-medium">Ore trascorse:</span> {hoursSpent}</p>
+                      )}
                       {photos.length > 0 && (
                         <p><span className="font-medium">Foto:</span> {photos.length} foto selezionate</p>
                       )}
