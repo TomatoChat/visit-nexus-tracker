@@ -122,47 +122,105 @@ export const useSellersBySupplier = (supplierId: string) => {
   return useQuery({
     queryKey: ['sellers', 'supplier', supplierId],
     queryFn: async () => {
-      // First get the selling points that are connected to this supplier
-      const { data: relationships, error: relationshipsError } = await supabase
-        .from('companySellingPoint')
-        .select('sellingPointId')
-        .eq('supplierCompanyId', supplierId);
-
-      if (relationshipsError) throw relationshipsError;
-
-      const sellingPointIds = relationships?.map(rel => rel.sellingPointId) || [];
-
-      if (sellingPointIds.length === 0) return [];
-
-      // Then get the selling points to find their seller companies
-      const { data: sellingPoints, error: sellingPointsError } = await supabase
-        .from('sellingPoints')
-        .select('sellerCompanyId')
-        .in('id', sellingPointIds);
-
-      if (sellingPointsError) throw sellingPointsError;
-
-      const sellerCompanyIds = [...new Set(sellingPoints?.map(sp => sp.sellerCompanyId) || [])];
-
-      if (sellerCompanyIds.length === 0) return [];
-
-      // Finally get the seller companies
-      const { data, error } = await supabase
-        .from('companies')
-        .select('*')
-        .eq('isSeller', true)
-        .eq('isActive', true)
-        .in('id', sellerCompanyIds)
-        .order('name', { ascending: true });
-
-      if (error) throw error;
-      return data as Company[];
+      console.log('🔍 Debugging useSellersBySupplier for supplierId:', supplierId);
+      
+      // Use efficient batching approach to get all results
+      console.log('🔍 Starting batched query approach...');
+      
+      return await getSellersBySupplierBatched(supplierId);
     },
     enabled: !!supplierId,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
 };
+
+// Efficient batching function
+async function getSellersBySupplierBatched(supplierId: string): Promise<Company[]> {
+  console.log('🔄 Using batched approach...');
+  
+  // Get relationships in batches
+  const batchSize = 100;
+  let allSellingPointIds: string[] = [];
+  let offset = 0;
+  
+  while (true) {
+    const { data: relationships, error: relationshipsError } = await supabase
+      .from('companySellingPoint')
+      .select('sellingPointId')
+      .eq('supplierCompanyId', supplierId)
+      .eq('isactive', true)
+      .range(offset, offset + batchSize - 1);
+
+    if (relationshipsError) {
+      console.error('❌ Error fetching relationships batch:', relationshipsError);
+      throw relationshipsError;
+    }
+
+    if (!relationships || relationships.length === 0) break;
+    
+    allSellingPointIds.push(...relationships.map(rel => rel.sellingPointId));
+    offset += batchSize;
+    
+    console.log(`🔄 Processed batch, total IDs so far: ${allSellingPointIds.length}`);
+  }
+
+  console.log('🔍 Total selling point IDs found:', allSellingPointIds.length);
+
+  if (allSellingPointIds.length === 0) {
+    console.log('⚠️ No selling point IDs found, returning empty array');
+    return [];
+  }
+
+  // Get selling points in batches
+  const sellerCompanyIds = new Set<string>();
+  const sellingPointBatchSize = 50;
+  
+  for (let i = 0; i < allSellingPointIds.length; i += sellingPointBatchSize) {
+    const batch = allSellingPointIds.slice(i, i + sellingPointBatchSize);
+    
+    const { data: sellingPoints, error: sellingPointsError } = await supabase
+      .from('sellingPoints')
+      .select('sellerCompanyId')
+      .in('id', batch)
+      .eq('isactive', true);
+
+    if (sellingPointsError) {
+      console.error('❌ Error fetching selling points batch:', sellingPointsError);
+      throw sellingPointsError;
+    }
+
+    if (sellingPoints) {
+      sellingPoints.forEach(sp => sellerCompanyIds.add(sp.sellerCompanyId));
+    }
+    console.log(`🔄 Processed selling points batch ${Math.floor(i/sellingPointBatchSize) + 1}, unique companies so far: ${sellerCompanyIds.size}`);
+  }
+
+  const uniqueSellerCompanyIds = Array.from(sellerCompanyIds);
+  console.log('🏢 Found', uniqueSellerCompanyIds.length, 'unique seller companies');
+
+  if (uniqueSellerCompanyIds.length === 0) {
+    console.log('⚠️ No seller company IDs found, returning empty array');
+    return [];
+  }
+
+  // Get the seller companies
+  const { data, error } = await supabase
+    .from('companies')
+    .select('id, name, isSeller, isActive')
+    .eq('isSeller', true)
+    .eq('isActive', true)
+    .in('id', uniqueSellerCompanyIds)
+    .order('name', { ascending: true });
+
+  if (error) {
+    console.error('❌ Error fetching companies:', error);
+    throw error;
+  }
+
+  console.log('✅ Batched query result - companies found:', data?.length || 0);
+  return data as Company[];
+}
 
 // People
 export const usePeople = () => {
@@ -251,34 +309,85 @@ export const useSellingPointsBySupplier = (supplierId: string, sellerId: string)
   return useQuery({
     queryKey: queryKeys.sellingPointsBySupplier(supplierId, sellerId),
     queryFn: async () => {
-      // First get the relationships
-      const { data: relationships, error: relationshipsError } = await supabase
-        .from('companySellingPoint')
-        .select('sellingPointId')
-        .eq('supplierCompanyId', supplierId);
-
-      if (relationshipsError) throw relationshipsError;
-
-      const sellingPointIds = relationships?.map(rel => rel.sellingPointId) || [];
-
-      if (sellingPointIds.length === 0) return [];
-
-      // Then get the selling points
-      const { data, error } = await supabase
-        .from('sellingPoints')
-        .select('*, addresses(*)')
-        .eq('sellerCompanyId', sellerId)
-        .in('id', sellingPointIds)
-        .order('name', { ascending: true });
-
-      if (error) throw error;
-      return data as SellingPoint[];
+      console.log('🔍 Optimizing useSellingPointsBySupplier for supplierId:', supplierId, 'sellerId:', sellerId);
+      
+      // Use efficient batching approach to get all results
+      console.log('🔍 Starting batched selling points query...');
+      
+      return await getSellingPointsBySupplierBatched(supplierId, sellerId);
     },
     enabled: !!supplierId && !!sellerId,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
 };
+
+// Efficient batching function for selling points
+async function getSellingPointsBySupplierBatched(supplierId: string, sellerId: string): Promise<SellingPoint[]> {
+  console.log('🔄 Using batched approach for selling points...');
+  
+  // Get relationships in batches
+  const batchSize = 100;
+  let allSellingPointIds: string[] = [];
+  let offset = 0;
+  
+  while (true) {
+    const { data: relationships, error: relationshipsError } = await supabase
+      .from('companySellingPoint')
+      .select('sellingPointId')
+      .eq('supplierCompanyId', supplierId)
+      .eq('isactive', true)
+      .range(offset, offset + batchSize - 1);
+
+    if (relationshipsError) {
+      console.error('❌ Error fetching relationships batch:', relationshipsError);
+      throw relationshipsError;
+    }
+
+    if (!relationships || relationships.length === 0) break;
+    
+    allSellingPointIds.push(...relationships.map(rel => rel.sellingPointId));
+    offset += batchSize;
+    
+    console.log(`🔄 Processed relationships batch, total IDs so far: ${allSellingPointIds.length}`);
+  }
+
+  console.log('🔍 Total selling point IDs found:', allSellingPointIds.length);
+
+  if (allSellingPointIds.length === 0) {
+    console.log('⚠️ No selling point IDs found, returning empty array');
+    return [];
+  }
+
+  // Get selling points with addresses in batches
+  const allSellingPoints: SellingPoint[] = [];
+  const sellingPointBatchSize = 50;
+  
+  for (let i = 0; i < allSellingPointIds.length; i += sellingPointBatchSize) {
+    const batch = allSellingPointIds.slice(i, i + sellingPointBatchSize);
+    
+    const { data: sellingPoints, error: sellingPointsError } = await supabase
+      .from('sellingPoints')
+      .select('*, addresses(*)')
+      .eq('sellerCompanyId', sellerId)
+      .in('id', batch)
+      .eq('isactive', true)
+      .order('name', { ascending: true });
+
+    if (sellingPointsError) {
+      console.error('❌ Error fetching selling points batch:', sellingPointsError);
+      throw sellingPointsError;
+    }
+
+    if (sellingPoints) {
+      allSellingPoints.push(...sellingPoints);
+    }
+    console.log(`🔄 Processed selling points batch ${Math.floor(i/sellingPointBatchSize) + 1}, total so far: ${allSellingPoints.length}`);
+  }
+
+  console.log('✅ Batched selling points query result - selling points found:', allSellingPoints.length);
+  return allSellingPoints as SellingPoint[];
+}
 
 // Activities
 export const useActivities = () => {
