@@ -7,7 +7,7 @@ import { useRoles } from '@/hooks/use-roles';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Plus, Filter, UploadCloud } from 'lucide-react';
-import { useSellers } from '@/hooks/use-data';
+import { useSellers, useAllUsers } from '@/hooks/use-data';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { useToast } from '@/hooks/use-toast';
 import { generateAndDownloadXlsxTemplate, parseXlsxFile, parseCsvFile } from '@/lib/xlsx-utils';
@@ -42,9 +42,13 @@ const SellingPoints = () => {
   const [selectedSellerFilters, setSelectedSellerFilters] = useState<string[]>([]);
   const [canManage, setCanManage] = useState(false); // State for RBAC
   const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false); // State for dialog
+  const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
+  const [showAccountManagerDropdown, setShowAccountManagerDropdown] = useState(false);
   
   // Fetch seller companies for filter
   const { data: sellers = [], isLoading: isLoadingSellers } = useSellers();
+  const { data: users = [], isLoading: isLoadingUsers } = useAllUsers();
+  const [selectedAccountManager, setSelectedAccountManager] = useState<string | null>(null);
 
   useEffect(() => {
     const verifyPermissions = async () => {
@@ -55,6 +59,13 @@ const SellingPoints = () => {
       verifyPermissions();
     }
   }, [loading, checkCanManageData]);
+
+  useEffect(() => {
+    if (showFilter) {
+      setShowCompanyDropdown(true);
+      setShowAccountManagerDropdown(true);
+    }
+  }, [showFilter]);
 
   // Placeholder handlers for the dialog
   const handleDownloadTemplate = useCallback(async () => {
@@ -179,8 +190,20 @@ const SellingPoints = () => {
     }
   }, [toast, setIsBulkUploadOpen]);
 
+  // Multi-select handler for companies
+  const handleCompanyMultiSelect = (selected) => {
+    // selected can be a string (single) or array (multi)
+    if (Array.isArray(selected)) {
+      setSelectedSellerFilters(selected);
+    } else if (selected) {
+      setSelectedSellerFilters([selected]);
+    } else {
+      setSelectedSellerFilters([]);
+    }
+  };
+
   // Show loading state while determining user role or sellers
-  if (loading || isLoadingSellers) {
+  if (loading || isLoadingSellers || isLoadingUsers) {
     return (
       <Layout>
         <div className="w-full pb-2 md:p-8">
@@ -231,7 +254,7 @@ const SellingPoints = () => {
         <div className="flex flex-row items-center justify-between gap-2 md:hidden mb-4">
           <div className="flex items-center gap-2">
             <SidebarTrigger />
-            <h1 className="text-lg font-bold text-foreground">Punti Vendita</h1>
+            <h1 className="text-lg font-bold">Punti Vendita</h1>
           </div>
           <div className="flex items-center gap-2">
             {!showSearch && (
@@ -271,7 +294,7 @@ const SellingPoints = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="border-black text-black hover:bg-gray-50"
+                className="border-black text-black dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800"
                 onClick={() => setTriggerAddForm(true)}
                 aria-label="Aggiungi Punto Vendita"
               >
@@ -282,7 +305,7 @@ const SellingPoints = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="border-black text-black hover:bg-gray-50"
+                className="border-black text-black dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800"
                 onClick={() => setIsBulkUploadOpen(true)}
                 aria-label="Caricamento Massivo Punti Vendita"
               >
@@ -293,7 +316,7 @@ const SellingPoints = () => {
         </div>
         {/* Desktop: Title and actions */}
         <div className="hidden md:flex items-center justify-between gap-4 mb-8">
-          <h1 className="text-3xl font-bold text-foreground text-left">Punti Vendita</h1>
+          <h1 className="text-3xl font-bold text-left">Punti Vendita</h1>
           <div className="flex items-center gap-2">
             {!showSearch && (
               <Button
@@ -332,7 +355,7 @@ const SellingPoints = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="border-black text-black hover:bg-gray-50"
+                className="border-black text-black dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800"
                 onClick={() => setTriggerAddForm(true)}
                 aria-label="Aggiungi Punto Vendita"
               >
@@ -343,7 +366,7 @@ const SellingPoints = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="border-black text-black hover:bg-gray-50"
+                className="border-black text-black dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800"
                 onClick={() => setIsBulkUploadOpen(true)}
                 aria-label="Caricamento Massivo Punti Vendita"
               >
@@ -356,46 +379,37 @@ const SellingPoints = () => {
         {/* Filter Dropdown */}
         {showFilter && (
           <div className="mb-4 p-4 bg-gray-50 rounded-lg border">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-gray-600" />
-                <span className="text-sm font-medium text-gray-700">Filtra per azienda cliente</span>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedSellerFilters([])}
-                className="text-xs"
-              >
-                Deseleziona tutto
-              </Button>
+            {/* Azienda Cliente Multi-Select */}
+            <div className="mb-3">
+              <label className="flex items-center gap-2 text-sm font-medium mb-1">
+                <Filter className="w-4 h-4" />
+                Filtra per azienda cliente
+              </label>
+              {showCompanyDropdown && (
+                <SearchableSelect
+                  options={filterOptions}
+                  value={selectedSellerFilters}
+                  onSelect={handleCompanyMultiSelect}
+                  placeholder="Seleziona una o più aziende"
+                  searchPlaceholder="Cerca azienda..."
+                  isMulti
+                />
+              )}
             </div>
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {filterOptions.map((option) => (
-                <label key={option.value} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedSellerFilters.includes(option.value)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedSellerFilters(prev => [...prev, option.value]);
-                      } else {
-                        setSelectedSellerFilters(prev => prev.filter(id => id !== option.value));
-                      }
-                    }}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm">{option.label}</span>
-                </label>
-              ))}
+            {/* Responsabile Cliente Filter */}
+            <div className="mb-3">
+              <label className="block text-sm font-medium mb-1">Filtra per Responsabile Cliente</label>
+              {showAccountManagerDropdown && (
+                <SearchableSelect
+                  options={[{ value: '', label: 'Tutti gli utenti' }, ...users.map(u => ({ value: u.id, label: u.displayName }))]}
+                  value={selectedAccountManager || ''}
+                  onSelect={val => typeof val === 'string' ? setSelectedAccountManager(val) : setSelectedAccountManager(val[0] || null)}
+                  placeholder={isLoadingUsers ? 'Caricamento utenti...' : 'Seleziona responsabile'}
+                  searchPlaceholder="Cerca responsabile..."
+                  disabled={isLoadingUsers}
+                />
+              )}
             </div>
-            {selectedSellerFilters.length > 0 && (
-              <div className="mt-3 pt-3 border-t">
-                <span className="text-xs text-gray-500">
-                  {selectedSellerFilters.length} azienda{selectedSellerFilters.length !== 1 ? 'e' : ''} selezionata{selectedSellerFilters.length !== 1 ? 'e' : ''}
-                </span>
-              </div>
-            )}
           </div>
         )}
         
@@ -405,6 +419,7 @@ const SellingPoints = () => {
           sellerFilters={selectedSellerFilters}
           triggerAddForm={triggerAddForm}
           onAddFormShown={() => setTriggerAddForm(false)}
+          accountManagerFilter={selectedAccountManager}
         />
         {canManage && (
           <BulkUploadDialog

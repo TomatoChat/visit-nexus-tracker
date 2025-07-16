@@ -9,9 +9,9 @@ import type { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, Pencil, Search, Plus, Link, Building } from 'lucide-react';
 import SupplierRelationships from './SupplierRelationships';
-import { useSuppliers, useCompanySellingPoints, useCreateCompanySellingPoint, useDeleteCompanySellingPoint } from '@/hooks/use-data';
+import { useSuppliers, useCompanySellingPoints, useCreateCompanySellingPoint, useDeleteCompanySellingPoint, useAllUsers } from '@/hooks/use-data';
 
-type SellingPoint = Database['public']['Tables']['sellingPoints']['Row'];
+type SellingPoint = Database['public']['Tables']['sellingPoints']['Row'] & { accountManager?: string };
 type Company = Database['public']['Tables']['companies']['Row'];
 type Address = Database['public']['Tables']['addresses']['Row'];
 
@@ -21,9 +21,10 @@ interface SellingPointManagementProps {
   sellerFilters?: string[];
   triggerAddForm?: boolean;
   onAddFormShown?: () => void;
+  accountManagerFilter?: string | null;
 }
 
-const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnly = false, searchTerm = '', sellerFilters = [], triggerAddForm = false, onAddFormShown }) => {
+const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnly = false, searchTerm = '', sellerFilters = [], triggerAddForm = false, onAddFormShown, accountManagerFilter }) => {
   const { toast } = useToast();
   const [sellingPoints, setSellingPoints] = useState<(SellingPoint & { addresses: Address, companies: Company })[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -69,6 +70,8 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
     longitude: ''
   });
 
+  const { data: users = [], isLoading: isLoadingUsers } = useAllUsers();
+  const [selectedAccountManagerId, setSelectedAccountManagerId] = useState<string | undefined>(undefined);
 
   const fetchSellingPoints = async () => {
     setIsLoading(true);
@@ -77,6 +80,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
         .from('sellingPoints')
         .select(`
           *,
+          accountManager,
           addresses (*),
           companies!sellingPoints_sellerCompanyId_fkey (*)
         `)
@@ -188,6 +192,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
     setRelationshipEndDate(undefined);
     setSellerCode('');
     setShowAddRelationshipForm(false);
+    setSelectedAccountManagerId(undefined);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -202,6 +207,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
       phoneNumber: phoneNumber || null,
       sellerCompanyId: selectedSellerCompanyId,
       addressId: selectedAddressId,
+      accountManager: selectedAccountManagerId || null,
     };
 
     try {
@@ -229,6 +235,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
     setPhoneNumber(sp.phoneNumber || '');
     setSelectedSellerCompanyId(sp.sellerCompanyId);
     setSelectedAddressId(sp.addressId);
+    setSelectedAccountManagerId(sp.accountManager || undefined);
     if (sp.addresses) {
       setAddressSearch(sp.addresses.addressLine1 || sp.addresses.city);
     }
@@ -319,9 +326,12 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
       // Apply seller filters - if no filters selected, show all; otherwise only show selected sellers
       const matchesSeller = sellerFilters.length === 0 || sellerFilters.includes(sp.sellerCompanyId);
       
-      return matchesSearch && matchesSeller;
+      // Apply accountManager filter
+      const matchesAccountManager = !accountManagerFilter || sp.accountManager === accountManagerFilter;
+      
+      return matchesSearch && matchesSeller && matchesAccountManager;
     });
-  }, [sellingPoints, searchTerm, sellerFilters]);
+  }, [sellingPoints, searchTerm, sellerFilters, accountManagerFilter]);
 
   useEffect(() => {
     if (triggerAddForm) {
@@ -407,6 +417,17 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                   )}
                 </>
               )}
+            </div>
+            <div>
+              <Label htmlFor="account-manager">Responsabile Cliente</Label>
+              <SearchableSelect
+                options={[{ value: '', label: 'Nessuno' }, ...users.map(u => ({ value: u.id, label: u.displayName }))]}
+                value={selectedAccountManagerId || ''}
+                onSelect={val => setSelectedAccountManagerId(val || undefined)}
+                placeholder={isLoadingUsers ? 'Caricamento utenti...' : 'Seleziona responsabile'}
+                searchPlaceholder="Cerca responsabile..."
+                disabled={isLoadingUsers}
+              />
             </div>
             
             {/* Supplier Relationships Section - only show when editing */}
@@ -586,6 +607,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/5">Azienda Cliente</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-2/5">Indirizzo</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/5">Telefono</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/5">Responsabile Cliente</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-32">Azioni</th>
                 </tr>
               </thead>
@@ -593,12 +615,14 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                 {filteredSellingPoints.map(sp => {
                   const address = sp.addresses;
                   const company = sp.companies;
+                  const accountManagerName = users.find(u => u.id === sp.accountManager)?.displayName || 'Nessuno';
                   return (
                     <tr key={sp.id} onClick={!readOnly ? () => handleEdit(sp) : undefined} className={!readOnly ? "cursor-pointer hover:bg-muted/50" : "hover:bg-muted/50"}>
                       <td className="px-4 py-4 text-sm font-medium text-foreground break-words">{sp.name}</td>
                       <td className="px-4 py-4 text-sm text-muted-foreground break-words">{company?.name || 'N/A'}</td>
                       <td className="px-4 py-4 text-sm text-muted-foreground break-words">{address ? `${address.addressLine1 || ''}${address.addressLine1 && address.city ? ', ' : ''}${address.city || ''}` : 'N/A'}</td>
                       <td className="px-4 py-4 text-sm text-muted-foreground break-words">{sp.phoneNumber || 'N/A'}</td>
+                      <td className="px-4 py-4 text-sm text-muted-foreground break-words">{accountManagerName}</td>
                       <td className="px-4 py-4 text-sm text-muted-foreground">
                         {!readOnly && (
                           <div className="flex gap-2">

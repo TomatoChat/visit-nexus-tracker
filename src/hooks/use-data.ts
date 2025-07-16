@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { createClient } from '@supabase/supabase-js';
 
 // Types
 type Company = Database['public']['Tables']['companies']['Row'];
@@ -732,6 +733,33 @@ export const useDeleteCompanySellingPoint = () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.companySellingPoints(variables.sellingPointId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.sellingPoints });
     },
+  });
+};
+
+// Fetch all users (id, email) for accountManager selection
+export const useAllUsers = () => {
+  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+  const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  const supabaseAny = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+  
+  return useQuery({
+    queryKey: ['allUsers'],
+    queryFn: async () => {
+      const { data, error } = await supabaseAny
+        .from('user_roles_with_name')
+        .select('userId, first_name, last_name, auth_email')
+        .eq('isActive', true);
+      if (error) throw error;
+      return (data || []).map((item: any) => {
+        const displayName = [item.first_name, item.last_name].filter(Boolean).join(' ');
+        return {
+          id: item.userId,
+          displayName: displayName || item.auth_email || 'Senza nome',
+        };
+      });
+    },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 };
 

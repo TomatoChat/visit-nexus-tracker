@@ -226,7 +226,7 @@ const Companies = () => {
         <div className="flex flex-row items-center justify-between gap-2 md:hidden mb-4">
           <div className="flex items-center gap-2">
             <SidebarTrigger />
-            <h1 className="text-lg font-bold text-foreground">Aziende</h1>
+            <h1 className="text-lg font-bold">Aziende</h1>
           </div>
           <div className="flex items-center gap-2">
             {!showSearch && (
@@ -281,7 +281,7 @@ const Companies = () => {
         </div>
         {/* Desktop: Title and actions */}
         <div className="hidden md:flex items-center justify-between gap-4 mb-8">
-          <h1 className="text-3xl font-bold text-foreground text-left">Aziende</h1>
+          <h1 className="text-3xl font-bold text-left">Aziende</h1>
           <div className="flex items-center gap-2">
             {!showSearch && (
               <Button
