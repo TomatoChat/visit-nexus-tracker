@@ -4,12 +4,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAdminMode } from '@/hooks/use-admin-mode';
+import { useRoles } from '@/hooks/use-roles';
+import { Shield, User } from 'lucide-react';
 
 const Profile: React.FC = () => {
   const { toast } = useToast();
   const [user, setUser] = useState<{ email: string } | null>(null);
+  const { isAdminMode, toggleAdminMode, canToggleAdminMode } = useAdminMode();
+  const { userRole } = useRoles();
   
   // Password change form state
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -115,6 +121,44 @@ const Profile: React.FC = () => {
               <div className="text-sm text-muted-foreground mb-1">Email</div>
               <div className="font-medium text-lg">{user?.email || '...'}</div>
             </div>
+            
+            {/* Admin Mode Toggle - only visible to admins */}
+            {canToggleAdminMode && (
+              <div className="pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {isAdminMode ? (
+                      <Shield className="w-5 h-5 text-blue-600" />
+                    ) : (
+                      <User className="w-5 h-5 text-gray-600" />
+                    )}
+                    <div>
+                      <div className="font-medium">Modalità Amministratore</div>
+                      <div className="text-sm text-muted-foreground">
+                        {isAdminMode 
+                          ? 'Vedi tutti i dati del sistema' 
+                          : 'Vedi solo i tuoi dati assegnati'
+                        }
+                      </div>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={isAdminMode}
+                    onCheckedChange={toggleAdminMode}
+                    className="ml-4"
+                  />
+                </div>
+                {isAdminMode && (
+                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="text-sm text-blue-800">
+                      <strong>Modalità Amministratore attiva:</strong> Puoi vedere tutti i fornitori, 
+                      clienti e punti vendita nel sistema. Questa modalità è utile per la gestione 
+                      e il supporto, ma per le attività quotidiane è consigliato utilizzare la modalità utente.
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             
             {/* Password Change Section */}
             <div className="pt-4 border-t">

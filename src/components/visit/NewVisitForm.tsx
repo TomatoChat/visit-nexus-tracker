@@ -32,10 +32,15 @@ import {
   useActivities, 
   usePeopleByCompanies,
   useCreateVisit,
-  useUploadPhotos
+  useUploadPhotos,
+  useSuppliers,
+  useSellers,
+  useSellingPoints
 } from '@/hooks/use-data';
 import { formatDateForDatabase } from '@/lib/date-utils';
 import { useQuery } from '@tanstack/react-query';
+import { useRoles } from '@/hooks/use-roles';
+import { useAdminMode } from '@/hooks/use-admin-mode';
 
 type Company = Database['public']['Tables']['companies']['Row'];
 type SellingPointWithAddress = Database['public']['Tables']['sellingPoints']['Row'] & { addresses?: Database['public']['Tables']['addresses']['Row'] };
@@ -70,14 +75,29 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
   // Add state for hours spent
   const [hoursSpent, setHoursSpent] = useState<string>('');
   
-  // Data fetching hooks (account manager filtered)
+  // Role checking
+  const { userRole, loading: roleLoading } = useRoles();
+  const { isAdminMode } = useAdminMode();
+  const isAdmin = userRole === 'admin';
+  const shouldUseAdminMode = isAdmin && isAdminMode;
+  
+  // Data fetching hooks - different logic for admin vs regular users
   const { data: amSellingPoints = [], isLoading: isLoadingSellingPoints } = useAccountManagerSellingPoints(user?.id || '');
 
-  // Check if user has any assigned selling points
-  const hasAssignedSellingPoints = amSellingPoints.length > 0;
+  // For admins in admin mode, use all selling points; for regular users, use account manager filtered ones
+  const { data: allSellingPoints = [], isLoading: isLoadingAllSellingPoints } = useSellingPoints();
+  const sellingPoints = shouldUseAdminMode ? allSellingPoints : amSellingPoints;
+  const isLoadingSellingPointsData = shouldUseAdminMode ? isLoadingAllSellingPoints : isLoadingSellingPoints;
 
-  // Sellers
-  const sellerCompanyIds = getSellerCompanyIdsFromSellingPoints(amSellingPoints);
+  // Check if user has any assigned selling points (only relevant for non-admin users or admins in user mode)
+  const hasAssignedSellingPoints = shouldUseAdminMode ? true : amSellingPoints.length > 0;
+
+  // For admins in admin mode, use all suppliers and sellers; for regular users, use filtered ones
+  const { data: allSuppliers = [], isLoading: isLoadingAllSuppliers } = useSuppliers();
+  const { data: allSellers = [], isLoading: isLoadingAllSellers } = useSellers();
+
+  // Sellers - different logic for admin vs regular users
+  const sellerCompanyIds = shouldUseAdminMode ? [] : getSellerCompanyIdsFromSellingPoints(amSellingPoints);
   const { data: amSellers = [], isLoading: isLoadingSellers } = useQuery({
     queryKey: ['accountManagerSellers', sellerCompanyIds],
     queryFn: async () => {
@@ -91,13 +111,13 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
       if (error) throw error;
       return data || [];
     },
-    enabled: sellerCompanyIds.length > 0,
+    enabled: sellerCompanyIds.length > 0 && !shouldUseAdminMode,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
 
-  // Suppliers
-  const sellingPointIds = getSellingPointIds(amSellingPoints);
+  // Suppliers - different logic for admin vs regular users
+  const sellingPointIds = shouldUseAdminMode ? [] : getSellingPointIds(amSellingPoints);
   const { data: companySellingPoints = [], isLoading: isLoadingCompanySellingPoints } = useQuery({
     queryKey: ['accountManagerCompanySellingPoints', sellingPointIds],
     queryFn: async () => {
@@ -110,11 +130,11 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
       if (error) throw error;
       return data || [];
     },
-    enabled: sellingPointIds.length > 0,
+    enabled: sellingPointIds.length > 0 && !shouldUseAdminMode,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
-  const supplierCompanyIds = getSupplierCompanyIdsFromCompanySellingPoints(companySellingPoints);
+  const supplierCompanyIds = shouldUseAdminMode ? [] : getSupplierCompanyIdsFromCompanySellingPoints(companySellingPoints);
   const { data: amSuppliers = [], isLoading: isLoadingSuppliers } = useQuery({
     queryKey: ['accountManagerSuppliers', supplierCompanyIds],
     queryFn: async () => {
@@ -128,7 +148,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
       if (error) throw error;
       return data || [];
     },
-    enabled: supplierCompanyIds.length > 0,
+    enabled: supplierCompanyIds.length > 0 && !shouldUseAdminMode,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
@@ -187,7 +207,8 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
     }
   }, [selectedActivityId]);
 
-  const supplierOptions = amSuppliers
+  // Use different data sources based on admin mode status
+  const supplierOptions = (shouldUseAdminMode ? allSuppliers : amSuppliers)
     .slice()
     .sort((a, b) => a.name.localeCompare(b.name))
     .map(supplier => ({
@@ -195,7 +216,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
       label: supplier.name
     }));
 
-  const sellerOptions = amSellers
+  const sellerOptions = (shouldUseAdminMode ? allSellers : amSellers)
     .slice()
     .sort((a, b) => a.name.localeCompare(b.name))
     .map(seller => ({
@@ -203,7 +224,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
       label: seller.name
     }));
 
-  const sellingPointOptions = amSellingPoints
+  const sellingPointOptions = sellingPoints
     .slice()
     .sort((a, b) => a.name.localeCompare(b.name))
     .map(point => ({
@@ -221,9 +242,9 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
       subtitle: undefined
     }));
 
-  const selectedSupplier = amSuppliers.find(s => s.id === selectedSupplierId);
-  const selectedSeller = amSellers.find(s => s.id === selectedSellerId);
-  const selectedSellingPoint = amSellingPoints.find(p => p.id === selectedSellingPointId);
+  const selectedSupplier = (shouldUseAdminMode ? allSuppliers : amSuppliers).find(s => s.id === selectedSupplierId);
+  const selectedSeller = (shouldUseAdminMode ? allSellers : amSellers).find(s => s.id === selectedSellerId);
+  const selectedSellingPoint = sellingPoints.find(p => p.id === selectedSellingPointId);
   const selectedActivity = activities.find(a => a.id === selectedActivityId);
 
   const canSubmit = user && selectedSupplierId && selectedSellerId && selectedSellingPointId && selectedActivityId && placedOrder !== null;
@@ -298,6 +319,22 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
       label: `${person.name} ${person.surname}`
     }));
 
+  // Show loading state while role is being determined
+  if (roleLoading) {
+    return (
+      <Card className="w-full">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center py-8">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Caricamento...</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <AgentOrAbove>
       <>
@@ -327,8 +364,17 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
       </AlertDialog>
       <Card className="w-full">
           <CardContent className="p-6 space-y-4 md:space-y-6">
-            {/* Check if user has assigned selling points */}
-            {!isLoadingSellingPoints && !hasAssignedSellingPoints && (
+            {/* Admin mode notice */}
+            {shouldUseAdminMode && (
+              <div className="p-4 bg-info/10 border border-info/20 rounded-lg">
+                <p className="text-blue-800">
+                  <strong>Modalità Amministratore:</strong> Puoi vedere tutti i fornitori, clienti e punti vendita nel sistema.
+                </p>
+              </div>
+            )}
+            
+            {/* Check if user has assigned selling points (only for non-admin users or admins in user mode) */}
+            {!shouldUseAdminMode && !isLoadingSellingPoints && !hasAssignedSellingPoints && (
               <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg">
                 <p className="text-yellow-800">
                   <strong>Attenzione:</strong> Non hai punti vendita assegnati. 
@@ -382,7 +428,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                 }}
                 placeholder="Scegli un'azienda fornitrice..."
                 searchPlaceholder="Cerca fornitori..."
-                disabled={isLoadingSuppliers || !hasAssignedSellingPoints}
+                disabled={shouldUseAdminMode ? isLoadingAllSuppliers : (isLoadingSuppliers || !hasAssignedSellingPoints)}
               />
             </div>
 
@@ -401,7 +447,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                   }}
                   placeholder="Scegli un cliente..."
                   searchPlaceholder="Cerca clienti..."
-                  disabled={isLoadingSellers}
+                  disabled={shouldUseAdminMode ? isLoadingAllSellers : isLoadingSellers}
                 />
               </div>
             )}
@@ -421,7 +467,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                   }}
                   placeholder="Scegli un punto vendita..."
                   searchPlaceholder="Cerca punti vendita..."
-                  disabled={isLoadingSellingPoints}
+                  disabled={isLoadingSellingPointsData}
                 />
               </div>
             )}

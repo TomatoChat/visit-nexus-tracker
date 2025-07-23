@@ -45,6 +45,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Layout from '@/components/Layout';
 import { RoleDisplay } from '@/components/ui/role-display';
 import { useRoles } from '@/hooks/use-roles';
+import { AdminModeProvider } from '@/hooks/use-admin-mode';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -326,22 +327,24 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <AppLayout>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/my-visits" element={<MyVisits />} />
-              <Route path="/companies" element={<Companies />} />
-              <Route path="/selling-points" element={<SellingPoints />} />
-              <Route path="/people" element={<People />} />
-              <Route path="/general-categories" element={<GeneralCategories />} />
-              <Route path="/profile" element={<Profile />} />
+        <AdminModeProvider>
+          <BrowserRouter>
+            <AppLayout>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/my-visits" element={<MyVisits />} />
+                <Route path="/companies" element={<Companies />} />
+                <Route path="/selling-points" element={<SellingPoints />} />
+                <Route path="/people" element={<People />} />
+                <Route path="/general-categories" element={<GeneralCategories />} />
+                <Route path="/profile" element={<Profile />} />
 
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AppLayout>
-        </BrowserRouter>
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </AppLayout>
+          </BrowserRouter>
+        </AdminModeProvider>
         {/* <PerformanceDashboard /> */} {/* Removed as per user request */}
       </TooltipProvider>
     </QueryClientProvider>
