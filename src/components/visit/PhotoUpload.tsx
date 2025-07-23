@@ -248,7 +248,7 @@ export const PhotoUpload = forwardRef<PhotoUploadRef, PhotoUploadProps>(({
                     </Button>
                   )}
                   {photo.uploaded && (
-                    <div className="absolute bottom-1 left-1 bg-green-500 text-white text-xs px-1 py-0.5 rounded">
+                    <div className="absolute bottom-1 left-1 bg-success text-success-foreground text-xs px-1 py-0.5 rounded">
                       ✓
                     </div>
                   )}

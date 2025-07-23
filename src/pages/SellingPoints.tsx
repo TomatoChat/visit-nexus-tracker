@@ -286,7 +286,7 @@ const SellingPoints = () => {
               size="icon"
               aria-label="Filtra per azienda cliente"
               onClick={() => setShowFilter(!showFilter)}
-              className={showFilter ? "bg-blue-50 text-blue-600" : ""}
+              className={showFilter ? "bg-info/10 text-info" : ""}
             >
               <Filter className="w-5 h-5" />
             </Button>
@@ -347,7 +347,7 @@ const SellingPoints = () => {
               size="icon"
               aria-label="Filtra per azienda cliente"
               onClick={() => setShowFilter(!showFilter)}
-              className={showFilter ? "bg-blue-50 text-blue-600" : ""}
+              className={showFilter ? "bg-info/10 text-info" : ""}
             >
               <Filter className="w-5 h-5" />
             </Button>
@@ -355,7 +355,7 @@ const SellingPoints = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="border-black text-black dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800"
+                className="border-border text-foreground hover:bg-accent"
                 onClick={() => setTriggerAddForm(true)}
                 aria-label="Aggiungi Punto Vendita"
               >
@@ -366,7 +366,7 @@ const SellingPoints = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="border-black text-black dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800"
+                className="border-border text-foreground hover:bg-accent"
                 onClick={() => setIsBulkUploadOpen(true)}
                 aria-label="Caricamento Massivo Punti Vendita"
               >
@@ -378,7 +378,7 @@ const SellingPoints = () => {
 
         {/* Filter Dropdown */}
         {showFilter && (
-          <div className="mb-4 p-4 bg-gray-50 rounded-lg border">
+          <div className="mb-4 p-4 bg-muted rounded-lg border">
             {/* Azienda Cliente Multi-Select */}
             <div className="mb-3">
               <label className="flex items-center gap-2 text-sm font-medium mb-1">

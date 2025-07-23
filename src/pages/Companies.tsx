@@ -258,7 +258,7 @@ const Companies = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="border-black text-black hover:bg-gray-50"
+                className="border-border text-foreground hover:bg-accent"
                 onClick={() => setTriggerAddForm(true)}
                 aria-label="Aggiungi Azienda"
               >
@@ -270,7 +270,7 @@ const Companies = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="border-black text-black hover:bg-gray-50"
+                className="border-border text-foreground hover:bg-accent"
                 onClick={() => setIsBulkUploadOpen(true)}
                 aria-label="Caricamento Massivo Aziende"
               >
@@ -312,7 +312,7 @@ const Companies = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="border-black text-black hover:bg-gray-50"
+                className="border-border text-foreground hover:bg-accent"
                 onClick={() => setTriggerAddForm(true)}
                 aria-label="Aggiungi Azienda"
               >
@@ -324,7 +324,7 @@ const Companies = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="border-black text-black hover:bg-gray-50"
+                className="border-border text-foreground hover:bg-accent"
                 onClick={() => setIsBulkUploadOpen(true)}
                 aria-label="Caricamento Massivo Aziende"
               >

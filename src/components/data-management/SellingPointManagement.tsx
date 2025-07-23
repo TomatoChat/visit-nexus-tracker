@@ -486,25 +486,25 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div><Label htmlFor="sp-name">Nome Punto Vendita <span className="text-red-500">*</span></Label><Input id="sp-name" value={name} onChange={e => setName(e.target.value)} required /></div>
+            <div><Label htmlFor="sp-name">Nome Punto Vendita <span className="text-destructive">*</span></Label><Input id="sp-name" value={name} onChange={e => setName(e.target.value)} required /></div>
             <div><Label htmlFor="sp-phone">Telefono</Label><Input id="sp-phone" value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} /></div>
-            <div>
-              <Label htmlFor="seller-company">Azienda Cliente <span className="text-red-500">*</span></Label>
+                          <div>
+                <Label htmlFor="seller-company">Azienda Cliente <span className="text-destructive">*</span></Label>
               <SearchableSelect options={sellerCompanyOptions} value={selectedSellerCompanyId} onSelect={(value) => setSelectedSellerCompanyId(value as string)} placeholder={isLoadingSellerCompanies ? "Caricamento..." : "Seleziona azienda"} searchPlaceholder="Cerca azienda..." disabled={isLoadingSellerCompanies} />
             </div>
             <div>
-              <Label>Indirizzo <span className="text-red-500">*</span></Label>
+              <Label>Indirizzo <span className="text-destructive">*</span></Label>
               {editingSellingPoint ? (
-                <div className="p-3 bg-gray-50 rounded border">
+                <div className="p-3 bg-muted rounded border">
                   {editingSellingPoint.addresses ? (
-                    <div className="text-sm text-gray-700">
+                    <div className="text-sm text-foreground">
                       <div>{editingSellingPoint.addresses.addressLine1 || ''}</div>
                       <div>{editingSellingPoint.addresses.addressLine2 || ''}</div>
                       <div>{editingSellingPoint.addresses.city || ''}, {editingSellingPoint.addresses.stateProvince || ''}</div>
                       <div>{editingSellingPoint.addresses.postalCode || ''} {editingSellingPoint.addresses.country || ''}</div>
                     </div>
                   ) : (
-                    <div className="text-sm text-gray-500">Nessun indirizzo associato</div>
+                    <div className="text-sm text-muted-foreground">Nessun indirizzo associato</div>
                   )}
                 </div>
               ) : (
@@ -518,13 +518,13 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                     <div className="space-y-2 border rounded p-2 mt-2">
                       <div><Label htmlFor="sp-addr-l1">Via</Label><Input id="sp-addr-l1" value={addressForm.addressLine1} onChange={e => setAddressForm(p => ({ ...p, addressLine1: e.target.value }))} /></div>
                       <div><Label htmlFor="sp-addr-l2">Civico</Label><Input id="sp-addr-l2" value={addressForm.addressLine2} onChange={e => setAddressForm(p => ({ ...p, addressLine2: e.target.value }))} /></div>
-                      <div><Label htmlFor="sp-addr-city">Città <span className="text-red-500">*</span></Label><Input id="sp-addr-city" value={addressForm.city} onChange={e => setAddressForm(p => ({ ...p, city: e.target.value }))} required /></div>
-                      <div><Label htmlFor="sp-addr-state">Provincia <span className="text-red-500">*</span></Label><Input id="sp-addr-state" value={addressForm.stateProvince} onChange={e => setAddressForm(p => ({ ...p, stateProvince: e.target.value }))} required /></div>
+                      <div><Label htmlFor="sp-addr-city">Città <span className="text-destructive">*</span></Label><Input id="sp-addr-city" value={addressForm.city} onChange={e => setAddressForm(p => ({ ...p, city: e.target.value }))} required /></div>
+                      <div><Label htmlFor="sp-addr-state">Provincia <span className="text-destructive">*</span></Label><Input id="sp-addr-state" value={addressForm.stateProvince} onChange={e => setAddressForm(p => ({ ...p, stateProvince: e.target.value }))} required /></div>
                       <div><Label htmlFor="sp-addr-zip">CAP</Label><Input id="sp-addr-zip" type="number" step="1" value={addressForm.postalCode} onChange={e => setAddressForm(p => ({ ...p, postalCode: e.target.value }))} /></div>
-                      <div><Label htmlFor="sp-addr-country">Nazione <span className="text-red-500">*</span></Label><Input id="sp-addr-country" value={addressForm.country} onChange={e => setAddressForm(p => ({ ...p, country: e.target.value }))} required /></div>
+                      <div><Label htmlFor="sp-addr-country">Nazione <span className="text-destructive">*</span></Label><Input id="sp-addr-country" value={addressForm.country} onChange={e => setAddressForm(p => ({ ...p, country: e.target.value }))} required /></div>
                       <div className="flex gap-2">
-                        <div className="flex-1"><Label htmlFor="sp-addr-lat">Latitudine <span className="text-red-500">*</span></Label><Input id="sp-addr-lat" type="number" step="any" value={addressForm.latitude} onChange={e => setAddressForm(p => ({ ...p, latitude: e.target.value }))} placeholder="Latitudine" required /></div>
-                        <div className="flex-1"><Label htmlFor="sp-addr-lng">Longitudine <span className="text-red-500">*</span></Label><Input id="sp-addr-lng" type="number" step="any" value={addressForm.longitude} onChange={e => setAddressForm(p => ({ ...p, longitude: e.target.value }))} placeholder="Longitudine" required /></div>
+                        <div className="flex-1"><Label htmlFor="sp-addr-lat">Latitudine <span className="text-destructive">*</span></Label><Input id="sp-addr-lat" type="number" step="any" value={addressForm.latitude} onChange={e => setAddressForm(p => ({ ...p, latitude: e.target.value }))} placeholder="Latitudine" required /></div>
+                        <div className="flex-1"><Label htmlFor="sp-addr-lng">Longitudine <span className="text-destructive">*</span></Label><Input id="sp-addr-lng" type="number" step="any" value={addressForm.longitude} onChange={e => setAddressForm(p => ({ ...p, longitude: e.target.value }))} placeholder="Longitudine" required /></div>
                       </div>
                       <div className="flex gap-2">
                         <Button type="button" variant="outline" onClick={() => { setShowAddressForm(false); setAddressForm({ addressLine1: '', addressLine2: '', city: '', stateProvince: '', postalCode: '', country: '', latitude: '', longitude: '' }); }}>Annulla</Button>
@@ -551,16 +551,16 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
             {editingSellingPoint && (
               <div className="space-y-4 border-t pt-4">
                 <div className="flex items-center gap-2">
-                  <Users className="w-5 h-5 text-gray-500" />
+                  <Users className="w-5 h-5 text-muted-foreground" />
                   <h3 className="text-lg font-medium">Responsabili Caricamento/Ordini</h3>
                 </div>
                 
                 {/* Existing Responsabili Caricamento/Ordini */}
                 {isLoadingServicePeople ? (
-                  <p className="text-sm text-gray-500">Caricamento responsabili caricamento/ordini...</p>
+                  <p className="text-sm text-muted-foreground">Caricamento responsabili caricamento/ordini...</p>
                 ) : servicePeople.length > 0 ? (
                   <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-gray-700">Responsabili caricamento/ordini assegnati:</h4>
+                    <h4 className="text-sm font-medium text-foreground">Responsabili caricamento/ordini assegnati:</h4>
                     <div className="space-y-2 max-h-32 overflow-y-auto">
                       {servicePeople.map((servicePerson) => {
                         const user = users.find(u => u.id === servicePerson.userId);
@@ -574,7 +574,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleRemoveServicePerson(servicePerson.id)}
-                                className="text-red-600 hover:bg-red-100 dark:hover:bg-red-900"
+                                className="text-destructive hover:bg-destructive/10"
                                 title="Rimuovi responsabile caricamento/ordini"
                               >
                                 <Trash2 className="w-3 h-3" />
@@ -619,7 +619,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                     </div>
                     
                     <div>
-                      <Label htmlFor="service-person-select">Utente <span className="text-red-500">*</span></Label>
+                      <Label htmlFor="service-person-select">Utente <span className="text-destructive">*</span></Label>
                       <SearchableSelect
                         options={users.map(u => ({ value: u.id, label: u.displayName }))}
                         value={selectedServicePersonId}
@@ -659,16 +659,16 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
             {editingSellingPoint && (
               <div className="space-y-4 border-t pt-4">
                 <div className="flex items-center gap-2">
-                  <Building className="w-5 h-5 text-gray-500" />
+                  <Building className="w-5 h-5 text-muted-foreground" />
                   <h3 className="text-lg font-medium">Relazioni Fornitori</h3>
                 </div>
                 
                 {/* Existing Relationships */}
                 {isLoadingRelationships ? (
-                  <p className="text-sm text-gray-500">Caricamento relazioni...</p>
+                  <p className="text-sm text-muted-foreground">Caricamento relazioni...</p>
                 ) : relationships.length > 0 ? (
                   <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-gray-700">Relazioni esistenti:</h4>
+                    <h4 className="text-sm font-medium text-foreground">Relazioni esistenti:</h4>
                     <div className="space-y-2 max-h-32 overflow-y-auto">
                       {relationships.map((relationship) => (
                         <div key={relationship.id} className="flex items-center justify-between p-2 bg-muted rounded text-sm">
@@ -686,7 +686,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                               size="sm"
                               variant="outline"
                               onClick={() => handleDeleteSupplierRelationship(relationship.id)}
-                              className="text-red-600 hover:bg-red-100 dark:hover:bg-red-900"
+                              className="text-destructive hover:bg-destructive/10"
                               title="Elimina relazione"
                             >
                               <Trash2 className="w-3 h-3" />
@@ -730,7 +730,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                     </div>
                     
                     <div>
-                      <Label htmlFor="supplier-select">Fornitore <span className="text-red-500">*</span></Label>
+                      <Label htmlFor="supplier-select">Fornitore <span className="text-destructive">*</span></Label>
                       <SearchableSelect
                         options={supplierOptions}
                         value={selectedSupplierId}
@@ -742,7 +742,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                     </div>
                     
                     <div>
-                      <Label htmlFor="start-date">Data inizio <span className="text-red-500">*</span></Label>
+                      <Label htmlFor="start-date">Data inizio <span className="text-destructive">*</span></Label>
                       <Input
                         id="start-date"
                         type="date"
@@ -793,7 +793,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                   <Button
                     type="button"
                     variant="ghost"
-                    className="text-red-600 hover:bg-red-100 dark:hover:bg-red-900"
+                    className="text-destructive hover:bg-destructive/10"
                     aria-label="Elimina"
                     onClick={() => {
                       if (confirm("Sei sicuro di voler eliminare questo punto vendita?")) {
@@ -821,7 +821,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
 
       <CardContent>
         {isLoading ? (
-          <p>Caricamento punti vendita...</p>
+          <p className="text-muted-foreground">Caricamento punti vendita...</p>
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -873,7 +873,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                               }}
                               aria-label="Elimina"
                             >
-                              <Trash2 className="w-4 h-4 text-red-600" />
+                              <Trash2 className="w-4 h-4 text-destructive" />
                             </Button>
                           </div>
                         )}
@@ -886,7 +886,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
           </div>
           </>
         )}
-        {filteredSellingPoints.length === 0 && !isLoading && <p>Nessun punto vendita trovato.</p>}
+        {filteredSellingPoints.length === 0 && !isLoading && <p className="text-muted-foreground">Nessun punto vendita trovato.</p>}
       </CardContent>
     </Card>
   );

@@ -6,6 +6,18 @@ import { cn } from "@/lib/utils"
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: "", dark: ".dark" } as const
 
+// Default chart colors using CSS variables - Modern palette
+const DEFAULT_CHART_COLORS = {
+  '1': 'hsl(var(--chart-1))',
+  '2': 'hsl(var(--chart-2))',
+  '3': 'hsl(var(--chart-3))',
+  '4': 'hsl(var(--chart-4))',
+  '5': 'hsl(var(--chart-5))',
+  '6': 'hsl(var(--chart-6))',
+  '7': 'hsl(var(--chart-7))',
+  '8': 'hsl(var(--chart-8))'
+} as const
+
 export type ChartConfig = {
   [k in string]: {
     label?: React.ReactNode
@@ -14,6 +26,12 @@ export type ChartConfig = {
     | { color?: string; theme?: never }
     | { color?: never; theme: Record<keyof typeof THEMES, string> }
   )
+}
+
+export type ChartProps = React.ComponentProps<typeof RechartsPrimitive.ResponsiveContainer> & {
+  config?: ChartConfig
+  colors?: string[]
+  theme?: "light" | "dark"
 }
 
 type ChartContextProps = {
@@ -64,6 +82,36 @@ const ChartContainer = React.forwardRef<
   )
 })
 ChartContainer.displayName = "Chart"
+
+const Chart = React.forwardRef<
+  React.ElementRef<typeof RechartsPrimitive.ResponsiveContainer>,
+  ChartProps
+>(({ config, colors, theme, ...props }, ref) => {
+  const id = React.useId()
+  const chartColors = colors || Object.values(DEFAULT_CHART_COLORS)
+
+  return (
+    <>
+      <ChartStyle id={id} config={config || {}} />
+      <RechartsPrimitive.ResponsiveContainer
+        ref={ref}
+        {...props}
+        data-chart={id}
+        style={{
+          "--color-1": chartColors[0],
+          "--color-2": chartColors[1],
+          "--color-3": chartColors[2],
+          "--color-4": chartColors[3],
+          "--color-5": chartColors[4],
+          "--color-6": chartColors[5],
+          "--color-7": chartColors[6],
+          "--color-8": chartColors[7],
+        } as React.CSSProperties}
+      />
+    </>
+  )
+})
+Chart.displayName = "Chart"
 
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   const colorConfig = Object.entries(config).filter(
@@ -354,10 +402,9 @@ function getPayloadConfigFromPayload(
 }
 
 export {
+  Chart,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent,
-  ChartStyle,
+  useChart,
 }

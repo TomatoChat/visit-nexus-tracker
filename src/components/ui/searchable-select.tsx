@@ -61,7 +61,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
             <div className="flex flex-wrap gap-1 items-center">
               {selectedOptions.length > 0
                 ? selectedOptions.map(opt => (
-                    <span key={opt.value} className="bg-gray-200 dark:bg-gray-700 rounded px-2 py-0.5 text-xs">
+                    <span key={opt.value} className="bg-muted rounded px-2 py-0.5 text-xs">
                       {opt.label}
                     </span>
                   ))

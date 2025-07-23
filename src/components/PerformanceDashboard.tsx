@@ -31,16 +31,16 @@ const PerformanceDashboard: React.FC = () => {
   };
 
   const getPerformanceColor = (value: number, threshold: number) => {
-    if (value <= threshold * 0.5) return 'bg-green-500';
-    if (value <= threshold) return 'bg-yellow-500';
-    return 'bg-red-500';
+    if (value <= threshold * 0.5) return 'bg-success';
+    if (value <= threshold) return 'bg-warning';
+    return 'bg-destructive';
   };
 
   if (!isVisible) {
     return (
       <button
         onClick={() => setIsVisible(true)}
-        className="fixed bottom-4 right-4 z-50 bg-blue-600 text-white p-2 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+        className="fixed bottom-4 right-4 z-50 bg-primary text-primary-foreground p-2 rounded-full shadow-lg hover:bg-primary/90 transition-colors"
         title="Performance Dashboard"
       >
         📊

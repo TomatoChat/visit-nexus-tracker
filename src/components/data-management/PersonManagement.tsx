@@ -215,7 +215,7 @@ const PersonManagement: React.FC<PersonManagementProps> = ({ readOnly = false, s
                   <Button
                     type="button"
                     variant="ghost"
-                    className="text-red-600 hover:bg-red-50"
+                    className="text-destructive hover:bg-destructive/10"
                     aria-label="Elimina"
                     onClick={() => {
                       if (confirm("Sei sicuro di voler eliminare questa persona?")) {

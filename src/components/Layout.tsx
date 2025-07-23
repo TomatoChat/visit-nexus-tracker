@@ -18,7 +18,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }, [resolvedTheme]);
 
   return (
-    <div className="w-full min-h-screen pt-1 md:pt-5 px-[1%] md:px-0 overflow-x-hidden text-black dark:text-white bg-white dark:bg-black">
+    <div className="w-full min-h-screen pt-1 md:pt-5 px-[1%] md:px-0 overflow-x-hidden bg-background text-foreground">
       {children}
     </div>
   );

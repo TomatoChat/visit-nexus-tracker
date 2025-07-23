@@ -329,7 +329,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
           <CardContent className="p-6 space-y-4 md:space-y-6">
             {/* Check if user has assigned selling points */}
             {!isLoadingSellingPoints && !hasAssignedSellingPoints && (
-              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg">
                 <p className="text-yellow-800">
                   <strong>Attenzione:</strong> Non hai punti vendita assegnati. 
                   Contatta l'amministratore per ricevere le assegnazioni necessarie.
@@ -496,7 +496,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                 />
 
                 {canSubmit && (
-                  <div className="space-y-3 p-4 bg-blue-50 rounded-lg text-gray-900">
+                  <div className="space-y-3 p-4 bg-info/10 rounded-lg text-foreground">
                     <h3 className="font-medium text-blue-900">Riepilogo visita</h3>
                     <div className="space-y-1 text-sm">
                       <p><span className="font-medium">Email utente:</span> {user?.email}</p>
