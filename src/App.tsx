@@ -108,62 +108,62 @@ function SidebarMenuContent() {
         </div>
         <SidebarMenu>
           <SidebarMenuItem>
-            <Link to="/" onClick={handleNavigationClick}>
-              <SidebarMenuButton isActive={location.pathname === "/"}>
+            <SidebarMenuButton asChild isActive={location.pathname === "/"}>
+              <Link to="/" onClick={handleNavigationClick}>
                 <Car className="w-5 h-5 flex-shrink-0" />
                 {(state === 'expanded' || isMobile) && <span className="truncate">Nuovo Rapporto Visita</span>}
-              </SidebarMenuButton>
-            </Link>
+              </Link>
+            </SidebarMenuButton>
           </SidebarMenuItem>
           
           {/* My Visits - visible to all authenticated users */}
           <SidebarMenuItem>
-            <Link to="/my-visits" onClick={handleNavigationClick}>
-              <SidebarMenuButton isActive={location.pathname === "/my-visits"}>
+            <SidebarMenuButton asChild isActive={location.pathname === "/my-visits"}>
+              <Link to="/my-visits" onClick={handleNavigationClick}>
                 <FileText className="w-5 h-5 flex-shrink-0" />
                 {(state === 'expanded' || isMobile) && <span className="truncate">Le mie visite</span>}
-              </SidebarMenuButton>
-            </Link>
+              </Link>
+            </SidebarMenuButton>
           </SidebarMenuItem>
 
           {/* Data Management Pages - only visible to internal agents and admins */}
           {userRole && userRole !== 'externalAgent' && userRole !== 'guest' && (
             <>
               <SidebarMenuItem>
-                <Link to="/companies" onClick={handleNavigationClick}>
-                  <SidebarMenuButton isActive={location.pathname === "/companies"}>
+                <SidebarMenuButton asChild isActive={location.pathname === "/companies"}>
+                  <Link to="/companies" onClick={handleNavigationClick}>
                     <Building className="w-5 h-5 flex-shrink-0" />
                     {(state === 'expanded' || isMobile) && <span className="truncate">Aziende</span>}
-                  </SidebarMenuButton>
-                </Link>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
               
               <SidebarMenuItem>
-                <Link to="/selling-points" onClick={handleNavigationClick}>
-                  <SidebarMenuButton isActive={location.pathname === "/selling-points"}>
+                <SidebarMenuButton asChild isActive={location.pathname === "/selling-points"}>
+                  <Link to="/selling-points" onClick={handleNavigationClick}>
                     <MapPin className="w-5 h-5 flex-shrink-0" />
                     {(state === 'expanded' || isMobile) && <span className="truncate">Punti Vendita</span>}
-                  </SidebarMenuButton>
-                </Link>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
               
               <SidebarMenuItem>
-                <Link to="/people" onClick={handleNavigationClick}>
-                  <SidebarMenuButton isActive={location.pathname === "/people"}>
+                <SidebarMenuButton asChild isActive={location.pathname === "/people"}>
+                  <Link to="/people" onClick={handleNavigationClick}>
                     <Users className="w-5 h-5 flex-shrink-0" />
                     {(state === 'expanded' || isMobile) && <span className="truncate">Persone</span>}
-                  </SidebarMenuButton>
-                </Link>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
 
               {/* General Categories - only visible to admins and internal agents */}
               <SidebarMenuItem>
-                <Link to="/general-categories" onClick={handleNavigationClick}>
-                  <SidebarMenuButton isActive={location.pathname === "/general-categories"}>
+                <SidebarMenuButton asChild isActive={location.pathname === "/general-categories"}>
+                  <Link to="/general-categories" onClick={handleNavigationClick}>
                     <DatabaseZap className="w-5 h-5 flex-shrink-0" />
                     {(state === 'expanded' || isMobile) && <span className="truncate">Categorie Generali</span>}
-                  </SidebarMenuButton>
-                </Link>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
             </>
           )}

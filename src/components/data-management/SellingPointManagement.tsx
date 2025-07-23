@@ -7,11 +7,12 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, Pencil, Search, Plus, Link, Building } from 'lucide-react';
+import { Trash2, Pencil, Search, Plus, Link, Building, Users } from 'lucide-react';
 import SupplierRelationships from './SupplierRelationships';
-import { useSuppliers, useCompanySellingPoints, useCreateCompanySellingPoint, useDeleteCompanySellingPoint } from '@/hooks/use-data';
+import { useSuppliers, useCompanySellingPoints, useCreateCompanySellingPoint, useDeleteCompanySellingPoint, useAllUsers } from '@/hooks/use-data';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-type SellingPoint = Database['public']['Tables']['sellingPoints']['Row'];
+type SellingPoint = Database['public']['Tables']['sellingPoints']['Row'] & { accountManager?: string };
 type Company = Database['public']['Tables']['companies']['Row'];
 type Address = Database['public']['Tables']['addresses']['Row'];
 
@@ -21,9 +22,10 @@ interface SellingPointManagementProps {
   sellerFilters?: string[];
   triggerAddForm?: boolean;
   onAddFormShown?: () => void;
+  accountManagerFilter?: string | null;
 }
 
-const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnly = false, searchTerm = '', sellerFilters = [], triggerAddForm = false, onAddFormShown }) => {
+const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnly = false, searchTerm = '', sellerFilters = [], triggerAddForm = false, onAddFormShown, accountManagerFilter }) => {
   const { toast } = useToast();
   const [sellingPoints, setSellingPoints] = useState<(SellingPoint & { addresses: Address, companies: Company })[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -45,6 +47,12 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
   const [sellerCode, setSellerCode] = useState<string>('');
   const [showAddRelationshipForm, setShowAddRelationshipForm] = useState(false);
 
+  // Responsabili Caricamento/Ordini state
+  const [selectedServicePersonId, setSelectedServicePersonId] = useState<string>('');
+  const [showAddServicePersonForm, setShowAddServicePersonForm] = useState(false);
+  const [servicePeople, setServicePeople] = useState<any[]>([]);
+  const [isLoadingServicePeople, setIsLoadingServicePeople] = useState(false);
+
   const [sellerCompanies, setSellerCompanies] = useState<Company[]>([]);
   const [isLoadingSellerCompanies, setIsLoadingSellerCompanies] = useState(false);
   
@@ -53,6 +61,37 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
   const { data: relationships = [], isLoading: isLoadingRelationships } = useCompanySellingPoints(editingSellingPoint?.id || '');
   const createRelationshipMutation = useCreateCompanySellingPoint();
   const deleteRelationshipMutation = useDeleteCompanySellingPoint();
+  const queryClient = useQueryClient();
+
+  // Responsabili Caricamento/Ordini mutations
+  const createServicePersonMutation = useMutation({
+    mutationFn: async ({ sellingPointId, userId }: { sellingPointId: string; userId: string }) => {
+      const { error } = await supabase
+        .from('sellingPointServicePeople')
+        .insert({
+          sellingPointId,
+          userId,
+          isactive: true
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['servicePeople'] });
+    }
+  });
+
+  const deleteServicePersonMutation = useMutation({
+    mutationFn: async ({ id }: { id: string }) => {
+      const { error } = await supabase
+        .from('sellingPointServicePeople')
+        .update({ isactive: false })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['servicePeople'] });
+    }
+  });
 
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [addressOptions, setAddressOptions] = useState<Array<{ value: string; label: string; subtitle?: string }>>([]);
@@ -69,6 +108,8 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
     longitude: ''
   });
 
+  const { data: users = [], isLoading: isLoadingUsers } = useAllUsers();
+  const [selectedAccountManagerId, setSelectedAccountManagerId] = useState<string | undefined>(undefined);
 
   const fetchSellingPoints = async () => {
     setIsLoading(true);
@@ -77,6 +118,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
         .from('sellingPoints')
         .select(`
           *,
+          accountManager,
           addresses (*),
           companies!sellingPoints_sellerCompanyId_fkey (*)
         `)
@@ -188,6 +230,10 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
     setRelationshipEndDate(undefined);
     setSellerCode('');
     setShowAddRelationshipForm(false);
+    setSelectedAccountManagerId(undefined);
+    // Reset service people form
+    setSelectedServicePersonId('');
+    setShowAddServicePersonForm(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -202,6 +248,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
       phoneNumber: phoneNumber || null,
       sellerCompanyId: selectedSellerCompanyId,
       addressId: selectedAddressId,
+      accountManager: selectedAccountManagerId || null,
     };
 
     try {
@@ -229,10 +276,14 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
     setPhoneNumber(sp.phoneNumber || '');
     setSelectedSellerCompanyId(sp.sellerCompanyId);
     setSelectedAddressId(sp.addressId);
+    setSelectedAccountManagerId(sp.accountManager || undefined);
     if (sp.addresses) {
       setAddressSearch(sp.addresses.addressLine1 || sp.addresses.city);
     }
     setShowAddForm(true);
+    
+    // Fetch responsabili caricamento/ordini for this selling point
+    fetchServicePeople(sp.id);
   };
 
   const handleSoftDelete = async (sp: SellingPoint & { addresses: Address, companies: Company }) => {
@@ -309,6 +360,79 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
     }
   };
 
+  // Fetch responsabili caricamento/ordini for the current selling point
+  const fetchServicePeople = async (sellingPointId: string) => {
+    setIsLoadingServicePeople(true);
+    try {
+      const { data, error } = await supabase
+        .from('sellingPointServicePeople')
+        .select('*')
+        .eq('sellingPointId', sellingPointId)
+        .eq('isactive', true);
+      
+      if (error) throw error;
+      setServicePeople(data || []);
+    } catch (error: any) {
+      toast({ title: 'Errore nel caricamento responsabili caricamento/ordini', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsLoadingServicePeople(false);
+    }
+  };
+
+  // Handle adding responsabile caricamento/ordini
+  const handleAddServicePerson = async () => {
+    if (!selectedServicePersonId || !editingSellingPoint) {
+      toast({ 
+        title: 'Errore di validazione', 
+        description: 'Seleziona un utente per aggiungere come responsabile caricamento/ordini.', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    try {
+      await createServicePersonMutation.mutateAsync({
+        sellingPointId: editingSellingPoint.id,
+        userId: selectedServicePersonId
+      });
+      
+      // Reset form
+      setSelectedServicePersonId('');
+      setShowAddServicePersonForm(false);
+      
+      // Refresh responsabili caricamento/ordini list
+      await fetchServicePeople(editingSellingPoint.id);
+      
+      toast({ title: 'Successo!', description: 'Responsabile caricamento/ordini aggiunto!' });
+    } catch (error: any) {
+      toast({ 
+        title: 'Errore', 
+        description: error.message || 'Impossibile aggiungere il responsabile caricamento/ordini.', 
+        variant: 'destructive' 
+      });
+    }
+  };
+
+  // Handle removing responsabile caricamento/ordini
+  const handleRemoveServicePerson = async (servicePersonId: string) => {
+    if (!editingSellingPoint || !confirm('Sei sicuro di voler rimuovere questo responsabile caricamento/ordini?')) return;
+
+    try {
+      await deleteServicePersonMutation.mutateAsync({ id: servicePersonId });
+      
+      // Refresh responsabili caricamento/ordini list
+      await fetchServicePeople(editingSellingPoint.id);
+      
+      toast({ title: 'Successo!', description: 'Responsabile caricamento/ordini rimosso!' });
+    } catch (error: any) {
+      toast({ 
+        title: 'Errore', 
+        description: error.message || 'Impossibile rimuovere il responsabile caricamento/ordini.', 
+        variant: 'destructive' 
+      });
+    }
+  };
+
   const filteredSellingPoints = useMemo(() => {
     return sellingPoints.filter(sp => {
       // Apply search filter
@@ -319,9 +443,12 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
       // Apply seller filters - if no filters selected, show all; otherwise only show selected sellers
       const matchesSeller = sellerFilters.length === 0 || sellerFilters.includes(sp.sellerCompanyId);
       
-      return matchesSearch && matchesSeller;
+      // Apply accountManager filter
+      const matchesAccountManager = !accountManagerFilter || sp.accountManager === accountManagerFilter;
+      
+      return matchesSearch && matchesSeller && matchesAccountManager;
     });
-  }, [sellingPoints, searchTerm, sellerFilters]);
+  }, [sellingPoints, searchTerm, sellerFilters, accountManagerFilter]);
 
   useEffect(() => {
     if (triggerAddForm) {
@@ -359,45 +486,45 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div><Label htmlFor="sp-name">Nome Punto Vendita <span className="text-red-500">*</span></Label><Input id="sp-name" value={name} onChange={e => setName(e.target.value)} required /></div>
+            <div><Label htmlFor="sp-name">Nome Punto Vendita <span className="text-destructive">*</span></Label><Input id="sp-name" value={name} onChange={e => setName(e.target.value)} required /></div>
             <div><Label htmlFor="sp-phone">Telefono</Label><Input id="sp-phone" value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} /></div>
-            <div>
-              <Label htmlFor="seller-company">Azienda Cliente <span className="text-red-500">*</span></Label>
-              <SearchableSelect options={sellerCompanyOptions} value={selectedSellerCompanyId} onSelect={setSelectedSellerCompanyId} placeholder={isLoadingSellerCompanies ? "Caricamento..." : "Seleziona azienda"} searchPlaceholder="Cerca azienda..." disabled={isLoadingSellerCompanies} />
+                          <div>
+                <Label htmlFor="seller-company">Azienda Cliente <span className="text-destructive">*</span></Label>
+              <SearchableSelect options={sellerCompanyOptions} value={selectedSellerCompanyId} onSelect={(value) => setSelectedSellerCompanyId(value as string)} placeholder={isLoadingSellerCompanies ? "Caricamento..." : "Seleziona azienda"} searchPlaceholder="Cerca azienda..." disabled={isLoadingSellerCompanies} />
             </div>
             <div>
-              <Label>Indirizzo <span className="text-red-500">*</span></Label>
+              <Label>Indirizzo <span className="text-destructive">*</span></Label>
               {editingSellingPoint ? (
-                <div className="p-3 bg-gray-50 rounded border">
+                <div className="p-3 bg-muted rounded border">
                   {editingSellingPoint.addresses ? (
-                    <div className="text-sm text-gray-700">
+                    <div className="text-sm text-foreground">
                       <div>{editingSellingPoint.addresses.addressLine1 || ''}</div>
                       <div>{editingSellingPoint.addresses.addressLine2 || ''}</div>
                       <div>{editingSellingPoint.addresses.city || ''}, {editingSellingPoint.addresses.stateProvince || ''}</div>
                       <div>{editingSellingPoint.addresses.postalCode || ''} {editingSellingPoint.addresses.country || ''}</div>
                     </div>
                   ) : (
-                    <div className="text-sm text-gray-500">Nessun indirizzo associato</div>
+                    <div className="text-sm text-muted-foreground">Nessun indirizzo associato</div>
                   )}
                 </div>
               ) : (
                 <>
                   {!showAddressForm ? (
                     <div className="flex gap-2">
-                      <SearchableSelect options={addressOptions} value={selectedAddressId} onSelect={setSelectedAddressId} placeholder="Cerca indirizzo..." searchPlaceholder="Digita indirizzo..." disabled={addressLoading} className="flex-1" />
+                      <SearchableSelect options={addressOptions} value={selectedAddressId} onSelect={(value) => setSelectedAddressId(value as string)} placeholder="Cerca indirizzo..." searchPlaceholder="Digita indirizzo..." disabled={addressLoading} className="flex-1" />
                       <Button type="button" variant="outline" onClick={() => setShowAddressForm(true)} className="px-3">+</Button>
                     </div>
                   ) : (
                     <div className="space-y-2 border rounded p-2 mt-2">
                       <div><Label htmlFor="sp-addr-l1">Via</Label><Input id="sp-addr-l1" value={addressForm.addressLine1} onChange={e => setAddressForm(p => ({ ...p, addressLine1: e.target.value }))} /></div>
                       <div><Label htmlFor="sp-addr-l2">Civico</Label><Input id="sp-addr-l2" value={addressForm.addressLine2} onChange={e => setAddressForm(p => ({ ...p, addressLine2: e.target.value }))} /></div>
-                      <div><Label htmlFor="sp-addr-city">Città <span className="text-red-500">*</span></Label><Input id="sp-addr-city" value={addressForm.city} onChange={e => setAddressForm(p => ({ ...p, city: e.target.value }))} required /></div>
-                      <div><Label htmlFor="sp-addr-state">Provincia <span className="text-red-500">*</span></Label><Input id="sp-addr-state" value={addressForm.stateProvince} onChange={e => setAddressForm(p => ({ ...p, stateProvince: e.target.value }))} required /></div>
+                      <div><Label htmlFor="sp-addr-city">Città <span className="text-destructive">*</span></Label><Input id="sp-addr-city" value={addressForm.city} onChange={e => setAddressForm(p => ({ ...p, city: e.target.value }))} required /></div>
+                      <div><Label htmlFor="sp-addr-state">Provincia <span className="text-destructive">*</span></Label><Input id="sp-addr-state" value={addressForm.stateProvince} onChange={e => setAddressForm(p => ({ ...p, stateProvince: e.target.value }))} required /></div>
                       <div><Label htmlFor="sp-addr-zip">CAP</Label><Input id="sp-addr-zip" type="number" step="1" value={addressForm.postalCode} onChange={e => setAddressForm(p => ({ ...p, postalCode: e.target.value }))} /></div>
-                      <div><Label htmlFor="sp-addr-country">Nazione <span className="text-red-500">*</span></Label><Input id="sp-addr-country" value={addressForm.country} onChange={e => setAddressForm(p => ({ ...p, country: e.target.value }))} required /></div>
+                      <div><Label htmlFor="sp-addr-country">Nazione <span className="text-destructive">*</span></Label><Input id="sp-addr-country" value={addressForm.country} onChange={e => setAddressForm(p => ({ ...p, country: e.target.value }))} required /></div>
                       <div className="flex gap-2">
-                        <div className="flex-1"><Label htmlFor="sp-addr-lat">Latitudine <span className="text-red-500">*</span></Label><Input id="sp-addr-lat" type="number" step="any" value={addressForm.latitude} onChange={e => setAddressForm(p => ({ ...p, latitude: e.target.value }))} placeholder="Latitudine" required /></div>
-                        <div className="flex-1"><Label htmlFor="sp-addr-lng">Longitudine <span className="text-red-500">*</span></Label><Input id="sp-addr-lng" type="number" step="any" value={addressForm.longitude} onChange={e => setAddressForm(p => ({ ...p, longitude: e.target.value }))} placeholder="Longitudine" required /></div>
+                        <div className="flex-1"><Label htmlFor="sp-addr-lat">Latitudine <span className="text-destructive">*</span></Label><Input id="sp-addr-lat" type="number" step="any" value={addressForm.latitude} onChange={e => setAddressForm(p => ({ ...p, latitude: e.target.value }))} placeholder="Latitudine" required /></div>
+                        <div className="flex-1"><Label htmlFor="sp-addr-lng">Longitudine <span className="text-destructive">*</span></Label><Input id="sp-addr-lng" type="number" step="any" value={addressForm.longitude} onChange={e => setAddressForm(p => ({ ...p, longitude: e.target.value }))} placeholder="Longitudine" required /></div>
                       </div>
                       <div className="flex gap-2">
                         <Button type="button" variant="outline" onClick={() => { setShowAddressForm(false); setAddressForm({ addressLine1: '', addressLine2: '', city: '', stateProvince: '', postalCode: '', country: '', latitude: '', longitude: '' }); }}>Annulla</Button>
@@ -408,21 +535,140 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                 </>
               )}
             </div>
+            <div>
+              <Label htmlFor="account-manager">Responsabile Cliente</Label>
+                              <SearchableSelect
+                  options={[{ value: '', label: 'Nessuno' }, ...users.map(u => ({ value: u.id, label: u.displayName }))]}
+                  value={selectedAccountManagerId || ''}
+                  onSelect={(val) => setSelectedAccountManagerId((val as string) || undefined)}
+                  placeholder={isLoadingUsers ? 'Caricamento utenti...' : 'Seleziona responsabile'}
+                  searchPlaceholder="Cerca responsabile..."
+                  disabled={isLoadingUsers}
+                />
+            </div>
+            
+            {/* Responsabili Caricamento/Ordini Section - only show when editing */}
+            {editingSellingPoint && (
+              <div className="space-y-4 border-t pt-4">
+                <div className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-muted-foreground" />
+                  <h3 className="text-lg font-medium">Responsabili Caricamento/Ordini</h3>
+                </div>
+                
+                {/* Existing Responsabili Caricamento/Ordini */}
+                {isLoadingServicePeople ? (
+                  <p className="text-sm text-muted-foreground">Caricamento responsabili caricamento/ordini...</p>
+                ) : servicePeople.length > 0 ? (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-foreground">Responsabili caricamento/ordini assegnati:</h4>
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                      {servicePeople.map((servicePerson) => {
+                        const user = users.find(u => u.id === servicePerson.userId);
+                        return (
+                          <div key={servicePerson.id} className="flex items-center justify-between p-2 bg-muted rounded text-sm">
+                            <div>
+                              <span className="font-medium">{user?.displayName || `User ID: ${servicePerson.userId}`}</span>
+                            </div>
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleRemoveServicePerson(servicePerson.id)}
+                                className="text-destructive hover:bg-destructive/10"
+                                title="Rimuovi responsabile caricamento/ordini"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Nessun responsabile caricamento/ordini assegnato.</p>
+                )}
+                
+                {/* Add New Responsabile Caricamento/Ordini Button */}
+                <div className="flex justify-center">
+                  <Button
+                    type="button"
+                    onClick={() => setShowAddServicePersonForm(true)}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Aggiungi Responsabile Caricamento/Ordini
+                  </Button>
+                </div>
+                
+                {/* Add New Responsabile Caricamento/Ordini Form - only show when button is clicked */}
+                {showAddServicePersonForm && (
+                  <div className="space-y-3 border rounded-lg p-3 bg-muted">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-medium text-foreground">Nuovo responsabile caricamento/ordini:</h4>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowAddServicePersonForm(false)}
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="service-person-select">Utente <span className="text-destructive">*</span></Label>
+                      <SearchableSelect
+                        options={users.map(u => ({ value: u.id, label: u.displayName }))}
+                        value={selectedServicePersonId}
+                        onSelect={(value) => setSelectedServicePersonId(value as string)}
+                        placeholder="Seleziona utente..."
+                        searchPlaceholder="Cerca utenti..."
+                        disabled={isLoadingUsers}
+                      />
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        onClick={() => setShowAddServicePersonForm(false)}
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                      >
+                        Annulla
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={handleAddServicePerson}
+                        disabled={!selectedServicePersonId}
+                        size="sm"
+                        className="flex-1"
+                      >
+                        Aggiungi
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             
             {/* Supplier Relationships Section - only show when editing */}
             {editingSellingPoint && (
               <div className="space-y-4 border-t pt-4">
                 <div className="flex items-center gap-2">
-                  <Building className="w-5 h-5 text-gray-500" />
+                  <Building className="w-5 h-5 text-muted-foreground" />
                   <h3 className="text-lg font-medium">Relazioni Fornitori</h3>
                 </div>
                 
                 {/* Existing Relationships */}
                 {isLoadingRelationships ? (
-                  <p className="text-sm text-gray-500">Caricamento relazioni...</p>
+                  <p className="text-sm text-muted-foreground">Caricamento relazioni...</p>
                 ) : relationships.length > 0 ? (
                   <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-gray-700">Relazioni esistenti:</h4>
+                    <h4 className="text-sm font-medium text-foreground">Relazioni esistenti:</h4>
                     <div className="space-y-2 max-h-32 overflow-y-auto">
                       {relationships.map((relationship) => (
                         <div key={relationship.id} className="flex items-center justify-between p-2 bg-muted rounded text-sm">
@@ -440,7 +686,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                               size="sm"
                               variant="outline"
                               onClick={() => handleDeleteSupplierRelationship(relationship.id)}
-                              className="text-red-600 hover:bg-red-100 dark:hover:bg-red-900"
+                              className="text-destructive hover:bg-destructive/10"
                               title="Elimina relazione"
                             >
                               <Trash2 className="w-3 h-3" />
@@ -484,11 +730,11 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                     </div>
                     
                     <div>
-                      <Label htmlFor="supplier-select">Fornitore <span className="text-red-500">*</span></Label>
+                      <Label htmlFor="supplier-select">Fornitore <span className="text-destructive">*</span></Label>
                       <SearchableSelect
                         options={supplierOptions}
                         value={selectedSupplierId}
-                        onSelect={setSelectedSupplierId}
+                        onSelect={(value) => setSelectedSupplierId(value as string)}
                         placeholder="Seleziona fornitore..."
                         searchPlaceholder="Cerca fornitori..."
                         disabled={isLoadingSuppliers}
@@ -496,7 +742,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                     </div>
                     
                     <div>
-                      <Label htmlFor="start-date">Data inizio <span className="text-red-500">*</span></Label>
+                      <Label htmlFor="start-date">Data inizio <span className="text-destructive">*</span></Label>
                       <Input
                         id="start-date"
                         type="date"
@@ -547,7 +793,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                   <Button
                     type="button"
                     variant="ghost"
-                    className="text-red-600 hover:bg-red-100 dark:hover:bg-red-900"
+                    className="text-destructive hover:bg-destructive/10"
                     aria-label="Elimina"
                     onClick={() => {
                       if (confirm("Sei sicuro di voler eliminare questo punto vendita?")) {
@@ -575,7 +821,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
 
       <CardContent>
         {isLoading ? (
-          <p>Caricamento punti vendita...</p>
+          <p className="text-muted-foreground">Caricamento punti vendita...</p>
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -586,6 +832,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/5">Azienda Cliente</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-2/5">Indirizzo</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/5">Telefono</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/5">Responsabile Cliente</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-32">Azioni</th>
                 </tr>
               </thead>
@@ -593,12 +840,14 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                 {filteredSellingPoints.map(sp => {
                   const address = sp.addresses;
                   const company = sp.companies;
+                  const accountManagerName = users.find(u => u.id === sp.accountManager)?.displayName || 'Nessuno';
                   return (
                     <tr key={sp.id} onClick={!readOnly ? () => handleEdit(sp) : undefined} className={!readOnly ? "cursor-pointer hover:bg-muted/50" : "hover:bg-muted/50"}>
                       <td className="px-4 py-4 text-sm font-medium text-foreground break-words">{sp.name}</td>
                       <td className="px-4 py-4 text-sm text-muted-foreground break-words">{company?.name || 'N/A'}</td>
                       <td className="px-4 py-4 text-sm text-muted-foreground break-words">{address ? `${address.addressLine1 || ''}${address.addressLine1 && address.city ? ', ' : ''}${address.city || ''}` : 'N/A'}</td>
                       <td className="px-4 py-4 text-sm text-muted-foreground break-words">{sp.phoneNumber || 'N/A'}</td>
+                      <td className="px-4 py-4 text-sm text-muted-foreground break-words">{accountManagerName}</td>
                       <td className="px-4 py-4 text-sm text-muted-foreground">
                         {!readOnly && (
                           <div className="flex gap-2">
@@ -624,7 +873,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                               }}
                               aria-label="Elimina"
                             >
-                              <Trash2 className="w-4 h-4 text-red-600" />
+                              <Trash2 className="w-4 h-4 text-destructive" />
                             </Button>
                           </div>
                         )}
@@ -637,7 +886,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
           </div>
           </>
         )}
-        {filteredSellingPoints.length === 0 && !isLoading && <p>Nessun punto vendita trovato.</p>}
+        {filteredSellingPoints.length === 0 && !isLoading && <p className="text-muted-foreground">Nessun punto vendita trovato.</p>}
       </CardContent>
     </Card>
   );

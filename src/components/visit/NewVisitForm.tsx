@@ -25,15 +25,17 @@ import {
 import { AgentOrAbove } from '@/components/ui/role-guard';
 import { PhotoUpload, PhotoUploadRef } from './PhotoUpload';
 import { 
-  useSuppliers, 
-  useSellersBySupplier, 
-  useSellingPointsBySupplier, 
+  useAccountManagerSellingPoints,
+  getSellerCompanyIdsFromSellingPoints,
+  getSellingPointIds,
+  getSupplierCompanyIdsFromCompanySellingPoints,
   useActivities, 
   usePeopleByCompanies,
   useCreateVisit,
   useUploadPhotos
 } from '@/hooks/use-data';
 import { formatDateForDatabase } from '@/lib/date-utils';
+import { useQuery } from '@tanstack/react-query';
 
 type Company = Database['public']['Tables']['companies']['Row'];
 type SellingPointWithAddress = Database['public']['Tables']['sellingPoints']['Row'] & { addresses?: Database['public']['Tables']['addresses']['Row'] };
@@ -65,10 +67,72 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
   const [photos, setPhotos] = useState<any[]>([]);
   const photoUploadRef = useRef<PhotoUploadRef>(null);
   
-  // Data fetching hooks
-  const { data: suppliers = [], isLoading: isLoadingSuppliers } = useSuppliers();
-  const { data: sellers = [], isLoading: isLoadingSellers } = useSellersBySupplier(selectedSupplierId);
-  const { data: sellingPoints = [], isLoading: isLoadingSellingPoints } = useSellingPointsBySupplier(selectedSupplierId, selectedSellerId);
+  // Add state for hours spent
+  const [hoursSpent, setHoursSpent] = useState<string>('');
+  
+  // Data fetching hooks (account manager filtered)
+  const { data: amSellingPoints = [], isLoading: isLoadingSellingPoints } = useAccountManagerSellingPoints(user?.id || '');
+
+  // Check if user has any assigned selling points
+  const hasAssignedSellingPoints = amSellingPoints.length > 0;
+
+  // Sellers
+  const sellerCompanyIds = getSellerCompanyIdsFromSellingPoints(amSellingPoints);
+  const { data: amSellers = [], isLoading: isLoadingSellers } = useQuery({
+    queryKey: ['accountManagerSellers', sellerCompanyIds],
+    queryFn: async () => {
+      if (sellerCompanyIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('companies')
+        .select('*')
+        .in('id', sellerCompanyIds)
+        .eq('isSeller', true)
+        .eq('isActive', true);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: sellerCompanyIds.length > 0,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+
+  // Suppliers
+  const sellingPointIds = getSellingPointIds(amSellingPoints);
+  const { data: companySellingPoints = [], isLoading: isLoadingCompanySellingPoints } = useQuery({
+    queryKey: ['accountManagerCompanySellingPoints', sellingPointIds],
+    queryFn: async () => {
+      if (sellingPointIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('companySellingPoint')
+        .select('supplierCompanyId')
+        .in('sellingPointId', sellingPointIds)
+        .eq('isactive', true);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: sellingPointIds.length > 0,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+  const supplierCompanyIds = getSupplierCompanyIdsFromCompanySellingPoints(companySellingPoints);
+  const { data: amSuppliers = [], isLoading: isLoadingSuppliers } = useQuery({
+    queryKey: ['accountManagerSuppliers', supplierCompanyIds],
+    queryFn: async () => {
+      if (supplierCompanyIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('companies')
+        .select('*')
+        .in('id', supplierCompanyIds)
+        .eq('isSupplier', true)
+        .eq('isActive', true);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: supplierCompanyIds.length > 0,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+
   const { data: activities = [], isLoading: isLoadingActivities } = useActivities();
   const { data: people = [], isLoading: isLoadingPeople } = usePeopleByCompanies([selectedSupplierId, selectedSellerId].filter(Boolean));
   
@@ -123,7 +187,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
     }
   }, [selectedActivityId]);
 
-  const supplierOptions = suppliers
+  const supplierOptions = amSuppliers
     .slice()
     .sort((a, b) => a.name.localeCompare(b.name))
     .map(supplier => ({
@@ -131,7 +195,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
       label: supplier.name
     }));
 
-  const sellerOptions = sellers
+  const sellerOptions = amSellers
     .slice()
     .sort((a, b) => a.name.localeCompare(b.name))
     .map(seller => ({
@@ -139,7 +203,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
       label: seller.name
     }));
 
-  const sellingPointOptions = sellingPoints
+  const sellingPointOptions = amSellingPoints
     .slice()
     .sort((a, b) => a.name.localeCompare(b.name))
     .map(point => ({
@@ -157,9 +221,9 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
       subtitle: undefined
     }));
 
-  const selectedSupplier = suppliers.find(s => s.id === selectedSupplierId);
-  const selectedSeller = sellers.find(s => s.id === selectedSellerId);
-  const selectedSellingPoint = sellingPoints.find(p => p.id === selectedSellingPointId);
+  const selectedSupplier = amSuppliers.find(s => s.id === selectedSupplierId);
+  const selectedSeller = amSellers.find(s => s.id === selectedSellerId);
+  const selectedSellingPoint = amSellingPoints.find(p => p.id === selectedSellingPointId);
   const selectedActivity = activities.find(a => a.id === selectedActivityId);
 
   const canSubmit = user && selectedSupplierId && selectedSellerId && selectedSellingPointId && selectedActivityId && placedOrder !== null;
@@ -176,7 +240,8 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
         agentId: user!.id,
         visitDate: formatDateForDatabase(selectedDate),
         personVisitedId: visitedPerson ? personVisitedId : null,
-        placedOrder: placedOrder
+        placedOrder: placedOrder,
+        hoursSpend: hoursSpent ? parseInt(hoursSpent, 10) : null,
       };
 
       const result = await createVisitMutation.mutateAsync(visitData);
@@ -205,6 +270,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
       setSelectedDate(new Date());
       setPlacedOrder(null);
       setPhotos([]);
+      setHoursSpent('');
     } catch (error) {
       console.error('Error submitting visit:', error);
       setResultDialogContent('Errore nell\'invio della visita. Per favore riprova più tardi.');
@@ -261,6 +327,16 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
       </AlertDialog>
       <Card className="w-full">
           <CardContent className="p-6 space-y-4 md:space-y-6">
+            {/* Check if user has assigned selling points */}
+            {!isLoadingSellingPoints && !hasAssignedSellingPoints && (
+              <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg">
+                <p className="text-yellow-800">
+                  <strong>Attenzione:</strong> Non hai punti vendita assegnati. 
+                  Contatta l'amministratore per ricevere le assegnazioni necessarie.
+                </p>
+              </div>
+            )}
+            
             {/* Date Picker */}
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center gap-2">
@@ -301,10 +377,12 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
               <SearchableSelect
                 options={supplierOptions}
                 value={selectedSupplierId}
-                onSelect={setSelectedSupplierId}
+                onSelect={value => {
+                  if (typeof value === 'string') setSelectedSupplierId(value);
+                }}
                 placeholder="Scegli un'azienda fornitrice..."
                 searchPlaceholder="Cerca fornitori..."
-                disabled={isLoadingSuppliers}
+                disabled={isLoadingSuppliers || !hasAssignedSellingPoints}
               />
             </div>
 
@@ -318,7 +396,9 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                 <SearchableSelect
                   options={sellerOptions}
                   value={selectedSellerId}
-                  onSelect={setSelectedSellerId}
+                  onSelect={value => {
+                    if (typeof value === 'string') setSelectedSellerId(value);
+                  }}
                   placeholder="Scegli un cliente..."
                   searchPlaceholder="Cerca clienti..."
                   disabled={isLoadingSellers}
@@ -336,7 +416,9 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                 <SearchableSelect
                   options={sellingPointOptions}
                   value={selectedSellingPointId}
-                  onSelect={setSelectedSellingPointId}
+                  onSelect={value => {
+                    if (typeof value === 'string') setSelectedSellingPointId(value);
+                  }}
                   placeholder="Scegli un punto vendita..."
                   searchPlaceholder="Cerca punti vendita..."
                   disabled={isLoadingSellingPoints}
@@ -354,7 +436,9 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                 <SearchableSelect
                   options={activityOptions}
                   value={selectedActivityId}
-                  onSelect={setSelectedActivityId}
+                  onSelect={value => {
+                    if (typeof value === 'string') setSelectedActivityId(value);
+                  }}
                   placeholder="Scegli un'attività..."
                   searchPlaceholder="Cerca attività..."
                   disabled={isLoadingActivities}
@@ -365,7 +449,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
             {/* Person selection section - hidden */}
             {selectedActivityId && (
               <>
-
+                {/* Order section */}
                 <div className="space-y-2 mt-6">
                   <label className="text-sm font-medium flex items-center gap-2" htmlFor="ordine-completato-switch">
                     Ordine
@@ -387,7 +471,23 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                     </Button>
                   </div>
                 </div>
-
+                {/* Hours Spent section */}
+                <div className="space-y-2 mt-6">
+                  <label className="text-sm font-medium flex items-center gap-2" htmlFor="hours-spent-input">
+                    Ore trascorse (opzionale)
+                  </label>
+                  <input
+                    id="hours-spent-input"
+                    type="number"
+                    min="0"
+                    step="1"
+                    className="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
+                    placeholder="Quante ore hai trascorso?"
+                    value={hoursSpent}
+                    onChange={e => setHoursSpent(e.target.value.replace(/[^0-9]/g, ''))}
+                    disabled={loading.submitting}
+                  />
+                </div>
                 {/* Photo Upload Section */}
                 <PhotoUpload
                   ref={photoUploadRef}
@@ -396,7 +496,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                 />
 
                 {canSubmit && (
-                  <div className="space-y-3 p-4 bg-blue-50 rounded-lg">
+                  <div className="space-y-3 p-4 bg-info/10 rounded-lg text-foreground">
                     <h3 className="font-medium text-blue-900">Riepilogo visita</h3>
                     <div className="space-y-1 text-sm">
                       <p><span className="font-medium">Email utente:</span> {user?.email}</p>
@@ -406,6 +506,9 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                       <p><span className="font-medium">Punto vendita:</span> {selectedSellingPoint?.name}</p>
                       <p><span className="font-medium">Attività:</span> {selectedActivity?.name}</p>
                       <p><span className="font-medium">Ordine:</span> {placedOrder ? 'Sì' : 'No'}</p>
+                      {hoursSpent && (
+                        <p><span className="font-medium">Ore trascorse:</span> {hoursSpent}</p>
+                      )}
                       {photos.length > 0 && (
                         <p><span className="font-medium">Foto:</span> {photos.length} foto selezionate</p>
                       )}

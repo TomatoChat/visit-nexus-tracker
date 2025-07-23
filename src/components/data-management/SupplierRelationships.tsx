@@ -152,7 +152,7 @@ const SupplierRelationships: React.FC<SupplierRelationshipsProps> = ({
               <SearchableSelect
                 options={supplierOptions}
                 value={selectedSupplierId}
-                onSelect={setSelectedSupplierId}
+                onSelect={(val) => setSelectedSupplierId(Array.isArray(val) ? val[0] : val)}
                 placeholder="Seleziona fornitore..."
                 searchPlaceholder="Cerca fornitori..."
                 disabled={isLoadingSuppliers}
@@ -308,7 +308,7 @@ const SupplierRelationships: React.FC<SupplierRelationshipsProps> = ({
                     size="sm"
                     variant="outline"
                     onClick={() => handleDelete(relationship)}
-                    className="text-red-600 hover:bg-red-50"
+                    className="text-destructive hover:bg-destructive/10"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>

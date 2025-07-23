@@ -186,7 +186,7 @@ const GeneralCategories = () => {
         <div className="flex flex-row items-center justify-between gap-2 md:hidden mb-4">
           <div className="flex items-center gap-2">
             <SidebarTrigger />
-            <h1 className="text-lg font-bold text-foreground">Categorie Generali</h1>
+            <h1 className="text-lg font-bold">Categorie Generali</h1>
           </div>
           <div className="flex items-center gap-2">
             {!showSearch && (
@@ -216,7 +216,7 @@ const GeneralCategories = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="border-black text-black hover:bg-gray-50"
+              className="border-border text-foreground hover:bg-accent"
               onClick={() => { setEditItem(null); setForm({}); setShowAddModal(true); setModalTab(tab as 'activities'|'roles'|'categories'); }}
               aria-label="Aggiungi"
             >
@@ -226,7 +226,7 @@ const GeneralCategories = () => {
         </div>
         {/* Desktop: Title and actions */}
         <div className="hidden md:flex items-center justify-between gap-4 mb-8">
-          <h1 className="text-3xl font-bold text-foreground text-left">Categorie Generali</h1>
+          <h1 className="text-3xl font-bold text-left">Categorie Generali</h1>
           <div className="flex items-center gap-2">
             {!showSearch && (
               <Button
@@ -255,7 +255,7 @@ const GeneralCategories = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="border-black text-black hover:bg-gray-50"
+              className="border-border text-foreground hover:bg-accent"
               onClick={() => { setEditItem(null); setForm({}); setShowAddModal(true); setModalTab(tab as 'activities'|'roles'|'categories'); }}
               aria-label="Aggiungi"
             >
@@ -336,11 +336,11 @@ const GeneralCategories = () => {
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{r.name}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                               {r.isAgent ? (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-success/10 text-success">
                                   Sì
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
                                   No
                                 </span>
                               )}
@@ -417,11 +417,11 @@ const GeneralCategories = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                               {c.sellerCategory ? (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-success/10 text-success">
                                   Sì
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
                                   No
                                 </span>
                               )}

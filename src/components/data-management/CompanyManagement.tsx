@@ -352,7 +352,7 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
                       <SearchableSelect
                         options={addressOptions}
                         value={selectedAddressId}
-                        onSelect={(val) => setSelectedAddressId(val)}
+                        onSelect={(val) => setSelectedAddressId(Array.isArray(val) ? val[0] : val)}
                         placeholder="Cerca indirizzo per via o città..."
                         searchPlaceholder="Digita indirizzo o città..."
                         disabled={addressLoading}
@@ -414,7 +414,7 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
                   <Button
                     type="button"
                     variant="ghost"
-                    className="text-red-600 hover:bg-red-50"
+                    className="text-destructive hover:bg-destructive/10"
                     aria-label="Elimina"
                     onClick={() => {
                       if (confirm("Sei sicuro di voler eliminare questa azienda?")) {
@@ -465,19 +465,19 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{company.codeVAT}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                         {company.isSeller && company.isSupplier ? (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-info/10 text-info">
                             Fornitore & Cliente
                           </span>
                         ) : company.isSeller ? (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-success/10 text-success">
                             Cliente
                           </span>
                         ) : company.isSupplier ? (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-warning/10 text-warning">
                             Fornitore
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-background text-foreground">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
                             N/A
                           </span>
                         )}

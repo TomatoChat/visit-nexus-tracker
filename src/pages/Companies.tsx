@@ -226,7 +226,7 @@ const Companies = () => {
         <div className="flex flex-row items-center justify-between gap-2 md:hidden mb-4">
           <div className="flex items-center gap-2">
             <SidebarTrigger />
-            <h1 className="text-lg font-bold text-foreground">Aziende</h1>
+            <h1 className="text-lg font-bold">Aziende</h1>
           </div>
           <div className="flex items-center gap-2">
             {!showSearch && (
@@ -258,7 +258,7 @@ const Companies = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="border-black text-black hover:bg-gray-50"
+                className="border-border text-foreground hover:bg-accent"
                 onClick={() => setTriggerAddForm(true)}
                 aria-label="Aggiungi Azienda"
               >
@@ -270,7 +270,7 @@ const Companies = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="border-black text-black hover:bg-gray-50"
+                className="border-border text-foreground hover:bg-accent"
                 onClick={() => setIsBulkUploadOpen(true)}
                 aria-label="Caricamento Massivo Aziende"
               >
@@ -281,7 +281,7 @@ const Companies = () => {
         </div>
         {/* Desktop: Title and actions */}
         <div className="hidden md:flex items-center justify-between gap-4 mb-8">
-          <h1 className="text-3xl font-bold text-foreground text-left">Aziende</h1>
+          <h1 className="text-3xl font-bold text-left">Aziende</h1>
           <div className="flex items-center gap-2">
             {!showSearch && (
               <Button
@@ -312,7 +312,7 @@ const Companies = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="border-black text-black hover:bg-gray-50"
+                className="border-border text-foreground hover:bg-accent"
                 onClick={() => setTriggerAddForm(true)}
                 aria-label="Aggiungi Azienda"
               >
@@ -324,7 +324,7 @@ const Companies = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="border-black text-black hover:bg-gray-50"
+                className="border-border text-foreground hover:bg-accent"
                 onClick={() => setIsBulkUploadOpen(true)}
                 aria-label="Caricamento Massivo Aziende"
               >

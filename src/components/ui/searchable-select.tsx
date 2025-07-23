@@ -13,13 +13,14 @@ interface Option {
 
 interface SearchableSelectProps {
   options: Option[];
-  value?: string;
-  onSelect: (value: string) => void;
+  value?: string | string[];
+  onSelect: (value: string | string[]) => void;
   placeholder?: string;
   searchPlaceholder?: string;
   className?: string;
   disabled?: boolean;
   alwaysVisibleOption?: Option;
+  isMulti?: boolean;
 }
 
 export const SearchableSelect: React.FC<SearchableSelectProps> = ({
@@ -30,15 +31,21 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   searchPlaceholder = "Search...",
   className,
   disabled = false,
-  alwaysVisibleOption
+  alwaysVisibleOption,
+  isMulti = false
 }) => {
   const [open, setOpen] = useState(false);
   const [selectedOption, setSelectedOption] = useState<Option | undefined>();
+  const [selectedOptions, setSelectedOptions] = useState<Option[]>([]);
 
   useEffect(() => {
-    const option = options.find(opt => opt.value === value);
-    setSelectedOption(option);
-  }, [value, options]);
+    if (isMulti && Array.isArray(value)) {
+      setSelectedOptions(options.filter(opt => value.includes(opt.value)));
+    } else {
+      const option = options.find(opt => opt.value === value);
+      setSelectedOption(option);
+    }
+  }, [value, options, isMulti]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -50,14 +57,27 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
           className={cn("w-full justify-between", className)}
           disabled={disabled}
         >
-          <div className="flex flex-col items-start">
-            <span className={selectedOption ? "text-foreground" : "text-muted-foreground"}>
-              {selectedOption ? selectedOption.label : placeholder}
-            </span>
-            {selectedOption?.subtitle && (
-              <span className="text-xs text-muted-foreground">{selectedOption.subtitle}</span>
-            )}
-          </div>
+          {isMulti && Array.isArray(value) ? (
+            <div className="flex flex-wrap gap-1 items-center">
+              {selectedOptions.length > 0
+                ? selectedOptions.map(opt => (
+                    <span key={opt.value} className="bg-muted rounded px-2 py-0.5 text-xs">
+                      {opt.label}
+                    </span>
+                  ))
+                : <span className="text-muted-foreground">{placeholder}</span>
+              }
+            </div>
+          ) : (
+            <div className="flex flex-col items-start">
+              <span className={selectedOption ? "text-foreground" : "text-muted-foreground"}>
+                {selectedOption ? selectedOption.label : placeholder}
+              </span>
+              {selectedOption?.subtitle && (
+                <span className="text-xs text-muted-foreground">{selectedOption.subtitle}</span>
+              )}
+            </div>
+          )}
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -72,16 +92,35 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
                   key={option.value}
                   value={option.label}
                   onSelect={() => {
-                    onSelect(option.value);
-                    setOpen(false);
+                    if (isMulti) {
+                      let newSelected: string[] = Array.isArray(value) ? [...value] : [];
+                      if (newSelected.includes(option.value)) {
+                        newSelected = newSelected.filter(v => v !== option.value);
+                      } else {
+                        newSelected.push(option.value);
+                      }
+                      onSelect(newSelected);
+                    } else {
+                      onSelect(option.value);
+                      setOpen(false);
+                    }
                   }}
                 >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === option.value ? "opacity-100" : "opacity-0"
-                    )}
-                  />
+                  {isMulti ? (
+                    <input
+                      type="checkbox"
+                      checked={Array.isArray(value) && value.includes(option.value)}
+                      readOnly
+                      className="mr-2"
+                    />
+                  ) : (
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === option.value ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                  )}
                   <div className="flex flex-col">
                     <span>{option.label}</span>
                     {option.subtitle && (
@@ -97,16 +136,35 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
                   key={alwaysVisibleOption.value}
                   value={alwaysVisibleOption.label}
                   onSelect={() => {
-                    onSelect(alwaysVisibleOption.value);
-                    setOpen(false);
+                    if (isMulti) {
+                      let newSelected: string[] = Array.isArray(value) ? [...value] : [];
+                      if (newSelected.includes(alwaysVisibleOption.value)) {
+                        newSelected = newSelected.filter(v => v !== alwaysVisibleOption.value);
+                      } else {
+                        newSelected.push(alwaysVisibleOption.value);
+                      }
+                      onSelect(newSelected);
+                    } else {
+                      onSelect(alwaysVisibleOption.value);
+                      setOpen(false);
+                    }
                   }}
                 >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === alwaysVisibleOption.value ? "opacity-100" : "opacity-0"
-                    )}
-                  />
+                  {isMulti ? (
+                    <input
+                      type="checkbox"
+                      checked={Array.isArray(value) && value.includes(alwaysVisibleOption.value)}
+                      readOnly
+                      className="mr-2"
+                    />
+                  ) : (
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === alwaysVisibleOption.value ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                  )}
                   <div className="flex flex-col">
                     <span>{alwaysVisibleOption.label}</span>
                     {alwaysVisibleOption.subtitle && (

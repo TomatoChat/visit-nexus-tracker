@@ -4,10 +4,10 @@ import { useRoles } from '@/hooks/use-roles';
 import { Shield, UserCheck, Users, UserX } from 'lucide-react';
 
 const roleColors: Record<string, string> = {
-  admin: 'bg-red-100 text-red-800 border-red-200',
-  internalAgent: 'bg-blue-100 text-blue-800 border-blue-200',
-  externalAgent: 'bg-green-100 text-green-800 border-green-200',
-  guest: 'bg-muted text-muted-foreground border-gray-200'
+  admin: 'bg-destructive/10 text-destructive border-destructive/20',
+  internalAgent: 'bg-info/10 text-info border-info/20',
+  externalAgent: 'bg-success/10 text-success border-success/20',
+  guest: 'bg-muted text-muted-foreground border-border'
 };
 
 const roleIcons: Record<string, React.ReactNode> = {

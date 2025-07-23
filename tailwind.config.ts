@@ -64,6 +64,43 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				success: {
+					DEFAULT: 'hsl(var(--success))',
+					foreground: 'hsl(var(--success-foreground))',
+					muted: 'hsl(var(--success-muted))',
+					'muted-foreground': 'hsl(var(--success-muted-foreground))'
+				},
+				warning: {
+					DEFAULT: 'hsl(var(--warning))',
+					foreground: 'hsl(var(--warning-foreground))',
+					muted: 'hsl(var(--warning-muted))',
+					'muted-foreground': 'hsl(var(--warning-muted-foreground))'
+				},
+				info: {
+					DEFAULT: 'hsl(var(--info))',
+					foreground: 'hsl(var(--info-foreground))',
+					muted: 'hsl(var(--info-muted))',
+					'muted-foreground': 'hsl(var(--info-muted-foreground))'
+				},
+				status: {
+					active: 'hsl(var(--status-active))',
+					inactive: 'hsl(var(--status-inactive))',
+					pending: 'hsl(var(--status-pending))'
+				},
+				overlay: {
+					DEFAULT: 'hsl(var(--overlay))',
+					foreground: 'hsl(var(--overlay-foreground))'
+				},
+				chart: {
+					'1': 'hsl(var(--chart-1))',
+					'2': 'hsl(var(--chart-2))',
+					'3': 'hsl(var(--chart-3))',
+					'4': 'hsl(var(--chart-4))',
+					'5': 'hsl(var(--chart-5))',
+					'6': 'hsl(var(--chart-6))',
+					'7': 'hsl(var(--chart-7))',
+					'8': 'hsl(var(--chart-8))'
 				}
 			},
 			borderRadius: {

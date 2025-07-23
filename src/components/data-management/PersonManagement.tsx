@@ -186,13 +186,13 @@ const PersonManagement: React.FC<PersonManagementProps> = ({ readOnly = false, s
               <div><Label htmlFor="email">Email <span className="text-red-500">*</span></Label><Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required /></div>
               <div><Label htmlFor="phoneNumber">Telefono <span className="text-red-500">*</span></Label><Input id="phoneNumber" value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} required /></div>
             </div>
-            <div><Label htmlFor="company">Azienda <span className="text-red-500">*</span></Label><SearchableSelect options={companyOptions} value={selectedCompanyId} onSelect={setSelectedCompanyId} placeholder={isLoadingCompanies ? "Caricamento..." : "Seleziona azienda"} disabled={isLoadingCompanies} /></div>
-            <div><Label htmlFor="sellingPoint">Punto Vendita</Label><SearchableSelect options={sellingPointOptions} value={selectedSellingPointId} onSelect={setSelectedSellingPointId} placeholder={isLoadingSellingPoints ? "Caricamento..." : (isSellingPointDropdownEnabled ? "Seleziona punto vendita" : "N/A")} disabled={!isSellingPointDropdownEnabled || isLoadingSellingPoints} /></div>
+            <div><Label htmlFor="company">Azienda <span className="text-red-500">*</span></Label><SearchableSelect options={companyOptions} value={selectedCompanyId} onSelect={(value) => setSelectedCompanyId(value as string)} placeholder={isLoadingCompanies ? "Caricamento..." : "Seleziona azienda"} disabled={isLoadingCompanies} /></div>
+            <div><Label htmlFor="sellingPoint">Punto Vendita</Label><SearchableSelect options={sellingPointOptions} value={selectedSellingPointId} onSelect={(value) => setSelectedSellingPointId(value as string)} placeholder={isLoadingSellingPoints ? "Caricamento..." : (isSellingPointDropdownEnabled ? "Seleziona punto vendita" : "N/A")} disabled={!isSellingPointDropdownEnabled || isLoadingSellingPoints} /></div>
             <div>
               <Label htmlFor="role">Ruolo <span className="text-red-500">*</span></Label>
               {!showNewRoleForm ? (
                 <div className="flex gap-2">
-                  <SearchableSelect options={personRoleOptions} value={selectedRoleId} onSelect={setSelectedRoleId} placeholder={isLoadingPersonRoles ? "Caricamento..." : "Seleziona ruolo"} disabled={isLoadingPersonRoles} className="flex-1" />
+                  <SearchableSelect options={personRoleOptions} value={selectedRoleId} onSelect={(value) => setSelectedRoleId(value as string)} placeholder={isLoadingPersonRoles ? "Caricamento..." : "Seleziona ruolo"} disabled={isLoadingPersonRoles} className="flex-1" />
                   <Button type="button" variant="outline" onClick={() => setShowNewRoleForm(true)} className="px-3">+</Button>
                 </div>
               ) : (
@@ -215,7 +215,7 @@ const PersonManagement: React.FC<PersonManagementProps> = ({ readOnly = false, s
                   <Button
                     type="button"
                     variant="ghost"
-                    className="text-red-600 hover:bg-red-50"
+                    className="text-destructive hover:bg-destructive/10"
                     aria-label="Elimina"
                     onClick={() => {
                       if (confirm("Sei sicuro di voler eliminare questa persona?")) {
@@ -249,7 +249,7 @@ const PersonManagement: React.FC<PersonManagementProps> = ({ readOnly = false, s
               <thead className="bg-muted">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/5">Nome Cognome</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/5">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/5">Nome</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/5">Azienda</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/5">P. Vendita</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/5">Ruolo</th>
@@ -260,7 +260,7 @@ const PersonManagement: React.FC<PersonManagementProps> = ({ readOnly = false, s
                   {filteredPeople.map(person => (
                     <tr key={person.id} onClick={!readOnly ? () => handleEdit(person) : undefined} className={!readOnly ? "cursor-pointer hover:bg-muted/50" : "hover:bg-muted/50"}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{`${person.surname} ${person.name}`}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{person.email}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{`${person.name} ${person.surname}`}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{person.companies?.name || 'N/A'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{person.sellingPoints?.name || 'N/A'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{person.personRoles?.name || 'N/A'}</td>
