@@ -73,6 +73,9 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
   // Data fetching hooks (account manager filtered)
   const { data: amSellingPoints = [], isLoading: isLoadingSellingPoints } = useAccountManagerSellingPoints(user?.id || '');
 
+  // Check if user has any assigned selling points
+  const hasAssignedSellingPoints = amSellingPoints.length > 0;
+
   // Sellers
   const sellerCompanyIds = getSellerCompanyIdsFromSellingPoints(amSellingPoints);
   const { data: amSellers = [], isLoading: isLoadingSellers } = useQuery({
@@ -324,6 +327,16 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
       </AlertDialog>
       <Card className="w-full">
           <CardContent className="p-6 space-y-4 md:space-y-6">
+            {/* Check if user has assigned selling points */}
+            {!isLoadingSellingPoints && !hasAssignedSellingPoints && (
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-yellow-800">
+                  <strong>Attenzione:</strong> Non hai punti vendita assegnati. 
+                  Contatta l'amministratore per ricevere le assegnazioni necessarie.
+                </p>
+              </div>
+            )}
+            
             {/* Date Picker */}
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center gap-2">
@@ -369,7 +382,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                 }}
                 placeholder="Scegli un'azienda fornitrice..."
                 searchPlaceholder="Cerca fornitori..."
-                disabled={isLoadingSuppliers}
+                disabled={isLoadingSuppliers || !hasAssignedSellingPoints}
               />
             </div>
 

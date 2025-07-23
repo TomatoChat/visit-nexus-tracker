@@ -7,9 +7,10 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, Pencil, Search, Plus, Link, Building } from 'lucide-react';
+import { Trash2, Pencil, Search, Plus, Link, Building, Users } from 'lucide-react';
 import SupplierRelationships from './SupplierRelationships';
 import { useSuppliers, useCompanySellingPoints, useCreateCompanySellingPoint, useDeleteCompanySellingPoint, useAllUsers } from '@/hooks/use-data';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 type SellingPoint = Database['public']['Tables']['sellingPoints']['Row'] & { accountManager?: string };
 type Company = Database['public']['Tables']['companies']['Row'];
@@ -46,6 +47,12 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
   const [sellerCode, setSellerCode] = useState<string>('');
   const [showAddRelationshipForm, setShowAddRelationshipForm] = useState(false);
 
+  // Responsabili Caricamento/Ordini state
+  const [selectedServicePersonId, setSelectedServicePersonId] = useState<string>('');
+  const [showAddServicePersonForm, setShowAddServicePersonForm] = useState(false);
+  const [servicePeople, setServicePeople] = useState<any[]>([]);
+  const [isLoadingServicePeople, setIsLoadingServicePeople] = useState(false);
+
   const [sellerCompanies, setSellerCompanies] = useState<Company[]>([]);
   const [isLoadingSellerCompanies, setIsLoadingSellerCompanies] = useState(false);
   
@@ -54,6 +61,37 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
   const { data: relationships = [], isLoading: isLoadingRelationships } = useCompanySellingPoints(editingSellingPoint?.id || '');
   const createRelationshipMutation = useCreateCompanySellingPoint();
   const deleteRelationshipMutation = useDeleteCompanySellingPoint();
+  const queryClient = useQueryClient();
+
+  // Responsabili Caricamento/Ordini mutations
+  const createServicePersonMutation = useMutation({
+    mutationFn: async ({ sellingPointId, userId }: { sellingPointId: string; userId: string }) => {
+      const { error } = await supabase
+        .from('sellingPointServicePeople')
+        .insert({
+          sellingPointId,
+          userId,
+          isactive: true
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['servicePeople'] });
+    }
+  });
+
+  const deleteServicePersonMutation = useMutation({
+    mutationFn: async ({ id }: { id: string }) => {
+      const { error } = await supabase
+        .from('sellingPointServicePeople')
+        .update({ isactive: false })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['servicePeople'] });
+    }
+  });
 
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [addressOptions, setAddressOptions] = useState<Array<{ value: string; label: string; subtitle?: string }>>([]);
@@ -193,6 +231,9 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
     setSellerCode('');
     setShowAddRelationshipForm(false);
     setSelectedAccountManagerId(undefined);
+    // Reset service people form
+    setSelectedServicePersonId('');
+    setShowAddServicePersonForm(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -240,6 +281,9 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
       setAddressSearch(sp.addresses.addressLine1 || sp.addresses.city);
     }
     setShowAddForm(true);
+    
+    // Fetch responsabili caricamento/ordini for this selling point
+    fetchServicePeople(sp.id);
   };
 
   const handleSoftDelete = async (sp: SellingPoint & { addresses: Address, companies: Company }) => {
@@ -316,6 +360,79 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
     }
   };
 
+  // Fetch responsabili caricamento/ordini for the current selling point
+  const fetchServicePeople = async (sellingPointId: string) => {
+    setIsLoadingServicePeople(true);
+    try {
+      const { data, error } = await supabase
+        .from('sellingPointServicePeople')
+        .select('*')
+        .eq('sellingPointId', sellingPointId)
+        .eq('isactive', true);
+      
+      if (error) throw error;
+      setServicePeople(data || []);
+    } catch (error: any) {
+      toast({ title: 'Errore nel caricamento responsabili caricamento/ordini', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsLoadingServicePeople(false);
+    }
+  };
+
+  // Handle adding responsabile caricamento/ordini
+  const handleAddServicePerson = async () => {
+    if (!selectedServicePersonId || !editingSellingPoint) {
+      toast({ 
+        title: 'Errore di validazione', 
+        description: 'Seleziona un utente per aggiungere come responsabile caricamento/ordini.', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    try {
+      await createServicePersonMutation.mutateAsync({
+        sellingPointId: editingSellingPoint.id,
+        userId: selectedServicePersonId
+      });
+      
+      // Reset form
+      setSelectedServicePersonId('');
+      setShowAddServicePersonForm(false);
+      
+      // Refresh responsabili caricamento/ordini list
+      await fetchServicePeople(editingSellingPoint.id);
+      
+      toast({ title: 'Successo!', description: 'Responsabile caricamento/ordini aggiunto!' });
+    } catch (error: any) {
+      toast({ 
+        title: 'Errore', 
+        description: error.message || 'Impossibile aggiungere il responsabile caricamento/ordini.', 
+        variant: 'destructive' 
+      });
+    }
+  };
+
+  // Handle removing responsabile caricamento/ordini
+  const handleRemoveServicePerson = async (servicePersonId: string) => {
+    if (!editingSellingPoint || !confirm('Sei sicuro di voler rimuovere questo responsabile caricamento/ordini?')) return;
+
+    try {
+      await deleteServicePersonMutation.mutateAsync({ id: servicePersonId });
+      
+      // Refresh responsabili caricamento/ordini list
+      await fetchServicePeople(editingSellingPoint.id);
+      
+      toast({ title: 'Successo!', description: 'Responsabile caricamento/ordini rimosso!' });
+    } catch (error: any) {
+      toast({ 
+        title: 'Errore', 
+        description: error.message || 'Impossibile rimuovere il responsabile caricamento/ordini.', 
+        variant: 'destructive' 
+      });
+    }
+  };
+
   const filteredSellingPoints = useMemo(() => {
     return sellingPoints.filter(sp => {
       // Apply search filter
@@ -373,7 +490,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
             <div><Label htmlFor="sp-phone">Telefono</Label><Input id="sp-phone" value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} /></div>
             <div>
               <Label htmlFor="seller-company">Azienda Cliente <span className="text-red-500">*</span></Label>
-              <SearchableSelect options={sellerCompanyOptions} value={selectedSellerCompanyId} onSelect={setSelectedSellerCompanyId} placeholder={isLoadingSellerCompanies ? "Caricamento..." : "Seleziona azienda"} searchPlaceholder="Cerca azienda..." disabled={isLoadingSellerCompanies} />
+              <SearchableSelect options={sellerCompanyOptions} value={selectedSellerCompanyId} onSelect={(value) => setSelectedSellerCompanyId(value as string)} placeholder={isLoadingSellerCompanies ? "Caricamento..." : "Seleziona azienda"} searchPlaceholder="Cerca azienda..." disabled={isLoadingSellerCompanies} />
             </div>
             <div>
               <Label>Indirizzo <span className="text-red-500">*</span></Label>
@@ -394,7 +511,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                 <>
                   {!showAddressForm ? (
                     <div className="flex gap-2">
-                      <SearchableSelect options={addressOptions} value={selectedAddressId} onSelect={setSelectedAddressId} placeholder="Cerca indirizzo..." searchPlaceholder="Digita indirizzo..." disabled={addressLoading} className="flex-1" />
+                      <SearchableSelect options={addressOptions} value={selectedAddressId} onSelect={(value) => setSelectedAddressId(value as string)} placeholder="Cerca indirizzo..." searchPlaceholder="Digita indirizzo..." disabled={addressLoading} className="flex-1" />
                       <Button type="button" variant="outline" onClick={() => setShowAddressForm(true)} className="px-3">+</Button>
                     </div>
                   ) : (
@@ -420,15 +537,123 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
             </div>
             <div>
               <Label htmlFor="account-manager">Responsabile Cliente</Label>
-              <SearchableSelect
-                options={[{ value: '', label: 'Nessuno' }, ...users.map(u => ({ value: u.id, label: u.displayName }))]}
-                value={selectedAccountManagerId || ''}
-                onSelect={val => setSelectedAccountManagerId(val || undefined)}
-                placeholder={isLoadingUsers ? 'Caricamento utenti...' : 'Seleziona responsabile'}
-                searchPlaceholder="Cerca responsabile..."
-                disabled={isLoadingUsers}
-              />
+                              <SearchableSelect
+                  options={[{ value: '', label: 'Nessuno' }, ...users.map(u => ({ value: u.id, label: u.displayName }))]}
+                  value={selectedAccountManagerId || ''}
+                  onSelect={(val) => setSelectedAccountManagerId((val as string) || undefined)}
+                  placeholder={isLoadingUsers ? 'Caricamento utenti...' : 'Seleziona responsabile'}
+                  searchPlaceholder="Cerca responsabile..."
+                  disabled={isLoadingUsers}
+                />
             </div>
+            
+            {/* Responsabili Caricamento/Ordini Section - only show when editing */}
+            {editingSellingPoint && (
+              <div className="space-y-4 border-t pt-4">
+                <div className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-gray-500" />
+                  <h3 className="text-lg font-medium">Responsabili Caricamento/Ordini</h3>
+                </div>
+                
+                {/* Existing Responsabili Caricamento/Ordini */}
+                {isLoadingServicePeople ? (
+                  <p className="text-sm text-gray-500">Caricamento responsabili caricamento/ordini...</p>
+                ) : servicePeople.length > 0 ? (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-gray-700">Responsabili caricamento/ordini assegnati:</h4>
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                      {servicePeople.map((servicePerson) => {
+                        const user = users.find(u => u.id === servicePerson.userId);
+                        return (
+                          <div key={servicePerson.id} className="flex items-center justify-between p-2 bg-muted rounded text-sm">
+                            <div>
+                              <span className="font-medium">{user?.displayName || `User ID: ${servicePerson.userId}`}</span>
+                            </div>
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleRemoveServicePerson(servicePerson.id)}
+                                className="text-red-600 hover:bg-red-100 dark:hover:bg-red-900"
+                                title="Rimuovi responsabile caricamento/ordini"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Nessun responsabile caricamento/ordini assegnato.</p>
+                )}
+                
+                {/* Add New Responsabile Caricamento/Ordini Button */}
+                <div className="flex justify-center">
+                  <Button
+                    type="button"
+                    onClick={() => setShowAddServicePersonForm(true)}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Aggiungi Responsabile Caricamento/Ordini
+                  </Button>
+                </div>
+                
+                {/* Add New Responsabile Caricamento/Ordini Form - only show when button is clicked */}
+                {showAddServicePersonForm && (
+                  <div className="space-y-3 border rounded-lg p-3 bg-muted">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-medium text-foreground">Nuovo responsabile caricamento/ordini:</h4>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowAddServicePersonForm(false)}
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="service-person-select">Utente <span className="text-red-500">*</span></Label>
+                      <SearchableSelect
+                        options={users.map(u => ({ value: u.id, label: u.displayName }))}
+                        value={selectedServicePersonId}
+                        onSelect={(value) => setSelectedServicePersonId(value as string)}
+                        placeholder="Seleziona utente..."
+                        searchPlaceholder="Cerca utenti..."
+                        disabled={isLoadingUsers}
+                      />
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        onClick={() => setShowAddServicePersonForm(false)}
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                      >
+                        Annulla
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={handleAddServicePerson}
+                        disabled={!selectedServicePersonId}
+                        size="sm"
+                        className="flex-1"
+                      >
+                        Aggiungi
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             
             {/* Supplier Relationships Section - only show when editing */}
             {editingSellingPoint && (
@@ -509,7 +734,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                       <SearchableSelect
                         options={supplierOptions}
                         value={selectedSupplierId}
-                        onSelect={setSelectedSupplierId}
+                        onSelect={(value) => setSelectedSupplierId(value as string)}
                         placeholder="Seleziona fornitore..."
                         searchPlaceholder="Cerca fornitori..."
                         disabled={isLoadingSuppliers}

@@ -752,9 +752,23 @@ export const useAllUsers = (): any => {
       if (error) throw error;
       return (data || []).map((item: any) => {
         const displayName = [item.first_name, item.last_name].filter(Boolean).join(' ');
+        // If we have a proper name, use it; otherwise try to extract name from email
+        let finalDisplayName = displayName;
+        if (!finalDisplayName && item.auth_email) {
+          // Extract name from email (e.g., "nicola.mazzarolo@standupweb.it" -> "Nicola Mazzarolo")
+          const emailName = item.auth_email.split('@')[0];
+          const nameParts = emailName.split('.');
+          if (nameParts.length >= 2) {
+            finalDisplayName = nameParts.map(part => 
+              part.charAt(0).toUpperCase() + part.slice(1)
+            ).join(' ');
+          } else {
+            finalDisplayName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
+          }
+        }
         return {
           id: item.userId,
-          displayName: displayName || item.auth_email || 'Senza nome',
+          displayName: finalDisplayName || 'Senza nome',
         };
       });
     },
@@ -766,19 +780,51 @@ export const useAllUsers = (): any => {
 
 // --- ACCOUNT MANAGER FILTERED HOOKS ---
 
-// 1. Selling points where user is account manager
+// 1. Selling points where user is account manager OR service person
 export const useAccountManagerSellingPoints = (userId: string) => {
   return useQuery({
     queryKey: ['accountManagerSellingPoints', userId],
     queryFn: async () => {
       if (!userId) return [];
-      const { data, error } = await supabase
+      
+      // Get selling points where user is account manager
+      const { data: accountManagerPoints, error: amError } = await supabase
         .from('sellingPoints')
         .select('*, addresses(*)')
         .eq('accountManager', userId)
         .eq('isactive', true);
-      if (error) throw error;
-      return data || [];
+      
+      if (amError) throw amError;
+      
+      // Get selling points where user is service person
+      const { data: servicePointIds, error: spIdsError } = await supabase
+        .from('sellingPointServicePeople')
+        .select('sellingPointId')
+        .eq('userId', userId)
+        .eq('isactive', true);
+      
+      if (spIdsError) throw spIdsError;
+      
+      let servicePoints: any[] = [];
+      if (servicePointIds && servicePointIds.length > 0) {
+        const sellingPointIds = servicePointIds.map(sp => sp.sellingPointId);
+        const { data: spData, error: spError } = await supabase
+          .from('sellingPoints')
+          .select('*, addresses(*)')
+          .in('id', sellingPointIds)
+          .eq('isactive', true);
+        
+        if (spError) throw spError;
+        servicePoints = spData || [];
+      }
+      
+              // Combine and deduplicate results
+      const allPoints = [...(accountManagerPoints || []), ...(servicePoints || [])];
+      const uniquePoints = allPoints.filter((point, index, self) => 
+        index === self.findIndex(p => p.id === point.id)
+      );
+      
+      return uniquePoints;
     },
     enabled: !!userId,
     staleTime: 2 * 60 * 1000,

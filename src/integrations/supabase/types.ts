@@ -369,6 +369,48 @@ export type Database = {
           },
         ]
       }
+      sellingPointServicePeople: {
+        Row: {
+          id: string
+          sellingPointId: string
+          userId: string
+          created_at: string
+          updated_at: string
+          isactive: boolean
+        }
+        Insert: {
+          id?: string
+          sellingPointId: string
+          userId: string
+          created_at?: string
+          updated_at?: string
+          isactive?: boolean
+        }
+        Update: {
+          id?: string
+          sellingPointId?: string
+          userId?: string
+          created_at?: string
+          updated_at?: string
+          isactive?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sellingPointServicePeople_sellingPointId_fkey"
+            columns: ["sellingPointId"]
+            isOneToOne: false
+            referencedRelation: "sellingPoints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sellingPointServicePeople_userId_fkey"
+            columns: ["userId"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       visitActivities: {
         Row: {
           created_at: string
