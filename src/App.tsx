@@ -182,12 +182,14 @@ function SidebarMenuContent() {
         </SidebarMenu>
       </div>
       <div className="flex flex-col gap-2 p-2">
-        <Link to="/profile">
-          <button className="w-full flex items-center gap-2 px-4 py-3 text-base font-normal rounded-lg transition-colors hover:bg-background focus:outline-none focus:bg-background text-foreground">
-            <User className="w-5 h-5 flex-shrink-0" />
-            {(state === 'expanded' || isMobile) && <span className="truncate text-base">Profilo</span>}
-          </button>
-        </Link>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild isActive={location.pathname === "/profile"}>
+            <Link to="/profile" onClick={handleNavigationClick}>
+              <User className="w-5 h-5 flex-shrink-0" />
+              {(state === 'expanded' || isMobile) && <span className="truncate">Profilo</span>}
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
         <button
           onClick={handleLogoutClick}
           className="w-full flex items-center gap-2 px-4 py-3 text-base font-normal rounded-lg transition-colors hover:bg-background focus:outline-none focus:bg-background text-foreground"
