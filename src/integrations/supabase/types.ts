@@ -102,6 +102,7 @@ export type Database = {
           name: string
           phoneNumber: string | null
           updated_at: string
+          visitCadence: number | null
         }
         Insert: {
           addressId: string
@@ -115,6 +116,7 @@ export type Database = {
           name: string
           phoneNumber?: string | null
           updated_at?: string
+          visitCadence?: number | null
         }
         Update: {
           addressId?: string
@@ -128,6 +130,7 @@ export type Database = {
           name?: string
           phoneNumber?: string | null
           updated_at?: string
+          visitCadence?: number | null
         }
         Relationships: [
           {

@@ -12,7 +12,12 @@ import SupplierRelationships from './SupplierRelationships';
 import { useSuppliers, useCompanySellingPoints, useCreateCompanySellingPoint, useUpdateCompanySellingPoint, useDeleteCompanySellingPoint, useAllUsers } from '@/hooks/use-data';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-type SellingPoint = Database['public']['Tables']['sellingPoints']['Row'] & { accountManager?: string };
+type SellingPoint = Database['public']['Tables']['sellingPoints']['Row'] & { 
+  accountManager?: string;
+  companySellingPoint?: Array<Database['public']['Tables']['companySellingPoint']['Row'] & {
+    supplierCompany?: Database['public']['Tables']['companies']['Row'];
+  }>;
+};
 type Company = Database['public']['Tables']['companies']['Row'];
 type Address = Database['public']['Tables']['addresses']['Row'];
 
@@ -123,7 +128,11 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
           *,
           accountManager,
           addresses (*),
-          companies!sellingPoints_sellerCompanyId_fkey (*)
+          companies!sellingPoints_sellerCompanyId_fkey (*),
+          companySellingPoint!companySellingPoint_sellingPointId_fkey (
+            *,
+            supplierCompany:companies!companySellingPoint_supplierCompanyId_fkey (*)
+          )
         `)
         .order('name', { ascending: true });
       if (error) throw error;
@@ -691,6 +700,8 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                   <h3 className="text-lg font-medium">Relazioni Fornitori</h3>
                 </div>
                 
+
+                
                 {/* Existing Relationships */}
                 {isLoadingRelationships ? (
                   <p className="text-sm text-muted-foreground">Caricamento relazioni...</p>
@@ -707,12 +718,22 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                               {relationship.endDate && (
                                 <span> - Al: {new Date(relationship.endDate).toLocaleDateString('it-IT')}</span>
                               )}
-                              {relationship.visitCadence && (
-                                <span className="ml-2 text-blue-600">
-                                  • Cadenza: {relationship.visitCadence} giorni
+                            </span>
+                            <div className="mt-1">
+                              {relationship.visitCadence ? (
+                                <span className="text-blue-600 font-medium">
+                                  • Cadenza: {relationship.visitCadence} giorni (specifica)
+                                </span>
+                              ) : relationship.supplierCompany?.visitCadence ? (
+                                <span className="text-orange-600">
+                                  • Cadenza: {relationship.supplierCompany.visitCadence} giorni (predefinita)
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground text-xs">
+                                  • Cadenza: N/A
                                 </span>
                               )}
-                            </span>
+                            </div>
                           </div>
                           <div className="flex gap-1">
                             <Button
@@ -897,11 +918,12 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
             <table className="w-full divide-y divide-border">
               <thead className="bg-muted">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/5">Nome</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/5">Azienda Cliente</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-2/5">Indirizzo</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/5">Telefono</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/5">Responsabile Cliente</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/6">Nome</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/6">Azienda Cliente</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/6">Indirizzo</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/6">Telefono</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/6">Responsabile Cliente</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/6">Cadenza</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-32">Azioni</th>
                 </tr>
               </thead>
@@ -910,6 +932,40 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                   const address = sp.addresses;
                   const company = sp.companies;
                   const accountManagerName = users.find(u => u.id === sp.accountManager)?.displayName || 'Nessuno';
+                  
+                  // Get cadence information for this selling point
+                  const relationships = sp.companySellingPoint || [];
+                  const cadenceInfo = relationships.length > 0 ? (
+                    <div className="space-y-1">
+                      {relationships.map((rel: any) => {
+                        const supplierName = rel.supplierCompany?.name || 'Fornitore sconosciuto';
+                        const relationshipCadence = rel.visitCadence;
+                        const supplierDefaultCadence = rel.supplierCompany?.visitCadence;
+                        
+                        // Determine which cadence to show
+                        let cadenceText = 'N/A';
+                        let cadenceColor = 'text-muted-foreground';
+                        
+                        if (relationshipCadence) {
+                          cadenceText = `${relationshipCadence} giorni`;
+                          cadenceColor = 'text-blue-600 font-medium';
+                        } else if (supplierDefaultCadence) {
+                          cadenceText = `${supplierDefaultCadence} giorni (predefinita)`;
+                          cadenceColor = 'text-orange-600';
+                        }
+                        
+                        return (
+                          <div key={rel.id} className="text-xs">
+                            <span className="font-medium">{supplierName}:</span>
+                            <span className={`ml-1 ${cadenceColor}`}>{cadenceText}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground text-xs">N/A</span>
+                  );
+                  
                   return (
                     <tr key={sp.id} onClick={!readOnly ? () => handleEdit(sp) : undefined} className={!readOnly ? "cursor-pointer hover:bg-muted/50" : "hover:bg-muted/50"}>
                       <td className="px-4 py-4 text-sm font-medium text-foreground break-words">{sp.name}</td>
@@ -917,6 +973,9 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                       <td className="px-4 py-4 text-sm text-muted-foreground break-words">{address ? `${address.addressLine1 || ''}${address.addressLine1 && address.city ? ', ' : ''}${address.city || ''}` : 'N/A'}</td>
                       <td className="px-4 py-4 text-sm text-muted-foreground break-words">{sp.phoneNumber || 'N/A'}</td>
                       <td className="px-4 py-4 text-sm text-muted-foreground break-words">{accountManagerName}</td>
+                      <td className="px-4 py-4 text-sm text-muted-foreground">
+                        {cadenceInfo}
+                      </td>
                       <td className="px-4 py-4 text-sm text-muted-foreground">
                         {!readOnly && (
                           <div className="flex gap-2">

@@ -36,6 +36,7 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
   const [currentCompanyType, setCurrentCompanyType] = useState<'supplier' | 'seller' | null>(null); // Renamed from companyType to avoid conflict
   const [selectedAddressId, setSelectedAddressId] = useState<string | undefined>(undefined);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
+  const [visitCadence, setVisitCadence] = useState<number | undefined>(undefined);
 
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [addressOptions, setAddressOptions] = useState<Array<{ value: string; label: string; subtitle?: string }>>([]);
@@ -178,6 +179,7 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
     setCurrentCompanyType(null);
     setSelectedAddressId(undefined);
     setSelectedCategoryId(undefined);
+    setVisitCadence(undefined);
     setShowAddressForm(false);
     setAddressForm({ addressLine1: '', addressLine2: '', city: '', stateProvince: '', postalCode: '', country: '', latitude: '', longitude: '' });
     setEditingCompany(null);
@@ -197,6 +199,7 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
       isSeller: currentCompanyType === 'seller',
       addressId: selectedAddressId,
       categoryId: selectedCategoryId,
+      visitCadence: visitCadence || null,
     };
 
     try {
@@ -230,7 +233,7 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
     setCompanyName(company.name);
     setCompanyVat(company.codeVAT);
     if (company.isSeller && company.isSupplier) {
-      setCurrentCompanyType(company.isSeller ? 'seller' : 'supplier');
+      setCurrentCompanyType('supplier'); // Default to supplier for companies that are both
     } else if (company.isSeller) {
       setCurrentCompanyType('seller');
     } else if (company.isSupplier) {
@@ -240,6 +243,7 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
     }
     setSelectedAddressId(company.addressId);
     setSelectedCategoryId(company.categoryId || undefined);
+    setVisitCadence(company.visitCadence || undefined);
     if (company.addresses) {
       setAddressSearch(company.addresses.addressLine1 || company.addresses.city);
     }
@@ -408,6 +412,24 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
                 </div>
               )}
             </div>
+            
+            {/* Visit Cadence field - show for suppliers (including those that are also sellers) */}
+            {(currentCompanyType === 'supplier' || (editingCompany && editingCompany.isSupplier)) && (
+              <div>
+                <Label htmlFor="company-visit-cadence">Cadenza Visite Predefinita (giorni)</Label>
+                <Input
+                  id="company-visit-cadence"
+                  type="number"
+                  min={1}
+                  value={visitCadence || ''}
+                  onChange={(e) => setVisitCadence(e.target.value ? Number(e.target.value) : undefined)}
+                  placeholder="Es: 30 (opzionale)"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Cadenza predefinita per questo fornitore. Verrà utilizzata quando non è specificata una cadenza per un punto vendita specifico.
+                </p>
+              </div>
+            )}
             <div className="flex justify-between items-center space-x-2">
               <div>
                 {editingCompany && (
@@ -449,10 +471,11 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
             <table className="w-full divide-border divide-border">
               <thead className="bg-muted">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/5">Nome</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/5">P.IVA</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/5">Tipo</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-2/5">Indirizzo</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/6">Nome</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/6">P.IVA</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/6">Tipo</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/6">Cadenza</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/3">Indirizzo</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-24">Azioni</th>
                 </tr>
               </thead>
@@ -478,6 +501,21 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
                           </span>
                         ) : (
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
+                            N/A
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                        {company.isSupplier && company.visitCadence ? (
+                          <span className="text-blue-600 font-medium">
+                            {company.visitCadence} giorni
+                          </span>
+                        ) : company.isSupplier ? (
+                          <span className="text-muted-foreground text-xs">
+                            Non impostata
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">
                             N/A
                           </span>
                         )}
