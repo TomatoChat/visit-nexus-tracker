@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminMode } from '@/hooks/use-admin-mode';
@@ -142,11 +141,22 @@ const Profile: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  <Switch
-                    checked={isAdminMode}
-                    onCheckedChange={toggleAdminMode}
-                    className="ml-4"
-                  />
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant={isAdminMode ? 'default' : 'outline'}
+                      onClick={() => toggleAdminMode()}
+                    >
+                      Sì
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={!isAdminMode ? 'default' : 'outline'}
+                      onClick={() => toggleAdminMode()}
+                    >
+                      No
+                    </Button>
+                  </div>
                 </div>
                 {isAdminMode && (
                   <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
