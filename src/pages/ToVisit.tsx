@@ -67,42 +67,64 @@ const ToVisit: React.FC = () => {
             city,
             stateProvince
           ),
-          companySellingPoint!companySellingPoint_sellingPointId_fkey (
+          companySellingPoint (
             supplierCompanyId,
             visitCadence,
-            supplierCompany:companies!companySellingPoint_supplierCompanyId_fkey (
+            supplierCompany:companies (
               name,
               visitCadence
             )
           ),
-          sellingPointServicePeople!sellingPointServicePeople_sellingPointId_fkey (
+          sellingPointServicePeople (
             userId
           )
         `)
         .eq('sellingPointServicePeople.userId', userId)
         .eq('isactive', true);
 
-      if (spError) throw spError;
+      if (spError) {
+        console.error('Error fetching selling points:', spError);
+        toast({ 
+          title: 'Errore', 
+          description: 'Impossibile caricare i punti vendita assegnati.', 
+          variant: 'destructive' 
+        });
+        return;
+      }
+
+      // Check if we have any selling points
+      if (!assignedSellingPoints || assignedSellingPoints.length === 0) {
+        setSellingPoints([]);
+        return;
+      }
 
       // Get the last visit date for each selling point
       const sellingPointsWithVisits = await Promise.all(
-        (assignedSellingPoints || []).map(async (sp: any) => {
-          const { data: lastVisit, error: visitError } = await supabase
-            .from('visits')
-            .select('visitDate')
-            .eq('sellingPointId', sp.id)
-            .order('visitDate', { ascending: false })
-            .limit(1)
-            .single();
+        assignedSellingPoints.map(async (sp: any) => {
+          try {
+            const { data: lastVisit, error: visitError } = await supabase
+              .from('visits')
+              .select('visitDate')
+              .eq('sellingPointId', sp.id)
+              .order('visitDate', { ascending: false })
+              .limit(1)
+              .maybeSingle();
 
-          if (visitError && visitError.code !== 'PGRST116') {
-            console.error('Error fetching last visit:', visitError);
+            if (visitError) {
+              console.error('Error fetching last visit for selling point', sp.id, ':', visitError);
+            }
+
+            return {
+              ...sp,
+              lastVisit: lastVisit?.visitDate || null
+            };
+          } catch (error) {
+            console.error('Error processing selling point', sp.id, ':', error);
+            return {
+              ...sp,
+              lastVisit: null
+            };
           }
-
-          return {
-            ...sp,
-            lastVisit: lastVisit?.visitDate || null
-          };
         })
       );
 
@@ -166,9 +188,10 @@ const ToVisit: React.FC = () => {
       console.error('Error fetching selling points to visit:', error);
       toast({ 
         title: 'Errore', 
-        description: 'Impossibile caricare i punti vendita da visitare.', 
+        description: 'Impossibile caricare i punti vendita da visitare. Riprova più tardi.', 
         variant: 'destructive' 
       });
+      setSellingPoints([]);
     } finally {
       setIsLoading(false);
     }
@@ -186,10 +209,10 @@ const ToVisit: React.FC = () => {
   }, [sellingPoints, filter]);
 
   const getUrgencyColor = (isOverdue: boolean, daysUntilDue: number) => {
-    if (isOverdue) return 'bg-red-100 text-red-800 border-red-200';
-    if (daysUntilDue <= 7) return 'bg-orange-100 text-orange-800 border-orange-200';
-    if (daysUntilDue <= 14) return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-    return 'bg-green-100 text-green-800 border-green-200';
+    if (isOverdue) return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800';
+    if (daysUntilDue <= 7) return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800';
+    if (daysUntilDue <= 14) return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800';
+    return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800';
   };
 
   const getUrgencyIcon = (isOverdue: boolean, daysUntilDue: number) => {
@@ -258,10 +281,10 @@ const ToVisit: React.FC = () => {
               <CardContent className="flex items-center justify-center py-8">
                 <div className="text-center">
                   <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  <h3 className="text-lg font-medium text-foreground mb-2">
                     Nessun punto vendita da visitare
                   </h3>
-                  <p className="text-gray-500">
+                  <p className="text-muted-foreground">
                     {filter === 'all' 
                       ? 'Tutti i punti vendita assegnati sono aggiornati.'
                       : filter === 'overdue'
@@ -279,7 +302,7 @@ const ToVisit: React.FC = () => {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900">{sp.name}</h3>
+                        <h3 className="text-lg font-semibold text-foreground">{sp.name}</h3>
                         <Badge variant="outline" className={getUrgencyColor(sp.isOverdue, sp.daysUntilDue)}>
                           {getUrgencyIcon(sp.isOverdue, sp.daysUntilDue)}
                           <span className="ml-1">
@@ -291,7 +314,7 @@ const ToVisit: React.FC = () => {
                         </Badge>
                       </div>
                       
-                      <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
                         <div className="flex items-center gap-1">
                           <Building className="w-4 h-4" />
                           <span>{sp.supplierCompany.name}</span>
@@ -307,10 +330,10 @@ const ToVisit: React.FC = () => {
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                         <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-gray-400" />
+                          <Calendar className="w-4 h-4 text-muted-foreground" />
                           <div>
-                            <span className="text-gray-500">Ultima visita:</span>
-                            <span className="ml-1 font-medium">
+                            <span className="text-muted-foreground">Ultima visita:</span>
+                            <span className="ml-1 font-medium text-foreground">
                               {sp.lastVisitDate 
                                 ? new Date(sp.lastVisitDate).toLocaleDateString('it-IT')
                                 : 'Mai visitato'
@@ -320,18 +343,18 @@ const ToVisit: React.FC = () => {
                         </div>
                         
                         <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-gray-400" />
+                          <Clock className="w-4 h-4 text-muted-foreground" />
                           <div>
-                            <span className="text-gray-500">Giorni dall'ultima visita:</span>
-                            <span className="ml-1 font-medium">{sp.daysSinceLastVisit}</span>
+                            <span className="text-muted-foreground">Giorni dall'ultima visita:</span>
+                            <span className="ml-1 font-medium text-foreground">{sp.daysSinceLastVisit}</span>
                           </div>
                         </div>
                         
                         <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-gray-400" />
+                          <Calendar className="w-4 h-4 text-muted-foreground" />
                           <div>
-                            <span className="text-gray-500">Cadenza:</span>
-                            <span className="ml-1 font-medium">
+                            <span className="text-muted-foreground">Cadenza:</span>
+                            <span className="ml-1 font-medium text-foreground">
                               {sp.cadence} giorni
                               {sp.relationshipCadence 
                                 ? ' (specifica)'
