@@ -8,6 +8,7 @@ import NotFound from "@/pages/NotFound";
 import Profile from './pages/Profile';
 
 import MyVisits from "@/pages/MyVisits";
+import ToVisit from "@/pages/ToVisit";
 import Companies from "@/pages/Companies";
 import SellingPoints from "@/pages/SellingPoints";
 import People from "@/pages/People";
@@ -123,6 +124,16 @@ function SidebarMenuContent() {
               <Link to="/my-visits" onClick={handleNavigationClick}>
                 <FileText className="w-5 h-5 flex-shrink-0" />
                 {(state === 'expanded' || isMobile) && <span className="truncate">Le mie visite</span>}
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          {/* To Visit - visible to all authenticated users */}
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={location.pathname === "/to-visit"}>
+              <Link to="/to-visit" onClick={handleNavigationClick}>
+                <Activity className="w-5 h-5 flex-shrink-0" />
+                {(state === 'expanded' || isMobile) && <span className="truncate">Da Visitare</span>}
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -333,6 +344,7 @@ const App = () => {
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/my-visits" element={<MyVisits />} />
+                <Route path="/to-visit" element={<ToVisit />} />
                 <Route path="/companies" element={<Companies />} />
                 <Route path="/selling-points" element={<SellingPoints />} />
                 <Route path="/people" element={<People />} />
