@@ -213,17 +213,75 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
     const longitude = addressForm.longitude;
 
     try {
-      const { data, error } = await supabase.from('addresses').insert({
-        addressLine1: addressForm.addressLine1 || null, addressLine2: addressForm.addressLine2 || null, city: addressForm.city, stateProvince: addressForm.stateProvince, postalCode: addressForm.postalCode || null, country: addressForm.country, latitude: parseFloat(latitude), longitude: parseFloat(longitude)
-      }).select().single();
+      let data;
+      let error;
+
+      if (editingSellingPoint && editingSellingPoint.addresses) {
+        // Update existing address
+        const { data: updateData, error: updateError } = await supabase
+          .from('addresses')
+          .update({
+            addressLine1: addressForm.addressLine1 || null,
+            addressLine2: addressForm.addressLine2 || null,
+            city: addressForm.city,
+            stateProvince: addressForm.stateProvince,
+            postalCode: addressForm.postalCode || null,
+            country: addressForm.country,
+            latitude: parseFloat(latitude),
+            longitude: parseFloat(longitude)
+          })
+          .eq('id', editingSellingPoint.addresses.id)
+          .select()
+          .single();
+        
+        data = updateData;
+        error = updateError;
+        
+        if (!error) {
+          // Update the local state to reflect the changes
+          setEditingSellingPoint(prev => prev ? {
+            ...prev,
+            addresses: data
+          } : null);
+        }
+      } else {
+        // Create new address
+        const { data: insertData, error: insertError } = await supabase
+          .from('addresses')
+          .insert({
+            addressLine1: addressForm.addressLine1 || null,
+            addressLine2: addressForm.addressLine2 || null,
+            city: addressForm.city,
+            stateProvince: addressForm.stateProvince,
+            postalCode: addressForm.postalCode || null,
+            country: addressForm.country,
+            latitude: parseFloat(latitude),
+            longitude: parseFloat(longitude)
+          })
+          .select()
+          .single();
+        
+        data = insertData;
+        error = insertError;
+        
+        if (!error) {
+          setSelectedAddressId(data.id);
+        }
+      }
+
       if (error) throw error;
-      setSelectedAddressId(data.id);
+      
       setShowAddressForm(false);
       setAddressForm({ addressLine1: '', addressLine2: '', city: '', stateProvince: '', postalCode: '', country: '', latitude: '', longitude: '' });
-      toast({ title: 'Successo!', description: 'Indirizzo creato!' });
-      setAddressSearch(data.addressLine1?.split(' ')[0] || data.city);
+      
+      const action = editingSellingPoint && editingSellingPoint.addresses ? 'aggiornato' : 'creato';
+      toast({ title: 'Successo!', description: `Indirizzo ${action}!` });
+      
+      if (!editingSellingPoint) {
+        setAddressSearch(data.addressLine1?.split(' ')[0] || data.city);
+      }
     } catch (error: any) {
-      toast({ title: 'Errore', description: error.message || 'Impossibile creare l\'indirizzo.', variant: 'destructive' });
+      toast({ title: 'Errore', description: error.message || 'Impossibile salvare l\'indirizzo.', variant: 'destructive' });
     }
   };
 
@@ -234,6 +292,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
     setSelectedAddressId(undefined);
     setShowAddressForm(false);
     setAddressForm({ addressLine1: '', addressLine2: '', city: '', stateProvince: '', postalCode: '', country: '', latitude: '', longitude: '' });
+    setAddressSearch('');
     setEditingSellingPoint(null);
     setViewingRelationships(null);
     // Reset supplier relationship form
@@ -293,6 +352,8 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
     setSelectedAccountManagerId(sp.accountManager || undefined);
     if (sp.addresses) {
       setAddressSearch(sp.addresses.addressLine1 || sp.addresses.city);
+    } else {
+      setAddressSearch('');
     }
     setShowAddForm(true);
     
@@ -532,18 +593,73 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
             <div>
               <Label>Indirizzo <span className="text-destructive">*</span></Label>
               {editingSellingPoint ? (
-                <div className="p-3 bg-muted rounded border">
-                  {editingSellingPoint.addresses ? (
-                    <div className="text-sm text-foreground">
-                      <div>{editingSellingPoint.addresses.addressLine1 || ''}</div>
-                      <div>{editingSellingPoint.addresses.addressLine2 || ''}</div>
-                      <div>{editingSellingPoint.addresses.city || ''}, {editingSellingPoint.addresses.stateProvince || ''}</div>
-                      <div>{editingSellingPoint.addresses.postalCode || ''} {editingSellingPoint.addresses.country || ''}</div>
+                <>
+                  {!showAddressForm ? (
+                    <div className="space-y-2">
+                      <div className="p-3 bg-muted rounded border">
+                        {editingSellingPoint.addresses ? (
+                          <div className="text-sm text-foreground">
+                            <div>{editingSellingPoint.addresses.addressLine1 || ''}</div>
+                            <div>{editingSellingPoint.addresses.addressLine2 || ''}</div>
+                            <div>{editingSellingPoint.addresses.city || ''}, {editingSellingPoint.addresses.stateProvince || ''}</div>
+                            <div>{editingSellingPoint.addresses.postalCode || ''} {editingSellingPoint.addresses.country || ''}</div>
+                          </div>
+                        ) : (
+                          <div className="text-sm text-muted-foreground">Nessun indirizzo associato</div>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          onClick={() => {
+                            if (editingSellingPoint.addresses) {
+                              setAddressForm({
+                                addressLine1: editingSellingPoint.addresses.addressLine1 || '',
+                                addressLine2: editingSellingPoint.addresses.addressLine2 || '',
+                                city: editingSellingPoint.addresses.city || '',
+                                stateProvince: editingSellingPoint.addresses.stateProvince || '',
+                                postalCode: editingSellingPoint.addresses.postalCode || '',
+                                country: editingSellingPoint.addresses.country || '',
+                                latitude: editingSellingPoint.addresses.latitude?.toString() || '',
+                                longitude: editingSellingPoint.addresses.longitude?.toString() || ''
+                              });
+                            }
+                            setShowAddressForm(true);
+                          }} 
+                          size="sm"
+                        >
+                          Modifica Indirizzo
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          onClick={() => setShowAddressForm(true)} 
+                          size="sm"
+                        >
+                          Nuovo Indirizzo
+                        </Button>
+                      </div>
                     </div>
                   ) : (
-                    <div className="text-sm text-muted-foreground">Nessun indirizzo associato</div>
+                    <div className="space-y-2 border rounded p-2 mt-2">
+                      <div><Label htmlFor="sp-addr-l1">Via</Label><Input id="sp-addr-l1" value={addressForm.addressLine1} onChange={e => setAddressForm(p => ({ ...p, addressLine1: e.target.value }))} /></div>
+                      <div><Label htmlFor="sp-addr-l2">Civico</Label><Input id="sp-addr-l2" value={addressForm.addressLine2} onChange={e => setAddressForm(p => ({ ...p, addressLine2: e.target.value }))} /></div>
+                      <div><Label htmlFor="sp-addr-city">Città <span className="text-destructive">*</span></Label><Input id="sp-addr-city" value={addressForm.city} onChange={e => setAddressForm(p => ({ ...p, city: e.target.value }))} required /></div>
+                      <div><Label htmlFor="sp-addr-state">Provincia <span className="text-destructive">*</span></Label><Input id="sp-addr-state" value={addressForm.stateProvince} onChange={e => setAddressForm(p => ({ ...p, stateProvince: e.target.value }))} required /></div>
+                      <div><Label htmlFor="sp-addr-zip">CAP</Label><Input id="sp-addr-zip" type="number" step="1" value={addressForm.postalCode} onChange={e => setAddressForm(p => ({ ...p, postalCode: e.target.value }))} /></div>
+                      <div><Label htmlFor="sp-addr-country">Nazione <span className="text-destructive">*</span></Label><Input id="sp-addr-country" value={addressForm.country} onChange={e => setAddressForm(p => ({ ...p, country: e.target.value }))} required /></div>
+                      <div className="flex gap-2">
+                        <div className="flex-1"><Label htmlFor="sp-addr-lat">Latitudine <span className="text-destructive">*</span></Label><Input id="sp-addr-lat" type="number" step="any" value={addressForm.latitude} onChange={e => setAddressForm(p => ({ ...p, latitude: e.target.value }))} placeholder="Latitudine" required /></div>
+                        <div className="flex-1"><Label htmlFor="sp-addr-lng">Longitudine <span className="text-destructive">*</span></Label><Input id="sp-addr-lng" type="number" step="any" value={addressForm.longitude} onChange={e => setAddressForm(p => ({ ...p, longitude: e.target.value }))} placeholder="Longitudine" required /></div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button type="button" variant="outline" onClick={() => { setShowAddressForm(false); setAddressForm({ addressLine1: '', addressLine2: '', city: '', stateProvince: '', postalCode: '', country: '', latitude: '', longitude: '' }); }}>Annulla</Button>
+                        <Button type="button" onClick={handleCreateAddress}>Salva Indirizzo</Button>
+                      </div>
+                    </div>
                   )}
-                </div>
+                </>
               ) : (
                 <>
                   {!showAddressForm ? (
