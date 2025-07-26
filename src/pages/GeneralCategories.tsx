@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useRoles } from '@/hooks/use-roles';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -264,14 +263,34 @@ const GeneralCategories = () => {
           </div>
         </div>
         
-        <Tabs value={tab} onValueChange={setTab} className="w-full content-visibility-auto">
-          <TabsList className="overflow-hidden rounded-md">
-            <TabsTrigger value="activities">Attività</TabsTrigger>
-            <TabsTrigger value="roles">Ruoli Persona</TabsTrigger>
-            <TabsTrigger value="categories">Categorie Azienda</TabsTrigger>
-          </TabsList>
-          <TabsContent value="activities">
-            {activitiesQuery.isLoading ? <TableSkeleton rows={5} columns={2} /> : activitiesQuery.isError ? <div className="text-red-600">Errore: {String(activitiesQuery.error)}</div> : (
+        {/* Filter buttons */}
+        <div className="flex gap-2 mb-6">
+          <Button
+            variant={tab === 'activities' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setTab('activities')}
+          >
+            Attività ({activitiesQuery.data?.length || 0})
+          </Button>
+          <Button
+            variant={tab === 'roles' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setTab('roles')}
+          >
+            Ruoli Persona ({rolesQuery.data?.length || 0})
+          </Button>
+          <Button
+            variant={tab === 'categories' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setTab('categories')}
+          >
+            Categorie Azienda ({categoriesQuery.data?.length || 0})
+          </Button>
+        </div>
+
+        {/* Content */}
+        {tab === 'activities' && (
+          activitiesQuery.isLoading ? <TableSkeleton rows={5} columns={2} /> : activitiesQuery.isError ? <div className="text-red-600">Errore: {String(activitiesQuery.error)}</div> : (
               <Card className="overflow-x-hidden">
                 <CardContent>
                   <div className="overflow-x-auto">
@@ -314,10 +333,10 @@ const GeneralCategories = () => {
                   {activitiesQuery.data?.length === 0 && <p>Nessuna attività trovata.</p>}
                 </CardContent>
               </Card>
-            )}
-          </TabsContent>
-          <TabsContent value="roles">
-            {rolesQuery.isLoading ? <TableSkeleton rows={5} columns={4} /> : rolesQuery.isError ? <div className="text-red-600">Errore: {String(rolesQuery.error)}</div> : (
+            )
+          )}
+        {tab === 'roles' && (
+          rolesQuery.isLoading ? <TableSkeleton rows={5} columns={4} /> : rolesQuery.isError ? <div className="text-red-600">Errore: {String(rolesQuery.error)}</div> : (
               <Card className="overflow-x-hidden">
                 <CardContent>
                   <div className="overflow-x-auto">
@@ -384,10 +403,10 @@ const GeneralCategories = () => {
                   {rolesQuery.data?.length === 0 && <p>Nessun ruolo trovato.</p>}
                 </CardContent>
               </Card>
-            )}
-          </TabsContent>
-          <TabsContent value="categories">
-            {categoriesQuery.isLoading ? <TableSkeleton rows={5} columns={4} /> : categoriesQuery.isError ? <div className="text-red-600">Errore: {String(categoriesQuery.error)}</div> : (
+            )
+          )}
+        {tab === 'categories' && (
+          categoriesQuery.isLoading ? <TableSkeleton rows={5} columns={4} /> : categoriesQuery.isError ? <div className="text-red-600">Errore: {String(categoriesQuery.error)}</div> : (
               <Card className="overflow-x-hidden">
                 <CardContent>
                   <div className="overflow-x-auto">
@@ -454,9 +473,8 @@ const GeneralCategories = () => {
                   {categoriesQuery.data?.length === 0 && <p>Nessuna categoria trovata.</p>}
                 </CardContent>
               </Card>
-            )}
-          </TabsContent>
-        </Tabs>
+            )
+          )}
         
         {/* Modal for add/edit */}
         <Dialog open={showAddModal} onOpenChange={setShowAddModal}>

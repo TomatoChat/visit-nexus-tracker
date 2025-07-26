@@ -9,10 +9,15 @@ import type { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, Pencil, Search, Plus, Link, Building, Users } from 'lucide-react';
 import SupplierRelationships from './SupplierRelationships';
-import { useSuppliers, useCompanySellingPoints, useCreateCompanySellingPoint, useDeleteCompanySellingPoint, useAllUsers } from '@/hooks/use-data';
+import { useSuppliers, useCompanySellingPoints, useCreateCompanySellingPoint, useUpdateCompanySellingPoint, useDeleteCompanySellingPoint, useAllUsers } from '@/hooks/use-data';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-type SellingPoint = Database['public']['Tables']['sellingPoints']['Row'] & { accountManager?: string };
+type SellingPoint = Database['public']['Tables']['sellingPoints']['Row'] & { 
+  accountManager?: string;
+  companySellingPoint?: Array<Database['public']['Tables']['companySellingPoint']['Row'] & {
+    supplierCompany?: Database['public']['Tables']['companies']['Row'];
+  }>;
+};
 type Company = Database['public']['Tables']['companies']['Row'];
 type Address = Database['public']['Tables']['addresses']['Row'];
 
@@ -45,7 +50,9 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
   const [relationshipStartDate, setRelationshipStartDate] = useState<Date>(new Date());
   const [relationshipEndDate, setRelationshipEndDate] = useState<Date | undefined>(undefined);
   const [sellerCode, setSellerCode] = useState<string>('');
+  const [visitCadence, setVisitCadence] = useState<number | undefined>(undefined);
   const [showAddRelationshipForm, setShowAddRelationshipForm] = useState(false);
+  const [editingRelationship, setEditingRelationship] = useState<any>(null);
 
   // Responsabili Caricamento/Ordini state
   const [selectedServicePersonId, setSelectedServicePersonId] = useState<string>('');
@@ -60,6 +67,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
   const { data: suppliers = [], isLoading: isLoadingSuppliers } = useSuppliers();
   const { data: relationships = [], isLoading: isLoadingRelationships } = useCompanySellingPoints(editingSellingPoint?.id || '');
   const createRelationshipMutation = useCreateCompanySellingPoint();
+  const updateRelationshipMutation = useUpdateCompanySellingPoint();
   const deleteRelationshipMutation = useDeleteCompanySellingPoint();
   const queryClient = useQueryClient();
 
@@ -120,7 +128,11 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
           *,
           accountManager,
           addresses (*),
-          companies!sellingPoints_sellerCompanyId_fkey (*)
+          companies!sellingPoints_sellerCompanyId_fkey (*),
+          companySellingPoint!companySellingPoint_sellingPointId_fkey (
+            *,
+            supplierCompany:companies!companySellingPoint_supplierCompanyId_fkey (*)
+          )
         `)
         .order('name', { ascending: true });
       if (error) throw error;
@@ -229,7 +241,9 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
     setRelationshipStartDate(new Date());
     setRelationshipEndDate(undefined);
     setSellerCode('');
+    setVisitCadence(undefined);
     setShowAddRelationshipForm(false);
+    setEditingRelationship(null);
     setSelectedAccountManagerId(undefined);
     // Reset service people form
     setSelectedServicePersonId('');
@@ -321,25 +335,48 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
         startDate: relationshipStartDate.toISOString().split('T')[0],
         endDate: relationshipEndDate ? relationshipEndDate.toISOString().split('T')[0] : null,
         sellerSellingPointCode: sellerCode || null,
+        visitCadence: visitCadence || null,
       };
 
-      await createRelationshipMutation.mutateAsync(relationshipData);
+      if (editingRelationship) {
+        // Update existing relationship
+        await updateRelationshipMutation.mutateAsync({
+          id: editingRelationship.id,
+          ...relationshipData
+        });
+        toast({ title: 'Successo!', description: 'Relazione fornitore aggiornata!' });
+      } else {
+        // Create new relationship
+        await createRelationshipMutation.mutateAsync(relationshipData);
+        toast({ title: 'Successo!', description: 'Relazione fornitore creata!' });
+      }
       
       // Reset form
       setSelectedSupplierId('');
       setRelationshipStartDate(new Date());
       setRelationshipEndDate(undefined);
       setSellerCode('');
+      setVisitCadence(undefined);
       setShowAddRelationshipForm(false);
+      setEditingRelationship(null);
       
-      toast({ title: 'Successo!', description: 'Relazione fornitore creata!' });
     } catch (error: any) {
       toast({ 
         title: 'Errore', 
-        description: error.message || 'Impossibile creare la relazione fornitore.', 
+        description: error.message || 'Impossibile salvare la relazione fornitore.', 
         variant: 'destructive' 
       });
     }
+  };
+
+  const handleEditSupplierRelationship = (relationship: any) => {
+    setEditingRelationship(relationship);
+    setSelectedSupplierId(relationship.supplierCompanyId);
+    setRelationshipStartDate(new Date(relationship.startDate));
+    setRelationshipEndDate(relationship.endDate ? new Date(relationship.endDate) : undefined);
+    setSellerCode(relationship.sellerSellingPointCode || '');
+    setVisitCadence(relationship.visitCadence || undefined);
+    setShowAddRelationshipForm(true);
   };
 
   const handleDeleteSupplierRelationship = async (relationshipId: string) => {
@@ -663,6 +700,8 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                   <h3 className="text-lg font-medium">Relazioni Fornitori</h3>
                 </div>
                 
+
+                
                 {/* Existing Relationships */}
                 {isLoadingRelationships ? (
                   <p className="text-sm text-muted-foreground">Caricamento relazioni...</p>
@@ -680,12 +719,43 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                                 <span> - Al: {new Date(relationship.endDate).toLocaleDateString('it-IT')}</span>
                               )}
                             </span>
+                            <div className="mt-1">
+                              {relationship.visitCadence ? (
+                                <span className="text-blue-600 font-medium">
+                                  • Cadenza: {relationship.visitCadence} giorni (specifica)
+                                </span>
+                              ) : relationship.supplierCompany?.visitCadence ? (
+                                <span className="text-orange-600">
+                                  • Cadenza: {relationship.supplierCompany.visitCadence} giorni (predefinita)
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground text-xs">
+                                  • Cadenza: N/A
+                                </span>
+                              )}
+                            </div>
                           </div>
                           <div className="flex gap-1">
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleDeleteSupplierRelationship(relationship.id)}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleEditSupplierRelationship(relationship);
+                              }}
+                              title="Modifica relazione"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDeleteSupplierRelationship(relationship.id);
+                              }}
                               className="text-destructive hover:bg-destructive/10"
                               title="Elimina relazione"
                             >
@@ -718,12 +788,17 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                 {showAddRelationshipForm && (
                   <div className="space-y-3 border rounded-lg p-3 bg-muted">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-medium text-foreground">Nuova relazione fornitore:</h4>
+                      <h4 className="text-sm font-medium text-foreground">
+                        {editingRelationship ? 'Modifica relazione fornitore:' : 'Nuova relazione fornitore:'}
+                      </h4>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => setShowAddRelationshipForm(false)}
+                        onClick={() => {
+                          setShowAddRelationshipForm(false);
+                          setEditingRelationship(null);
+                        }}
                       >
                         ✕
                       </Button>
@@ -762,10 +837,25 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                       />
                     </div>
                     
+                    <div>
+                      <Label htmlFor="visit-cadence">Cadenza Visite (giorni)</Label>
+                      <Input
+                        id="visit-cadence"
+                        type="number"
+                        min={1}
+                        value={visitCadence || ''}
+                        onChange={(e) => setVisitCadence(e.target.value ? Number(e.target.value) : undefined)}
+                        placeholder="Es: 30"
+                      />
+                    </div>
+                    
                     <div className="flex gap-2">
                       <Button
                         type="button"
-                        onClick={() => setShowAddRelationshipForm(false)}
+                        onClick={() => {
+                          setShowAddRelationshipForm(false);
+                          setEditingRelationship(null);
+                        }}
                         variant="outline"
                         size="sm"
                         className="flex-1"
@@ -779,7 +869,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                         size="sm"
                         className="flex-1"
                       >
-                        Aggiungi
+                        {editingRelationship ? 'Salva Modifiche' : 'Aggiungi'}
                       </Button>
                     </div>
                   </div>
@@ -828,11 +918,12 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
             <table className="w-full divide-y divide-border">
               <thead className="bg-muted">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/5">Nome</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/5">Azienda Cliente</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-2/5">Indirizzo</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/5">Telefono</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/5">Responsabile Cliente</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/6">Nome</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/6">Azienda Cliente</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/6">Indirizzo</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/6">Telefono</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/6">Responsabile Cliente</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/6">Cadenza</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-32">Azioni</th>
                 </tr>
               </thead>
@@ -841,6 +932,40 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                   const address = sp.addresses;
                   const company = sp.companies;
                   const accountManagerName = users.find(u => u.id === sp.accountManager)?.displayName || 'Nessuno';
+                  
+                  // Get cadence information for this selling point
+                  const relationships = sp.companySellingPoint || [];
+                  const cadenceInfo = relationships.length > 0 ? (
+                    <div className="space-y-1">
+                      {relationships.map((rel: any) => {
+                        const supplierName = rel.supplierCompany?.name || 'Fornitore sconosciuto';
+                        const relationshipCadence = rel.visitCadence;
+                        const supplierDefaultCadence = rel.supplierCompany?.visitCadence;
+                        
+                        // Determine which cadence to show
+                        let cadenceText = 'N/A';
+                        let cadenceColor = 'text-muted-foreground';
+                        
+                        if (relationshipCadence) {
+                          cadenceText = `${relationshipCadence} giorni`;
+                          cadenceColor = 'text-blue-600 font-medium';
+                        } else if (supplierDefaultCadence) {
+                          cadenceText = `${supplierDefaultCadence} giorni (predefinita)`;
+                          cadenceColor = 'text-orange-600';
+                        }
+                        
+                        return (
+                          <div key={rel.id} className="text-xs">
+                            <span className="font-medium">{supplierName}:</span>
+                            <span className={`ml-1 ${cadenceColor}`}>{cadenceText}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground text-xs">N/A</span>
+                  );
+                  
                   return (
                     <tr key={sp.id} onClick={!readOnly ? () => handleEdit(sp) : undefined} className={!readOnly ? "cursor-pointer hover:bg-muted/50" : "hover:bg-muted/50"}>
                       <td className="px-4 py-4 text-sm font-medium text-foreground break-words">{sp.name}</td>
@@ -848,6 +973,9 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                       <td className="px-4 py-4 text-sm text-muted-foreground break-words">{address ? `${address.addressLine1 || ''}${address.addressLine1 && address.city ? ', ' : ''}${address.city || ''}` : 'N/A'}</td>
                       <td className="px-4 py-4 text-sm text-muted-foreground break-words">{sp.phoneNumber || 'N/A'}</td>
                       <td className="px-4 py-4 text-sm text-muted-foreground break-words">{accountManagerName}</td>
+                      <td className="px-4 py-4 text-sm text-muted-foreground">
+                        {cadenceInfo}
+                      </td>
                       <td className="px-4 py-4 text-sm text-muted-foreground">
                         {!readOnly && (
                           <div className="flex gap-2">

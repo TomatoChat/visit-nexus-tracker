@@ -102,6 +102,7 @@ export type Database = {
           name: string
           phoneNumber: string | null
           updated_at: string
+          visitCadence: number | null
         }
         Insert: {
           addressId: string
@@ -115,6 +116,7 @@ export type Database = {
           name: string
           phoneNumber?: string | null
           updated_at?: string
+          visitCadence?: number | null
         }
         Update: {
           addressId?: string
@@ -128,6 +130,7 @@ export type Database = {
           name?: string
           phoneNumber?: string | null
           updated_at?: string
+          visitCadence?: number | null
         }
         Relationships: [
           {
@@ -187,6 +190,7 @@ export type Database = {
           supplierCompanyId: string
           updated_at: string
           isactive: boolean
+          visitCadence: number | null
         }
         Insert: {
           created_at?: string
@@ -198,6 +202,7 @@ export type Database = {
           supplierCompanyId: string
           updated_at?: string
           isactive?: boolean
+          visitCadence?: number | null
         }
         Update: {
           created_at?: string
@@ -209,6 +214,7 @@ export type Database = {
           supplierCompanyId?: string
           updated_at?: string
           isactive?: boolean
+          visitCadence?: number | null
         }
         Relationships: [
           {

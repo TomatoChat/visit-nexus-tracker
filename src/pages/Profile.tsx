@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -110,7 +111,19 @@ const Profile: React.FC = () => {
 
   return (
     <Layout>
-      <div className="w-full max-w-md mx-auto mt-10">
+      <div className="w-full pb-2 md:pb-0">
+        {/* Mobile: Sidebar button and title */}
+        <div className="flex flex-row items-center gap-2 md:hidden mb-4">
+          <SidebarTrigger />
+          <h1 className="text-lg font-bold">Profilo</h1>
+        </div>
+
+        {/* Desktop: Title */}
+        <div className="hidden md:flex items-center gap-4 mb-8">
+          <h1 className="text-3xl font-bold">Profilo</h1>
+        </div>
+
+        <div className="w-full max-w-md mx-auto">
         <Card>
           <CardHeader>
             <CardTitle>Profilo Utente</CardTitle>
@@ -246,6 +259,7 @@ const Profile: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
     </Layout>
   );
