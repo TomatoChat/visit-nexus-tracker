@@ -9,9 +9,12 @@ Visit Nexus Tracker is a full-stack application that enables users to:
 - **Manage Business Relationships**: Handle complex supplier-seller-selling point relationships
 - **Generate Reports**: Create comprehensive visit summaries and analytics
 - **Data Management**: Add and manage companies, people, selling points, and activities
+- **Bulk Data Import**: Import large datasets via Excel/CSV files with validation
+- **Performance Monitoring**: Real-time application performance metrics and monitoring
 - **Geocoding**: Automatically geocode addresses using Google Maps API
 - **Authentication**: Secure user authentication with Supabase
 - **Role-Based Access Control**: Comprehensive permission system with four user roles
+- **Dark Theme Support**: Modern UI with light and dark theme options
 
 ## ✨ Key Features
 
@@ -24,6 +27,7 @@ Visit Nexus Tracker is a full-stack application that enables users to:
   - **Internal Agent**: Read-only access to data management, can create visits and view their own visits
   - **External Agent**: Can create visits and view their own visits, limited to "My Visits" only
   - **Guest**: Read-only access to view data
+- **Profile Management**: User profile page with password change functionality
 
 ### 📸 Photo Upload & Documentation
 - **Visit Photo Documentation**: Upload multiple photos per visit
@@ -32,6 +36,15 @@ Visit Nexus Tracker is a full-stack application that enables users to:
 - **Data Integrity**: Photos become permanent once uploaded (no deletion)
 - **Storage Organization**: Photos organized by visit ID in Supabase Storage
 - **Audit Trail**: Complete photo documentation for visit records
+- **Progress Tracking**: Real-time upload progress monitoring
+
+### 📊 Bulk Data Management
+- **Excel/CSV Import**: Bulk upload capabilities for companies, selling points, and people
+- **Template Downloads**: Pre-formatted Excel templates with validation rules
+- **Data Validation**: Comprehensive client-side and server-side validation
+- **Transaction Safety**: All-or-nothing uploads with rollback on errors
+- **Reference Data**: Templates include reference data for categories and relationships
+- **Error Reporting**: Detailed error messages with row-specific feedback
 
 ### 🏢 Business Relationship Management
 - **Multi-level Company Structure**: Suppliers → Sellers → Selling Points
@@ -48,10 +61,25 @@ Visit Nexus Tracker is a full-stack application that enables users to:
 - **Search Functionality**: Real-time search across all data management pages
 - **Add Forms**: Quick add functionality with inline forms for all entities
 
+### 🎨 User Interface & Experience
+- **Dark Theme Support**: Modern UI with light and dark theme options
+- **Responsive Design**: Optimized for desktop and mobile devices
+- **Performance Dashboard**: Real-time application performance monitoring
+- **Toast Notifications**: User-friendly feedback system
+- **Loading States**: Comprehensive loading indicators and skeletons
+- **Accessibility**: WCAG compliant design with keyboard navigation
+
 ### 🗺️ Location Services
 - **Address Geocoding**: Automatic coordinate generation from addresses
 - **Location Validation**: Ensure accurate address data
 - **Google Maps Integration**: Leverage Google Maps API for geocoding
+
+### 📈 Performance Monitoring
+- **Real-time Metrics**: Memory usage, load times, and network performance
+- **Component Tracking**: Individual component render and interaction times
+- **Speed Insights**: Integration with Vercel Speed Insights
+- **Performance Dashboard**: Floating performance monitor for development
+- **Batch Processing**: Efficient handling of large data operations
 
 ## 🔐 Role-Based Access Control
 
@@ -69,6 +97,7 @@ Admin (4) > Internal Agent (3) > External Agent (2) > Guest (1)
 - ✅ View all visits from all users
 - ✅ Manage system settings and configurations
 - ✅ Access all data management pages
+- ✅ Bulk upload capabilities
 
 #### Internal Agent
 - ✅ Create visits and view own visits
