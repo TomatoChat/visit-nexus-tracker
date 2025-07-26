@@ -44,6 +44,7 @@ const SupplierRelationships: React.FC<SupplierRelationshipsProps> = ({
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [sellerCode, setSellerCode] = useState<string>('');
+  const [visitCadence, setVisitCadence] = useState<number | undefined>(undefined);
 
   // Data hooks
   const { data: suppliers = [], isLoading: isLoadingSuppliers } = useSuppliers();
@@ -78,6 +79,7 @@ const SupplierRelationships: React.FC<SupplierRelationshipsProps> = ({
         startDate: formatDateForDatabase(startDate),
         endDate: endDate ? formatDateForDatabase(endDate) : null,
         sellerSellingPointCode: sellerCode || null,
+        visitCadence: visitCadence || null,
       };
 
       if (editingRelationship) {
@@ -107,6 +109,7 @@ const SupplierRelationships: React.FC<SupplierRelationshipsProps> = ({
     setStartDate(new Date(relationship.startDate));
     setEndDate(relationship.endDate ? new Date(relationship.endDate) : undefined);
     setSellerCode(relationship.sellerSellingPointCode || '');
+    setVisitCadence(relationship.visitCadence || undefined);
     setShowAddForm(true);
   };
 
@@ -133,6 +136,7 @@ const SupplierRelationships: React.FC<SupplierRelationshipsProps> = ({
     setStartDate(new Date());
     setEndDate(undefined);
     setSellerCode('');
+    setVisitCadence(undefined);
     setEditingRelationship(null);
     setShowAddForm(false);
   };
@@ -224,6 +228,18 @@ const SupplierRelationships: React.FC<SupplierRelationshipsProps> = ({
               />
             </div>
 
+            <div>
+              <Label htmlFor="visit-cadence">Cadenza Visite (giorni)</Label>
+              <Input
+                id="visit-cadence"
+                type="number"
+                min={1}
+                value={visitCadence || ''}
+                onChange={(e) => setVisitCadence(e.target.value ? Number(e.target.value) : undefined)}
+                placeholder="Es: 30"
+              />
+            </div>
+
             <div className="flex justify-between items-center space-x-2">
               <div>
                 {editingRelationship && (
@@ -292,6 +308,11 @@ const SupplierRelationships: React.FC<SupplierRelationshipsProps> = ({
                     {relationship.sellerSellingPointCode && (
                       <span className="ml-2">
                         • Codice: {relationship.sellerSellingPointCode}
+                      </span>
+                    )}
+                    {relationship.visitCadence && (
+                      <span className="ml-2 text-blue-600">
+                        • Cadenza: {relationship.visitCadence} giorni
                       </span>
                     )}
                   </div>

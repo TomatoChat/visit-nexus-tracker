@@ -9,7 +9,7 @@ import type { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, Pencil, Search, Plus, Link, Building, Users } from 'lucide-react';
 import SupplierRelationships from './SupplierRelationships';
-import { useSuppliers, useCompanySellingPoints, useCreateCompanySellingPoint, useDeleteCompanySellingPoint, useAllUsers } from '@/hooks/use-data';
+import { useSuppliers, useCompanySellingPoints, useCreateCompanySellingPoint, useUpdateCompanySellingPoint, useDeleteCompanySellingPoint, useAllUsers } from '@/hooks/use-data';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 type SellingPoint = Database['public']['Tables']['sellingPoints']['Row'] & { accountManager?: string };
@@ -45,7 +45,9 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
   const [relationshipStartDate, setRelationshipStartDate] = useState<Date>(new Date());
   const [relationshipEndDate, setRelationshipEndDate] = useState<Date | undefined>(undefined);
   const [sellerCode, setSellerCode] = useState<string>('');
+  const [visitCadence, setVisitCadence] = useState<number | undefined>(undefined);
   const [showAddRelationshipForm, setShowAddRelationshipForm] = useState(false);
+  const [editingRelationship, setEditingRelationship] = useState<any>(null);
 
   // Responsabili Caricamento/Ordini state
   const [selectedServicePersonId, setSelectedServicePersonId] = useState<string>('');
@@ -60,6 +62,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
   const { data: suppliers = [], isLoading: isLoadingSuppliers } = useSuppliers();
   const { data: relationships = [], isLoading: isLoadingRelationships } = useCompanySellingPoints(editingSellingPoint?.id || '');
   const createRelationshipMutation = useCreateCompanySellingPoint();
+  const updateRelationshipMutation = useUpdateCompanySellingPoint();
   const deleteRelationshipMutation = useDeleteCompanySellingPoint();
   const queryClient = useQueryClient();
 
@@ -229,7 +232,9 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
     setRelationshipStartDate(new Date());
     setRelationshipEndDate(undefined);
     setSellerCode('');
+    setVisitCadence(undefined);
     setShowAddRelationshipForm(false);
+    setEditingRelationship(null);
     setSelectedAccountManagerId(undefined);
     // Reset service people form
     setSelectedServicePersonId('');
@@ -321,25 +326,48 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
         startDate: relationshipStartDate.toISOString().split('T')[0],
         endDate: relationshipEndDate ? relationshipEndDate.toISOString().split('T')[0] : null,
         sellerSellingPointCode: sellerCode || null,
+        visitCadence: visitCadence || null,
       };
 
-      await createRelationshipMutation.mutateAsync(relationshipData);
+      if (editingRelationship) {
+        // Update existing relationship
+        await updateRelationshipMutation.mutateAsync({
+          id: editingRelationship.id,
+          ...relationshipData
+        });
+        toast({ title: 'Successo!', description: 'Relazione fornitore aggiornata!' });
+      } else {
+        // Create new relationship
+        await createRelationshipMutation.mutateAsync(relationshipData);
+        toast({ title: 'Successo!', description: 'Relazione fornitore creata!' });
+      }
       
       // Reset form
       setSelectedSupplierId('');
       setRelationshipStartDate(new Date());
       setRelationshipEndDate(undefined);
       setSellerCode('');
+      setVisitCadence(undefined);
       setShowAddRelationshipForm(false);
+      setEditingRelationship(null);
       
-      toast({ title: 'Successo!', description: 'Relazione fornitore creata!' });
     } catch (error: any) {
       toast({ 
         title: 'Errore', 
-        description: error.message || 'Impossibile creare la relazione fornitore.', 
+        description: error.message || 'Impossibile salvare la relazione fornitore.', 
         variant: 'destructive' 
       });
     }
+  };
+
+  const handleEditSupplierRelationship = (relationship: any) => {
+    setEditingRelationship(relationship);
+    setSelectedSupplierId(relationship.supplierCompanyId);
+    setRelationshipStartDate(new Date(relationship.startDate));
+    setRelationshipEndDate(relationship.endDate ? new Date(relationship.endDate) : undefined);
+    setSellerCode(relationship.sellerSellingPointCode || '');
+    setVisitCadence(relationship.visitCadence || undefined);
+    setShowAddRelationshipForm(true);
   };
 
   const handleDeleteSupplierRelationship = async (relationshipId: string) => {
@@ -679,13 +707,34 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                               {relationship.endDate && (
                                 <span> - Al: {new Date(relationship.endDate).toLocaleDateString('it-IT')}</span>
                               )}
+                              {relationship.visitCadence && (
+                                <span className="ml-2 text-blue-600">
+                                  • Cadenza: {relationship.visitCadence} giorni
+                                </span>
+                              )}
                             </span>
                           </div>
                           <div className="flex gap-1">
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleDeleteSupplierRelationship(relationship.id)}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleEditSupplierRelationship(relationship);
+                              }}
+                              title="Modifica relazione"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDeleteSupplierRelationship(relationship.id);
+                              }}
                               className="text-destructive hover:bg-destructive/10"
                               title="Elimina relazione"
                             >
@@ -718,12 +767,17 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                 {showAddRelationshipForm && (
                   <div className="space-y-3 border rounded-lg p-3 bg-muted">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-medium text-foreground">Nuova relazione fornitore:</h4>
+                      <h4 className="text-sm font-medium text-foreground">
+                        {editingRelationship ? 'Modifica relazione fornitore:' : 'Nuova relazione fornitore:'}
+                      </h4>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => setShowAddRelationshipForm(false)}
+                        onClick={() => {
+                          setShowAddRelationshipForm(false);
+                          setEditingRelationship(null);
+                        }}
                       >
                         ✕
                       </Button>
@@ -762,10 +816,25 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                       />
                     </div>
                     
+                    <div>
+                      <Label htmlFor="visit-cadence">Cadenza Visite (giorni)</Label>
+                      <Input
+                        id="visit-cadence"
+                        type="number"
+                        min={1}
+                        value={visitCadence || ''}
+                        onChange={(e) => setVisitCadence(e.target.value ? Number(e.target.value) : undefined)}
+                        placeholder="Es: 30"
+                      />
+                    </div>
+                    
                     <div className="flex gap-2">
                       <Button
                         type="button"
-                        onClick={() => setShowAddRelationshipForm(false)}
+                        onClick={() => {
+                          setShowAddRelationshipForm(false);
+                          setEditingRelationship(null);
+                        }}
                         variant="outline"
                         size="sm"
                         className="flex-1"
@@ -779,7 +848,7 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                         size="sm"
                         className="flex-1"
                       >
-                        Aggiungi
+                        {editingRelationship ? 'Salva Modifiche' : 'Aggiungi'}
                       </Button>
                     </div>
                   </div>

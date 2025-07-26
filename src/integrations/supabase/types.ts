@@ -187,6 +187,7 @@ export type Database = {
           supplierCompanyId: string
           updated_at: string
           isactive: boolean
+          visitCadence: number | null
         }
         Insert: {
           created_at?: string
@@ -198,6 +199,7 @@ export type Database = {
           supplierCompanyId: string
           updated_at?: string
           isactive?: boolean
+          visitCadence?: number | null
         }
         Update: {
           created_at?: string
@@ -209,6 +211,7 @@ export type Database = {
           supplierCompanyId?: string
           updated_at?: string
           isactive?: boolean
+          visitCadence?: number | null
         }
         Relationships: [
           {
