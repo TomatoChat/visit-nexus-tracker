@@ -35,7 +35,9 @@ import {
   useUploadPhotos,
   useSuppliers,
   useSellers,
-  useSellingPoints
+  useSellingPoints,
+  useFilteredSellingPoints,
+  useFilteredSellersBySupplier
 } from '@/hooks/use-data';
 import { formatDateForDatabase } from '@/lib/date-utils';
 import { useQuery } from '@tanstack/react-query';
@@ -47,7 +49,10 @@ type SellingPointWithAddress = Database['public']['Tables']['sellingPoints']['Ro
 type VisitActivity = Database['public']['Tables']['visitActivities']['Row'];
 type Person = Database['public']['Tables']['people']['Row'];
 
-interface NewVisitFormProps {}
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+interface NewVisitFormProps {
+  // Empty interface for future props
+}
 
 export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
@@ -69,7 +74,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
   const [personVisitedId, setPersonVisitedId] = useState<string | null>(null);
 
   // Add state for photos
-  const [photos, setPhotos] = useState<any[]>([]);
+  const [photos, setPhotos] = useState<{ id: string; file: File; preview: string; uploaded: boolean }[]>([]);
   const photoUploadRef = useRef<PhotoUploadRef>(null);
   
   // Add state for hours spent
@@ -84,10 +89,30 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
   // Data fetching hooks - different logic for admin vs regular users
   const { data: amSellingPoints = [], isLoading: isLoadingSellingPoints } = useAccountManagerSellingPoints(user?.id || '');
 
-  // For admins in admin mode, use all selling points; for regular users, use account manager filtered ones
+  // For admins in admin mode, use all selling points; for regular users, use filtered ones
   const { data: allSellingPoints = [], isLoading: isLoadingAllSellingPoints } = useSellingPoints();
-  const sellingPoints = shouldUseAdminMode ? allSellingPoints : amSellingPoints;
-  const isLoadingSellingPointsData = shouldUseAdminMode ? isLoadingAllSellingPoints : isLoadingSellingPoints;
+  
+  // Use filtered selling points when supplier and seller are selected (for both admin and regular users)
+  const { data: filteredSellingPoints = [], isLoading: isLoadingFilteredSellingPoints } = useFilteredSellingPoints(
+    user?.id || '', 
+    selectedSupplierId, 
+    selectedSellerId,
+    shouldUseAdminMode
+  );
+  
+  // Determine which selling points to use based on selection state
+  let sellingPoints: SellingPointWithAddress[] = [];
+  let isLoadingSellingPointsData = false;
+  
+  if (selectedSupplierId && selectedSellerId) {
+    // When both supplier and seller are selected, use filtered selling points for both admin and regular users
+    sellingPoints = filteredSellingPoints;
+    isLoadingSellingPointsData = isLoadingFilteredSellingPoints;
+  } else {
+    // When supplier or seller not selected, use account manager selling points (for regular users) or all selling points (for admin mode)
+    sellingPoints = shouldUseAdminMode ? allSellingPoints : amSellingPoints;
+    isLoadingSellingPointsData = shouldUseAdminMode ? isLoadingAllSellingPoints : isLoadingSellingPoints;
+  }
 
   // Check if user has any assigned selling points (only relevant for non-admin users or admins in user mode)
   const hasAssignedSellingPoints = shouldUseAdminMode ? true : amSellingPoints.length > 0;
@@ -115,6 +140,36 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
+
+  // New: Filtered sellers by supplier
+  const { data: filteredSellers = [], isLoading: isLoadingFilteredSellers } = useFilteredSellersBySupplier(selectedSupplierId);
+
+  // Seller options logic
+  let sellerOptions: { value: string; label: string }[] = [];
+  let isLoadingSellerOptions = false;
+  if (selectedSupplierId) {
+    sellerOptions = filteredSellers
+      .slice()
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(seller => ({ value: seller.id, label: seller.name }));
+    isLoadingSellerOptions = isLoadingFilteredSellers;
+  } else {
+    sellerOptions = (shouldUseAdminMode ? allSellers : amSellers)
+      .slice()
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(seller => ({ value: seller.id, label: seller.name }));
+    isLoadingSellerOptions = shouldUseAdminMode ? isLoadingAllSellers : isLoadingSellers;
+  }
+
+  // Selling point options
+  const sellingPointOptions = sellingPoints
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(point => ({
+      value: point.id,
+      label: point.name,
+      subtitle: point.addresses?.city || ''
+    }));
 
   // Suppliers - different logic for admin vs regular users
   const sellingPointIds = shouldUseAdminMode ? [] : getSellingPointIds(amSellingPoints);
@@ -155,6 +210,16 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
 
   const { data: activities = [], isLoading: isLoadingActivities } = useActivities();
   const { data: people = [], isLoading: isLoadingPeople } = usePeopleByCompanies([selectedSupplierId, selectedSellerId].filter(Boolean));
+  
+  // Activity options
+  const activityOptions = activities
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(activity => ({
+      value: activity.id,
+      label: activity.name,
+      subtitle: undefined
+    }));
   
   // Mutations
   const createVisitMutation = useCreateVisit();
@@ -214,32 +279,6 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
     .map(supplier => ({
       value: supplier.id,
       label: supplier.name
-    }));
-
-  const sellerOptions = (shouldUseAdminMode ? allSellers : amSellers)
-    .slice()
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map(seller => ({
-      value: seller.id,
-      label: seller.name
-    }));
-
-  const sellingPointOptions = sellingPoints
-    .slice()
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map(point => ({
-      value: point.id,
-      label: point.name,
-      subtitle: point.addresses?.city || ''
-    }));
-
-  const activityOptions = activities
-    .slice()
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map(activity => ({
-      value: activity.id,
-      label: activity.name,
-      subtitle: undefined
     }));
 
   const selectedSupplier = (shouldUseAdminMode ? allSuppliers : amSuppliers).find(s => s.id === selectedSupplierId);
@@ -447,7 +486,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                   }}
                   placeholder="Scegli un cliente..."
                   searchPlaceholder="Cerca clienti..."
-                  disabled={shouldUseAdminMode ? isLoadingAllSellers : isLoadingSellers}
+                  disabled={isLoadingSellerOptions}
                 />
               </div>
             )}
@@ -459,6 +498,16 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
                   <MapPin className="w-4 h-4" />
                   Punto vendita
                 </label>
+                {selectedSupplierId && selectedSellerId && !isLoadingSellingPointsData && sellingPointOptions.length === 0 && (
+                  <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg">
+                    <p className="text-yellow-800">
+                      <strong>Nessun punto vendita disponibile:</strong> {shouldUseAdminMode 
+                        ? 'Non ci sono punti vendita che abbiano una relazione con il fornitore e cliente selezionati.'
+                        : 'Non ci sono punti vendita assegnati a te che abbiano una relazione con il fornitore e cliente selezionati.'
+                      }
+                    </p>
+                  </div>
+                )}
                 <SearchableSelect
                   options={sellingPointOptions}
                   value={selectedSellingPointId}

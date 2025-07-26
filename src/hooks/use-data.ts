@@ -144,7 +144,7 @@ async function getSellersBySupplierBatched(supplierId: string): Promise<Company[
   
   // Get relationships in batches
   const batchSize = 100;
-  let allSellingPointIds: string[] = [];
+  const allSellingPointIds: string[] = [];
   let offset = 0;
   
   while (true) {
@@ -331,7 +331,7 @@ async function getSellingPointsBySupplierBatched(supplierId: string, sellerId: s
   
   // Get relationships in batches
   const batchSize = 100;
-  let allSellingPointIds: string[] = [];
+  const allSellingPointIds: string[] = [];
   let offset = 0;
   
   while (true) {
@@ -846,5 +846,138 @@ export function getSellingPointIds(sellingPoints: any[]): string[] {
 export function getSupplierCompanyIdsFromCompanySellingPoints(companySellingPoints: any[]): string[] {
   return Array.from(new Set((companySellingPoints || []).map(csp => csp.supplierCompanyId)));
 }
+
+// New hook: Filter selling points based on user assignments AND supplier-selling point relationships
+export const useFilteredSellingPoints = (userId: string, supplierId: string, sellerId: string, shouldUseAdminMode: boolean) => {
+  return useQuery({
+    queryKey: ['filteredSellingPoints', userId, supplierId, sellerId, shouldUseAdminMode],
+    queryFn: async () => {
+      if (!supplierId || !sellerId) return [];
+      if (shouldUseAdminMode) {
+        // Admin mode: only filter by supplier and seller relationship
+        // 1. Get selling points connected to the supplier
+        const { data: supplierRelationships, error: srError } = await supabase
+          .from('companySellingPoint')
+          .select('sellingPointId')
+          .eq('supplierCompanyId', supplierId)
+          .eq('isactive', true);
+        if (srError) throw srError;
+        const supplierSellingPointIds = supplierRelationships?.map(sr => sr.sellingPointId) || [];
+        if (supplierSellingPointIds.length === 0) return [];
+        // 2. Get selling points for the seller and in the supplier relationship
+        const { data: sellingPoints, error: spError } = await supabase
+          .from('sellingPoints')
+          .select('*, addresses(*)')
+          .in('id', supplierSellingPointIds)
+          .eq('sellerCompanyId', sellerId)
+          .eq('isactive', true)
+          .order('name', { ascending: true });
+        if (spError) throw spError;
+        return sellingPoints || [];
+      } else {
+        // Regular user: filter by user assignment AND supplier-seller relationship
+        if (!userId) return [];
+        // Step 1: Get selling points where user is account manager OR service person
+        const userAssignedSellingPoints: string[] = [];
+        // Get selling points where user is account manager
+        const { data: accountManagerPoints, error: amError } = await supabase
+          .from('sellingPoints')
+          .select('id')
+          .eq('accountManager', userId)
+          .eq('isactive', true);
+        if (amError) throw amError;
+        if (accountManagerPoints) {
+          userAssignedSellingPoints.push(...accountManagerPoints.map(sp => sp.id));
+        }
+        // Get selling points where user is service person
+        const { data: servicePointIds, error: spIdsError } = await supabase
+          .from('sellingPointServicePeople')
+          .select('sellingPointId')
+          .eq('userId', userId)
+          .eq('isactive', true);
+        if (spIdsError) throw spIdsError;
+        if (servicePointIds) {
+          userAssignedSellingPoints.push(...servicePointIds.map(sp => sp.sellingPointId));
+        }
+        // Remove duplicates
+        const uniqueUserAssignedSellingPoints = Array.from(new Set(userAssignedSellingPoints));
+        if (uniqueUserAssignedSellingPoints.length === 0) {
+          return [];
+        }
+        // Step 2: Get selling points that have a relationship with the selected supplier
+        const { data: supplierRelationships, error: srError } = await supabase
+          .from('companySellingPoint')
+          .select('sellingPointId')
+          .eq('supplierCompanyId', supplierId)
+          .eq('isactive', true);
+        if (srError) throw srError;
+        const supplierSellingPointIds = supplierRelationships?.map(sr => sr.sellingPointId) || [];
+        if (supplierSellingPointIds.length === 0) {
+          return [];
+        }
+        // Step 3: Find intersection of user-assigned selling points and supplier-related selling points
+        const intersectionSellingPointIds = uniqueUserAssignedSellingPoints.filter(
+          id => supplierSellingPointIds.includes(id)
+        );
+        if (intersectionSellingPointIds.length === 0) {
+          return [];
+        }
+        // Step 4: Get the full selling point data for the intersection, filtered by seller
+        const { data: sellingPoints, error: spError } = await supabase
+          .from('sellingPoints')
+          .select('*, addresses(*)')
+          .in('id', intersectionSellingPointIds)
+          .eq('sellerCompanyId', sellerId)
+          .eq('isactive', true)
+          .order('name', { ascending: true });
+        if (spError) throw spError;
+        return sellingPoints || [];
+      }
+    },
+    enabled: (!!userId || shouldUseAdminMode) && !!supplierId && !!sellerId,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+};
+
+// Filtered sellers by supplier: only sellers with at least one selling point connected to the supplier
+export const useFilteredSellersBySupplier = (supplierId: string) => {
+  return useQuery({
+    queryKey: ['filteredSellersBySupplier', supplierId],
+    queryFn: async () => {
+      if (!supplierId) return [];
+      // 1. Get all companySellingPoint rows for this supplier
+      const { data: companySellingPoints, error: cspError } = await supabase
+        .from('companySellingPoint')
+        .select('sellingPointId')
+        .eq('supplierCompanyId', supplierId)
+        .eq('isactive', true);
+      if (cspError) throw cspError;
+      const sellingPointIds = (companySellingPoints || []).map(csp => csp.sellingPointId);
+      if (sellingPointIds.length === 0) return [];
+      // 2. Get all sellingPoints with those IDs
+      const { data: sellingPoints, error: spError } = await supabase
+        .from('sellingPoints')
+        .select('sellerCompanyId')
+        .in('id', sellingPointIds)
+        .eq('isactive', true);
+      if (spError) throw spError;
+      const sellerCompanyIds = Array.from(new Set((sellingPoints || []).map(sp => sp.sellerCompanyId)));
+      if (sellerCompanyIds.length === 0) return [];
+      // 3. Get all companies with those IDs, isSeller = true, isActive = true
+      const { data: sellers, error: sellersError } = await supabase
+        .from('companies')
+        .select('*')
+        .in('id', sellerCompanyIds)
+        .eq('isSeller', true)
+        .eq('isActive', true);
+      if (sellersError) throw sellersError;
+      return sellers || [];
+    },
+    enabled: !!supplierId,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+};
 
 export type { Activity, PersonRole, CompanyCategory }; 
