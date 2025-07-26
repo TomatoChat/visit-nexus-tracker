@@ -747,8 +747,8 @@ export const useAllUsers = (): any => {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from('user_roles_with_name')
-        .select('userId, first_name, last_name, auth_email')
-        .eq('isActive', true);
+        .select('"userId", "first_name", "last_name", "auth_email", "isActive"')
+        .eq('"isActive"', true);
       if (error) throw error;
       return (data || []).map((item: any) => {
         const displayName = [item.first_name, item.last_name].filter(Boolean).join(' ');
