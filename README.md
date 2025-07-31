@@ -23,7 +23,7 @@ Visit Nexus Tracker is a full-stack application that enables users to:
 - Session management and automatic token refresh
 - Protected routes and user-specific data access
 - **Role-Based Access Control (RBAC)** with four distinct roles:
-  - **Admin**: Full access to all features and data management, can view all selling points in "To Visit"
+  - **Admin**: Full access to all features and data management, can view their assigned selling points in "To Visit"
   - **Internal Agent**: Can create visits and view their own visits, limited access to data management
   - **External Agent**: Can create visits and view their own visits, no access to data management
   - **Guest**: Read-only access to view data
@@ -51,9 +51,7 @@ Visit Nexus Tracker is a full-stack application that enables users to:
 - **Complex Relationships**: Track which suppliers work with which sellers at specific locations
 - **People Management**: Associate contacts with specific companies
 - **Activity Tracking**: Record different types of business activities
-- **Visit Scheduling**: Role-based view of selling points that need visits
-  - **Admin**: View all selling points requiring visits across the organization
-  - **Other Roles**: View only assigned selling points requiring visits
+- **Visit Scheduling**: All users view only their assigned selling points that need visits
 
 ### 📊 Data Management
 - **Company Management**: Add suppliers and sellers with detailed information (Admin only)
@@ -99,7 +97,7 @@ Admin (4) > Internal Agent (3) > External Agent (2) > Guest (1)
 - ✅ Manage user roles and permissions
 - ✅ Create, read, update, delete all data
 - ✅ View all visits from all users
-- ✅ View all selling points requiring visits
+- ✅ View assigned selling points requiring visits
 - ✅ Manage system settings and configurations
 - ✅ Access all data management pages (Companies, Selling Points, People, General Categories)
 - ✅ Bulk upload capabilities
@@ -227,9 +225,7 @@ src/
 
 ### Recent Access Control Updates
 - **Data Management Pages**: Companies, Selling Points, People, and General Categories are now restricted to Admin users only
-- **To Visit Page**: Enhanced with role-based access:
-  - **Admin**: Can view all selling points requiring visits across the organization
-  - **Other Roles**: Can only view selling points assigned to them
+- **To Visit Page**: All users (including Admin) view only their assigned selling points that need visits
 - **Menu Visibility**: Data management menu items are hidden for non-admin users
 - **Route Protection**: Direct URL access to restricted pages is blocked and redirects to home
 

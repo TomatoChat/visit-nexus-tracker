@@ -31,13 +31,11 @@ interface SellingPointWithCadence {
 
 const ToVisit: React.FC = () => {
   const { toast } = useToast();
-  const { userRole, checkCanViewAllVisits } = useRoles();
+  const { userRole } = useRoles();
   const [sellingPoints, setSellingPoints] = useState<SellingPointWithCadence[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'overdue' | 'upcoming'>('all');
   const [userId, setUserId] = useState<string | null>(null);
-  const [canViewAll, setCanViewAll] = useState(false);
-
   useEffect(() => {
     const fetchUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -49,25 +47,43 @@ const ToVisit: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const checkPermissions = async () => {
-      const canViewAllVisits = await checkCanViewAllVisits();
-      setCanViewAll(canViewAllVisits);
-    };
-    checkPermissions();
-  }, [checkCanViewAllVisits]);
-
-  useEffect(() => {
     if (userId) {
       fetchSellingPointsToVisit();
     }
-  }, [userId, canViewAll]);
+  }, [userId]);
 
   const fetchSellingPointsToVisit = async () => {
     if (!userId) return;
 
     setIsLoading(true);
     try {
-      let query = supabase
+      // First, get the selling points assigned to this user
+      const { data: userAssignments, error: assignmentError } = await supabase
+        .from('sellingPointServicePeople')
+        .select('sellingPointId')
+        .eq('userId', userId)
+        .eq('isactive', true);
+
+      if (assignmentError) {
+        console.error('Error fetching user assignments:', assignmentError);
+        toast({ 
+          title: 'Errore', 
+          description: 'Impossibile caricare le assegnazioni utente.', 
+          variant: 'destructive' 
+        });
+        return;
+      }
+
+      if (!userAssignments || userAssignments.length === 0) {
+        setSellingPoints([]);
+        return;
+      }
+
+      // Extract the selling point IDs
+      const assignedSellingPointIds = userAssignments.map(assignment => assignment.sellingPointId);
+
+      // Now get the selling points with their relationships
+      const { data: assignedSellingPoints, error: spError } = await supabase
         .from('sellingPoints')
         .select(`
           id,
@@ -84,20 +100,10 @@ const ToVisit: React.FC = () => {
               name,
               visitCadence
             )
-          ),
-          sellingPointServicePeople (
-            userId
           )
         `)
+        .in('id', assignedSellingPointIds)
         .eq('isactive', true);
-
-      // If user can view all visits (admin), get all selling points
-      // Otherwise, only get selling points assigned to the user
-      if (!canViewAll) {
-        query = query.eq('sellingPointServicePeople.userId', userId);
-      }
-
-      const { data: assignedSellingPoints, error: spError } = await query;
 
       if (spError) {
         console.error('Error fetching selling points:', spError);
@@ -244,10 +250,7 @@ const ToVisit: React.FC = () => {
         <div className="w-full pb-2 md:p-8">
           <div className="flex items-center justify-center py-8">
             <div className="text-lg">
-              {canViewAll 
-                ? 'Caricamento tutti i punti vendita da visitare...'
-                : 'Caricamento punti vendita assegnati da visitare...'
-              }
+              Caricamento punti vendita assegnati da visitare...
             </div>
           </div>
         </div>
@@ -270,11 +273,6 @@ const ToVisit: React.FC = () => {
         <div className="hidden md:flex items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-bold text-left">Da Visitare</h1>
-            {canViewAll && (
-              <p className="text-sm text-muted-foreground mt-1">
-                Visualizzazione di tutti i punti vendita
-              </p>
-            )}
           </div>
         </div>
 
@@ -315,9 +313,7 @@ const ToVisit: React.FC = () => {
                   </h3>
                   <p className="text-muted-foreground">
                     {filter === 'all' 
-                      ? canViewAll 
-                        ? 'Tutti i punti vendita sono aggiornati.'
-                        : 'Tutti i punti vendita assegnati sono aggiornati.'
+                      ? 'Tutti i punti vendita assegnati sono aggiornati.'
                       : filter === 'overdue'
                       ? 'Nessun punto vendita in ritardo.'
                       : 'Nessun punto vendita in programma per i prossimi giorni.'
