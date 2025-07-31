@@ -47,6 +47,7 @@ import Layout from '@/components/Layout';
 import { RoleDisplay } from '@/components/ui/role-display';
 import { useRoles } from '@/hooks/use-roles';
 import { AdminModeProvider } from '@/hooks/use-admin-mode';
+import { ProtectedRoute } from '@/components/ui/protected-route';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -138,8 +139,8 @@ function SidebarMenuContent() {
             </SidebarMenuButton>
           </SidebarMenuItem>
 
-          {/* Data Management Pages - only visible to internal agents and admins */}
-          {userRole && userRole !== 'externalAgent' && userRole !== 'guest' && (
+          {/* Data Management Pages - only visible to admins */}
+          {userRole === 'admin' && (
             <>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={location.pathname === "/companies"}>
@@ -168,7 +169,7 @@ function SidebarMenuContent() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              {/* General Categories - only visible to admins and internal agents */}
+              {/* General Categories - only visible to admins */}
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={location.pathname === "/general-categories"}>
                   <Link to="/general-categories" onClick={handleNavigationClick}>
@@ -347,10 +348,10 @@ const App = () => {
                 <Route path="/" element={<Index />} />
                 <Route path="/my-visits" element={<MyVisits />} />
                 <Route path="/to-visit" element={<ToVisit />} />
-                <Route path="/companies" element={<Companies />} />
-                <Route path="/selling-points" element={<SellingPoints />} />
-                <Route path="/people" element={<People />} />
-                <Route path="/general-categories" element={<GeneralCategories />} />
+                <Route path="/companies" element={<ProtectedRoute><Companies /></ProtectedRoute>} />
+                <Route path="/selling-points" element={<ProtectedRoute><SellingPoints /></ProtectedRoute>} />
+                <Route path="/people" element={<ProtectedRoute><People /></ProtectedRoute>} />
+                <Route path="/general-categories" element={<ProtectedRoute><GeneralCategories /></ProtectedRoute>} />
                 <Route path="/profile" element={<Profile />} />
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

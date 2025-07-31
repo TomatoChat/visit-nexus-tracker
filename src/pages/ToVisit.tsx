@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar, Clock, MapPin, Building, AlertTriangle, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useRoles } from '@/hooks/use-roles';
 
 interface SellingPointWithCadence {
   id: string;
@@ -30,10 +31,12 @@ interface SellingPointWithCadence {
 
 const ToVisit: React.FC = () => {
   const { toast } = useToast();
+  const { userRole, checkCanViewAllVisits } = useRoles();
   const [sellingPoints, setSellingPoints] = useState<SellingPointWithCadence[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'overdue' | 'upcoming'>('all');
   const [userId, setUserId] = useState<string | null>(null);
+  const [canViewAll, setCanViewAll] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -46,18 +49,25 @@ const ToVisit: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    const checkPermissions = async () => {
+      const canViewAllVisits = await checkCanViewAllVisits();
+      setCanViewAll(canViewAllVisits);
+    };
+    checkPermissions();
+  }, [checkCanViewAllVisits]);
+
+  useEffect(() => {
     if (userId) {
       fetchSellingPointsToVisit();
     }
-  }, [userId]);
+  }, [userId, canViewAll]);
 
   const fetchSellingPointsToVisit = async () => {
     if (!userId) return;
 
     setIsLoading(true);
     try {
-      // Get selling points assigned to the user (as service person only for now)
-      const { data: assignedSellingPoints, error: spError } = await supabase
+      let query = supabase
         .from('sellingPoints')
         .select(`
           id,
@@ -79,14 +89,21 @@ const ToVisit: React.FC = () => {
             userId
           )
         `)
-        .eq('sellingPointServicePeople.userId', userId)
         .eq('isactive', true);
+
+      // If user can view all visits (admin), get all selling points
+      // Otherwise, only get selling points assigned to the user
+      if (!canViewAll) {
+        query = query.eq('sellingPointServicePeople.userId', userId);
+      }
+
+      const { data: assignedSellingPoints, error: spError } = await query;
 
       if (spError) {
         console.error('Error fetching selling points:', spError);
         toast({ 
           title: 'Errore', 
-          description: 'Impossibile caricare i punti vendita assegnati.', 
+          description: 'Impossibile caricare i punti vendita da visitare.', 
           variant: 'destructive' 
         });
         return;
@@ -226,7 +243,12 @@ const ToVisit: React.FC = () => {
       <Layout>
         <div className="w-full pb-2 md:p-8">
           <div className="flex items-center justify-center py-8">
-            <div className="text-lg">Caricamento punti vendita da visitare...</div>
+            <div className="text-lg">
+              {canViewAll 
+                ? 'Caricamento tutti i punti vendita da visitare...'
+                : 'Caricamento punti vendita assegnati da visitare...'
+              }
+            </div>
           </div>
         </div>
       </Layout>
@@ -246,7 +268,14 @@ const ToVisit: React.FC = () => {
 
         {/* Desktop: Title */}
         <div className="hidden md:flex items-center justify-between gap-4 mb-8">
-          <h1 className="text-3xl font-bold text-left">Da Visitare</h1>
+          <div>
+            <h1 className="text-3xl font-bold text-left">Da Visitare</h1>
+            {canViewAll && (
+              <p className="text-sm text-muted-foreground mt-1">
+                Visualizzazione di tutti i punti vendita
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Filter buttons */}
@@ -286,7 +315,9 @@ const ToVisit: React.FC = () => {
                   </h3>
                   <p className="text-muted-foreground">
                     {filter === 'all' 
-                      ? 'Tutti i punti vendita assegnati sono aggiornati.'
+                      ? canViewAll 
+                        ? 'Tutti i punti vendita sono aggiornati.'
+                        : 'Tutti i punti vendita assegnati sono aggiornati.'
                       : filter === 'overdue'
                       ? 'Nessun punto vendita in ritardo.'
                       : 'Nessun punto vendita in programma per i prossimi giorni.'

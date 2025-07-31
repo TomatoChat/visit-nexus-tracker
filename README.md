@@ -23,9 +23,9 @@ Visit Nexus Tracker is a full-stack application that enables users to:
 - Session management and automatic token refresh
 - Protected routes and user-specific data access
 - **Role-Based Access Control (RBAC)** with four distinct roles:
-  - **Admin**: Full access to all features and data management
-  - **Internal Agent**: Read-only access to data management, can create visits and view their own visits
-  - **External Agent**: Can create visits and view their own visits, limited to "My Visits" only
+  - **Admin**: Full access to all features and data management, can view all selling points in "To Visit"
+  - **Internal Agent**: Can create visits and view their own visits, limited access to data management
+  - **External Agent**: Can create visits and view their own visits, no access to data management
   - **Guest**: Read-only access to view data
 - **Profile Management**: User profile page with password change functionality
 
@@ -51,15 +51,19 @@ Visit Nexus Tracker is a full-stack application that enables users to:
 - **Complex Relationships**: Track which suppliers work with which sellers at specific locations
 - **People Management**: Associate contacts with specific companies
 - **Activity Tracking**: Record different types of business activities
+- **Visit Scheduling**: Role-based view of selling points that need visits
+  - **Admin**: View all selling points requiring visits across the organization
+  - **Other Roles**: View only assigned selling points requiring visits
 
 ### 📊 Data Management
-- **Company Management**: Add suppliers and sellers with detailed information
-- **Selling Point Management**: Track retail locations with addresses and geocoding
-- **Person Management**: Maintain contact databases for each company
-- **Activity Management**: Define and track different types of business activities
+- **Company Management**: Add suppliers and sellers with detailed information (Admin only)
+- **Selling Point Management**: Track retail locations with addresses and geocoding (Admin only)
+- **Person Management**: Maintain contact databases for each company (Admin only)
+- **Activity Management**: Define and track different types of business activities (Admin only)
 - **User Management**: Admin interface for managing user roles and permissions
 - **Search Functionality**: Real-time search across all data management pages
 - **Add Forms**: Quick add functionality with inline forms for all entities
+- **Bulk Upload**: Excel/CSV import capabilities for mass data entry (Admin only)
 
 ### 🎨 User Interface & Experience
 - **Dark Theme Support**: Modern UI with light and dark theme options
@@ -95,33 +99,35 @@ Admin (4) > Internal Agent (3) > External Agent (2) > Guest (1)
 - ✅ Manage user roles and permissions
 - ✅ Create, read, update, delete all data
 - ✅ View all visits from all users
+- ✅ View all selling points requiring visits
 - ✅ Manage system settings and configurations
-- ✅ Access all data management pages
+- ✅ Access all data management pages (Companies, Selling Points, People, General Categories)
 - ✅ Bulk upload capabilities
 
 #### Internal Agent
 - ✅ Create visits and view own visits
-- ✅ View companies, people, selling points, activities (read-only)
-- ✅ Access all data management pages in read-only mode
-- ❌ Cannot modify data in Data Management
+- ✅ View only assigned selling points requiring visits
+- ❌ Cannot access data management pages (Companies, Selling Points, People, General Categories)
 - ❌ Cannot view other users' visits
 
 #### External Agent
 - ✅ Create visits and view own visits
-- ✅ Access only "My Visits" page
-- ❌ Cannot access data management pages
+- ✅ View only assigned selling points requiring visits
+- ❌ Cannot access data management pages (Companies, Selling Points, People, General Categories)
 - ❌ Cannot view other users' visits
 
 #### Guest
-- ✅ View companies, people, selling points, activities (read-only)
 - ❌ Cannot create visits
+- ❌ Cannot access data management pages
 - ❌ Cannot modify any data
 
 ### Security Implementation
 - **Database Level**: Row Level Security (RLS) policies enforce permissions
 - **Application Level**: Role guards prevent unauthorized UI elements
+- **Route Level**: Protected routes prevent direct URL access to restricted pages
 - **API Level**: Role checking in functions provides additional security
 - **Session Management**: Roles checked on each request
+- **Menu Level**: Navigation menu items hidden based on user role
 
 ## 🚀 Quick Start
 
@@ -198,6 +204,8 @@ src/
 ├── components/          # Reusable UI components
 │   ├── data-management/ # Data management components
 │   ├── ui/             # Base UI components (shadcn/ui)
+│   │   ├── protected-route.tsx # Route protection component
+│   │   └── role-guard.tsx      # Role-based UI guards
 │   └── visit/          # Visit-specific components
 ├── hooks/              # Custom React hooks
 ├── integrations/       # External service integrations
@@ -212,13 +220,24 @@ src/
 ### Role-Based Access Control
 - **Database Level**: RLS policies enforce permissions at the database level
 - **Application Level**: Role guards prevent unauthorized UI elements from rendering
+- **Route Level**: Protected routes prevent direct URL access to restricted pages
+- **Menu Level**: Navigation menu items hidden based on user role
 - **API Level**: Role checking in functions provides additional security
 - **Session Management**: Roles are checked on each request
+
+### Recent Access Control Updates
+- **Data Management Pages**: Companies, Selling Points, People, and General Categories are now restricted to Admin users only
+- **To Visit Page**: Enhanced with role-based access:
+  - **Admin**: Can view all selling points requiring visits across the organization
+  - **Other Roles**: Can only view selling points assigned to them
+- **Menu Visibility**: Data management menu items are hidden for non-admin users
+- **Route Protection**: Direct URL access to restricted pages is blocked and redirects to home
 
 ### Data Protection
 - **Row Level Security**: Database-level access control
 - **User Isolation**: Users can only access their own data
-- **Admin Controls**: Only admins can modify system data
+- **Admin Controls**: Only admins can modify system data and view all selling points
+- **Role-Based Data Access**: Different data views based on user role
 - **Audit Trail**: Visit tracking with user attribution
 - **Photo Security**: Photos stored securely with user-specific access controls
 
