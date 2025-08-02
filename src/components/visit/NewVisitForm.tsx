@@ -63,7 +63,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = ({ activeTab }) => {
   const [selectedActivityId, setSelectedActivityId] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [orderDate, setOrderDate] = useState<Date | undefined>(undefined);
-  const [placedOrder, setPlacedOrder] = useState<boolean | null>(null);
+  const [orderStatus, setOrderStatus] = useState<'placed' | 'not_placed' | 'will_be_placed' | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   
@@ -269,10 +269,10 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = ({ activeTab }) => {
     }
   }, [selectedSellingPointId]);
 
-  // Set default for placedOrder to false when an activity is selected
+  // Set default for orderStatus to not_placed when an activity is selected
   useEffect(() => {
     if (selectedActivityId) {
-      setPlacedOrder(false);
+      setOrderStatus('not_placed');
       setVisitedPerson(false);
       setPersonVisitedId(null);
     }
@@ -292,7 +292,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = ({ activeTab }) => {
   const selectedSellingPoint = sellingPoints.find(p => p.id === selectedSellingPointId);
   const selectedActivity = activities.find(a => a.id === selectedActivityId);
 
-  const canSubmit = user && selectedSupplierId && selectedSellerId && selectedSellingPointId && selectedActivityId && placedOrder !== null;
+  const canSubmit = user && selectedSupplierId && selectedSellerId && selectedSellingPointId && selectedActivityId && orderStatus !== null;
 
   const handleSubmitVisit = async () => {
     if (!canSubmit) return;
@@ -301,20 +301,21 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = ({ activeTab }) => {
     try {
       let orderId = selectedOrderId;
       
-      // If placedOrder is true and no order is selected, create a new order
-      if (placedOrder && !selectedOrderId) {
+      // If order was placed or will be placed and no order is selected, create a new order
+      if ((orderStatus === 'placed' || orderStatus === 'will_be_placed') && !selectedOrderId) {
         try {
-          const { data: orderData, error: orderError } = await supabase
-            .from("orders")
-            .insert({
-              supplierCompanyId: selectedSupplierId,
-              sellingPointId: selectedSellingPointId,
-              orderDate: formatDateForDatabase(selectedDate),
-              notes: `Ordine creato da visita - ${selectedActivity?.name || 'Attività'}`,
-              userId: user!.id,
-            })
-            .select()
-            .single();
+                      const { data: orderData, error: orderError } = await supabase
+              .from("orders")
+              .insert({
+                supplierCompanyId: selectedSupplierId,
+                sellingPointId: selectedSellingPointId,
+                orderDate: formatDateForDatabase(selectedDate),
+                notes: `Ordine creato da visita - ${selectedActivity?.name || 'Attività'}`,
+                userId: user!.id,
+                received: orderStatus === 'placed', // true if placed, false if will be placed
+              })
+              .select()
+              .single();
 
           if (orderError) throw orderError;
           orderId = orderData.id;
@@ -374,15 +375,18 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = ({ activeTab }) => {
     setLoading(prev => ({ ...prev, submitting: true }));
     
     try {
+      const orderData: any = {
+        supplierCompanyId: selectedSupplierId,
+        sellingPointId: selectedSellingPointId,
+        orderDate: formatDateForDatabase(orderDate),
+        notes: notes.trim() || null,
+        userId: user.id,
+        received: false, // Default to not received
+      };
+
       const { error } = await supabase
         .from("orders")
-        .insert({
-          supplierCompanyId: selectedSupplierId,
-          sellingPointId: selectedSellingPointId,
-          orderDate: formatDateForDatabase(orderDate),
-          notes: notes.trim() || null,
-          userId: user.id,
-        });
+        .insert(orderData);
 
       if (error) throw error;
 
@@ -406,7 +410,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = ({ activeTab }) => {
     setSelectedActivityId('');
     setSelectedDate(new Date());
     setOrderDate(undefined);
-    setPlacedOrder(null);
+    setOrderStatus(null);
     setSelectedOrderId(null);
     setPhotos([]);
     setHoursSpent('');
@@ -635,17 +639,24 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = ({ activeTab }) => {
                     <div className="flex gap-2">
                       <Button
                         type="button"
-                        variant={placedOrder === true ? 'default' : 'outline'}
-                        onClick={() => setPlacedOrder(true)}
+                        variant={orderStatus === 'placed' ? 'default' : 'outline'}
+                        onClick={() => setOrderStatus('placed')}
                       >
-                        Sì
+                        Effettuato
                       </Button>
                       <Button
                         type="button"
-                        variant={placedOrder === false ? 'default' : 'outline'}
-                        onClick={() => setPlacedOrder(false)}
+                        variant={orderStatus === 'will_be_placed' ? 'default' : 'outline'}
+                        onClick={() => setOrderStatus('will_be_placed')}
                       >
-                        No
+                        Sarà effettuato
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={orderStatus === 'not_placed' ? 'default' : 'outline'}
+                        onClick={() => setOrderStatus('not_placed')}
+                      >
+                        Non effettuato
                       </Button>
                     </div>
                   </div>
@@ -687,8 +698,12 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = ({ activeTab }) => {
                         <p><span className="font-medium">Cliente:</span> {selectedSeller?.name}</p>
                         <p><span className="font-medium">Punto vendita:</span> {selectedSellingPoint?.name}</p>
                         <p><span className="font-medium">Attività:</span> {selectedActivity?.name}</p>
-                        <p><span className="font-medium">Ordine:</span> {placedOrder ? 'Sì' : 'No'}</p>
-                        {placedOrder && selectedOrderId && (
+                        <p><span className="font-medium">Ordine:</span> {
+                          orderStatus === 'placed' ? 'Effettuato' : 
+                          orderStatus === 'will_be_placed' ? 'Sarà effettuato' : 
+                          orderStatus === 'not_placed' ? 'Non effettuato' : 'N/A'
+                        }</p>
+                        {(orderStatus === 'placed' || orderStatus === 'will_be_placed') && selectedOrderId && (
                           <p><span className="font-medium">Ordine collegato:</span> Sì</p>
                         )}
                         {hoursSpent && (
@@ -805,6 +820,8 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = ({ activeTab }) => {
                   </Popover>
                 </div>
               )}
+
+
 
               {/* Step 5: Note */}
               {selectedSellingPointId && (

@@ -12,6 +12,7 @@ import CompanyManagementPage from "@/pages/CompanyManagement";
 import SellingPointManagementPage from "@/pages/SellingPointManagement";
 import PersonManagementPage from "@/pages/PersonManagement";
 import CategoryManagement from "@/pages/CategoryManagement";
+import OrderManagementPage from "@/pages/OrderManagement";
 import MyData from "@/pages/MyData";
 import { usePerformanceTracking } from "@/lib/performance";
 import PerformanceDashboard from "@/components/PerformanceDashboard";
@@ -36,7 +37,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Car, DatabaseZap, LogOut, Power, Lock, Building, MapPin, Users, Activity, FileText, User, ShoppingCart, Plus } from "lucide-react";
+import { Car, DatabaseZap, LogOut, Power, Lock, Building, MapPin, Users, Activity, FileText, User, ShoppingCart, Plus, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -138,6 +139,18 @@ function SidebarMenuContent() {
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
+
+          {/* Order Management - only visible to admins */}
+          {userRole === 'admin' && (
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={location.pathname === "/orders"}>
+                <Link to="/orders" onClick={handleNavigationClick}>
+                  <Package className="w-5 h-5 flex-shrink-0" />
+                  {(state === 'expanded' || isMobile) && <span className="truncate">Gestione Ordini</span>}
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
 
           {/* Data Management Pages - only visible to admins */}
           {userRole === 'admin' && (
@@ -351,6 +364,7 @@ const App = () => {
                 <Route path="/companies" element={<ProtectedRoute><CompanyManagementPage /></ProtectedRoute>} />
                 <Route path="/selling-points" element={<ProtectedRoute><SellingPointManagementPage /></ProtectedRoute>} />
                 <Route path="/people" element={<ProtectedRoute><PersonManagementPage /></ProtectedRoute>} />
+                <Route path="/orders" element={<ProtectedRoute><OrderManagementPage /></ProtectedRoute>} />
                 <Route path="/general-categories" element={<ProtectedRoute><CategoryManagement /></ProtectedRoute>} />
                 <Route path="/profile" element={<UserProfile />} />
 

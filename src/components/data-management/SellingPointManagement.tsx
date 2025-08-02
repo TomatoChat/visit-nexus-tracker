@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, Pencil, Search, Plus, Link, Building, Users } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import SupplierRelationships from './SupplierRelationships';
 import { useSuppliers, useCompanySellingPoints, useCreateCompanySellingPoint, useUpdateCompanySellingPoint, useDeleteCompanySellingPoint, useAllUsers } from '@/hooks/use-data';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -38,6 +39,14 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingSellingPoint, setEditingSellingPoint] = useState<(SellingPoint & { addresses: Address, companies: Company }) | null>(null);
   const [viewingRelationships, setViewingRelationships] = useState<string | null>(null);
+
+  // Confirmation dialogs
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showDeleteRelationshipDialog, setShowDeleteRelationshipDialog] = useState(false);
+  const [showRemoveServicePersonDialog, setShowRemoveServicePersonDialog] = useState(false);
+  const [selectedSellingPoint, setSelectedSellingPoint] = useState<(SellingPoint & { addresses: Address, companies: Company }) | null>(null);
+  const [selectedRelationshipId, setSelectedRelationshipId] = useState<string | null>(null);
+  const [selectedServicePersonIdForDialog, setSelectedServicePersonIdForDialog] = useState<string | null>(null);
 
   // Add New/Edit Form State
   const [name, setName] = useState('');
@@ -441,14 +450,20 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
   };
 
   const handleDeleteSupplierRelationship = async (relationshipId: string) => {
-    if (!editingSellingPoint || !confirm('Sei sicuro di voler eliminare questa relazione?')) return;
+    setSelectedRelationshipId(relationshipId);
+    setShowDeleteRelationshipDialog(true);
+  };
+
+  const confirmDeleteRelationship = async () => {
+    if (!editingSellingPoint || !selectedRelationshipId) return;
 
     try {
       await deleteRelationshipMutation.mutateAsync({
-        id: relationshipId,
+        id: selectedRelationshipId,
         sellingPointId: editingSellingPoint.id
       });
       toast({ title: 'Successo!', description: 'Relazione fornitore eliminata!' });
+      setSelectedRelationshipId(null);
     } catch (error: any) {
       toast({ 
         title: 'Errore', 
@@ -513,15 +528,21 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
 
   // Handle removing responsabile caricamento/ordini
   const handleRemoveServicePerson = async (servicePersonId: string) => {
-    if (!editingSellingPoint || !confirm('Sei sicuro di voler rimuovere questo responsabile caricamento/ordini?')) return;
+    setSelectedServicePersonIdForDialog(servicePersonId);
+    setShowRemoveServicePersonDialog(true);
+  };
+
+  const confirmRemoveServicePerson = async () => {
+    if (!editingSellingPoint || !selectedServicePersonIdForDialog) return;
 
     try {
-      await deleteServicePersonMutation.mutateAsync({ id: servicePersonId });
+      await deleteServicePersonMutation.mutateAsync({ id: selectedServicePersonIdForDialog });
       
       // Refresh responsabili caricamento/ordini list
       await fetchServicePeople(editingSellingPoint.id);
       
       toast({ title: 'Successo!', description: 'Responsabile caricamento/ordini rimosso!' });
+      setSelectedServicePersonIdForDialog(null);
     } catch (error: any) {
       toast({ 
         title: 'Errore', 
@@ -1002,9 +1023,8 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
                     className="text-destructive hover:bg-destructive/10"
                     aria-label="Elimina"
                     onClick={() => {
-                      if (confirm("Sei sicuro di voler eliminare questo punto vendita?")) {
-                        handleSoftDelete(editingSellingPoint);
-                      }
+                      setSelectedSellingPoint(editingSellingPoint);
+                      setShowDeleteDialog(true);
                     }}
                   >
                     <Trash2 className="w-5 h-5" />
@@ -1023,116 +1043,185 @@ const SellingPointManagement: React.FC<SellingPointManagementProps> = ({ readOnl
   }
 
   return (
-    <Card className="overflow-x-hidden">
+    <>
+      <Card className="overflow-x-hidden">
 
-      <CardContent>
-        {isLoading ? (
-          <p className="text-muted-foreground">Caricamento punti vendita...</p>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-            <table className="w-full divide-y divide-border">
-              <thead className="bg-muted">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/6">Nome</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/6">Azienda Cliente</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/6">Indirizzo</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/6">Telefono</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/6">Responsabile Cliente</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/6">Cadenza</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-32">Azioni</th>
-                </tr>
-              </thead>
-              <tbody className="bg-background divide-y divide-border">
-                {filteredSellingPoints.map(sp => {
-                  const address = sp.addresses;
-                  const company = sp.companies;
-                  const accountManagerName = users.find(u => u.id === sp.accountManager)?.displayName || 'Nessuno';
-                  
-                  // Get cadence information for this selling point
-                  const relationships = sp.companySellingPoint || [];
-                  const cadenceInfo = relationships.length > 0 ? (
-                    <div className="space-y-1">
-                      {relationships.map((rel: any) => {
-                        const supplierName = rel.supplierCompany?.name || 'Fornitore sconosciuto';
-                        const relationshipCadence = rel.visitCadence;
-                        const supplierDefaultCadence = rel.supplierCompany?.visitCadence;
-                        
-                        // Determine which cadence to show
-                        let cadenceText = 'N/A';
-                        let cadenceColor = 'text-muted-foreground';
-                        
-                        if (relationshipCadence) {
-                          cadenceText = `${relationshipCadence} giorni`;
-                          cadenceColor = 'text-blue-600 font-medium';
-                        } else if (supplierDefaultCadence) {
-                          cadenceText = `${supplierDefaultCadence} giorni (predefinita)`;
-                          cadenceColor = 'text-orange-600';
-                        }
-                        
-                        return (
-                          <div key={rel.id} className="text-xs">
-                            <span className="font-medium">{supplierName}:</span>
-                            <span className={`ml-1 ${cadenceColor}`}>{cadenceText}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <span className="text-muted-foreground text-xs">N/A</span>
-                  );
-                  
-                  return (
-                    <tr key={sp.id} onClick={!readOnly ? () => handleEdit(sp) : undefined} className={!readOnly ? "cursor-pointer hover:bg-muted/50" : "hover:bg-muted/50"}>
-                      <td className="px-4 py-4 text-sm font-medium text-foreground break-words">{sp.name}</td>
-                      <td className="px-4 py-4 text-sm text-muted-foreground break-words">{company?.name || 'N/A'}</td>
-                      <td className="px-4 py-4 text-sm text-muted-foreground break-words">{address ? `${address.addressLine1 || ''}${address.addressLine1 && address.city ? ', ' : ''}${address.city || ''}` : 'N/A'}</td>
-                      <td className="px-4 py-4 text-sm text-muted-foreground break-words">{sp.phoneNumber || 'N/A'}</td>
-                      <td className="px-4 py-4 text-sm text-muted-foreground break-words">{accountManagerName}</td>
-                      <td className="px-4 py-4 text-sm text-muted-foreground">
-                        {cadenceInfo}
-                      </td>
-                      <td className="px-4 py-4 text-sm text-muted-foreground">
-                        {!readOnly && (
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={e => {
-                                e.stopPropagation();
-                                handleEdit(sp);
-                              }}
-                              aria-label="Modifica"
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={e => {
-                                e.stopPropagation();
-                                if (confirm('Sei sicuro di voler eliminare questo punto vendita?')) {
-                                  handleSoftDelete(sp);
-                                }
-                              }}
-                              aria-label="Elimina"
-                            >
-                              <Trash2 className="w-4 h-4 text-destructive" />
-                            </Button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          </>
-        )}
-        {filteredSellingPoints.length === 0 && !isLoading && <p className="text-muted-foreground">Nessun punto vendita trovato.</p>}
-      </CardContent>
-    </Card>
+        <CardContent>
+          {isLoading ? (
+            <p className="text-muted-foreground">Caricamento punti vendita...</p>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+              <table className="w-full divide-y divide-border">
+                <thead className="bg-muted">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/6">Nome</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/6">Azienda Cliente</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/6">Indirizzo</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/6">Telefono</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/6">Responsabile Cliente</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-1/6">Cadenza</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider w-32">Azioni</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-background divide-y divide-border">
+                  {filteredSellingPoints.map(sp => {
+                    const address = sp.addresses;
+                    const company = sp.companies;
+                    const accountManagerName = users.find(u => u.id === sp.accountManager)?.displayName || 'Nessuno';
+                    
+                    // Get cadence information for this selling point
+                    const relationships = sp.companySellingPoint || [];
+                    const cadenceInfo = relationships.length > 0 ? (
+                      <div className="space-y-1">
+                        {relationships.map((rel: any) => {
+                          const supplierName = rel.supplierCompany?.name || 'Fornitore sconosciuto';
+                          const relationshipCadence = rel.visitCadence;
+                          const supplierDefaultCadence = rel.supplierCompany?.visitCadence;
+                          
+                          // Determine which cadence to show
+                          let cadenceText = 'N/A';
+                          let cadenceColor = 'text-muted-foreground';
+                          
+                          if (relationshipCadence) {
+                            cadenceText = `${relationshipCadence} giorni`;
+                            cadenceColor = 'text-blue-600 font-medium';
+                          } else if (supplierDefaultCadence) {
+                            cadenceText = `${supplierDefaultCadence} giorni (predefinita)`;
+                            cadenceColor = 'text-orange-600';
+                          }
+                          
+                          return (
+                            <div key={rel.id} className="text-xs">
+                              <span className="font-medium">{supplierName}:</span>
+                              <span className={`ml-1 ${cadenceColor}`}>{cadenceText}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">N/A</span>
+                    );
+                    
+                    return (
+                      <tr key={sp.id} onClick={!readOnly ? () => handleEdit(sp) : undefined} className={!readOnly ? "cursor-pointer hover:bg-muted/50" : "hover:bg-muted/50"}>
+                        <td className="px-4 py-4 text-sm font-medium text-foreground break-words">{sp.name}</td>
+                        <td className="px-4 py-4 text-sm text-muted-foreground break-words">{company?.name || 'N/A'}</td>
+                        <td className="px-4 py-4 text-sm text-muted-foreground break-words">{address ? `${address.addressLine1 || ''}${address.addressLine1 && address.city ? ', ' : ''}${address.city || ''}` : 'N/A'}</td>
+                        <td className="px-4 py-4 text-sm text-muted-foreground break-words">{sp.phoneNumber || 'N/A'}</td>
+                        <td className="px-4 py-4 text-sm text-muted-foreground break-words">{accountManagerName}</td>
+                        <td className="px-4 py-4 text-sm text-muted-foreground">
+                          {cadenceInfo}
+                        </td>
+                        <td className="px-4 py-4 text-sm text-muted-foreground">
+                          {!readOnly && (
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  handleEdit(sp);
+                                }}
+                                aria-label="Modifica"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  setSelectedSellingPoint(sp);
+                                  setShowDeleteDialog(true);
+                                }}
+                                aria-label="Elimina"
+                              >
+                                <Trash2 className="w-4 h-4 text-destructive" />
+                              </Button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            </>
+          )}
+          {filteredSellingPoints.length === 0 && !isLoading && <p className="text-muted-foreground">Nessun punto vendita trovato.</p>}
+        </CardContent>
+      </Card>
+
+      {/* Delete Selling Point Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Conferma Eliminazione</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sei sicuro di voler eliminare questo punto vendita? Questa azione non può essere annullata.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (selectedSellingPoint) {
+                  handleSoftDelete(selectedSellingPoint);
+                  setSelectedSellingPoint(null);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Elimina
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Relationship Confirmation Dialog */}
+      <AlertDialog open={showDeleteRelationshipDialog} onOpenChange={setShowDeleteRelationshipDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Conferma Eliminazione Relazione</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sei sicuro di voler eliminare questa relazione? Questa azione non può essere annullata.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteRelationship}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Elimina
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Remove Service Person Confirmation Dialog */}
+      <AlertDialog open={showRemoveServicePersonDialog} onOpenChange={setShowRemoveServicePersonDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Conferma Rimozione</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sei sicuro di voler rimuovere questo responsabile caricamento/ordini? Questa azione non può essere annullata.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmRemoveServicePerson}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Rimuovi
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 
