@@ -29,7 +29,7 @@ const COMPANY_TEMPLATE_HEADERS = [
   'ID Categoria', // selectedCategoryId (Required in database)
 ];
 
-const Companies = () => {
+const CompanyManagementPage = () => {
   const { userRole, loading, checkCanManageData } = useRoles();
   const { toast } = useToast();
   const [showSearch, setShowSearch] = useState(false);
@@ -354,4 +354,4 @@ const Companies = () => {
   );
 };
 
-export default Companies; 
+export default CompanyManagementPage; 

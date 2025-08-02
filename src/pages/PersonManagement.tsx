@@ -22,7 +22,7 @@ const PEOPLE_TEMPLATE_HEADERS = [
   'ID Ruolo Persona', // selectedRoleId
 ];
 
-const People = () => {
+const PersonManagementPage = () => {
   const { userRole, loading, checkCanManageData } = useRoles();
   const { toast } = useToast();
   const [showSearch, setShowSearch] = useState(false);
@@ -311,4 +311,4 @@ const People = () => {
   );
 };
 
-export default People; 
+export default PersonManagementPage; 

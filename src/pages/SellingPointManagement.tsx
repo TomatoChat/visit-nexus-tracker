@@ -31,7 +31,7 @@ const SELLING_POINT_TEMPLATE_HEADERS = [
   'ID Fornitore 4',
 ];
 
-const SellingPoints = () => {
+const SellingPointManagementPage = () => {
   const { userRole, loading, checkCanManageData } = useRoles();
   const { toast } = useToast();
   const [showSearch, setShowSearch] = useState(false);
@@ -435,4 +435,4 @@ const SellingPoints = () => {
   );
 };
 
-export default SellingPoints; 
+export default SellingPointManagementPage; 

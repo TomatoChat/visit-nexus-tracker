@@ -16,7 +16,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Pencil, Trash2 } from 'lucide-react';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 
-const GeneralCategories = () => {
+const CategoryManagement = () => {
   const { userRole, loading, checkCanManageData } = useRoles();
   const { toast } = useToast();
   const [tab, setTab] = useState('activities');
@@ -622,4 +622,4 @@ const GeneralCategories = () => {
   );
 };
 
-export default GeneralCategories; 
+export default CategoryManagement; 

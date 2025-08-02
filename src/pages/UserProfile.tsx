@@ -11,7 +11,7 @@ import { useAdminMode } from '@/hooks/use-admin-mode';
 import { useRoles } from '@/hooks/use-roles';
 import { Shield, User } from 'lucide-react';
 
-const Profile: React.FC = () => {
+const UserProfile: React.FC = () => {
   const { toast } = useToast();
   const [user, setUser] = useState<{ email: string } | null>(null);
   const { isAdminMode, toggleAdminMode, canToggleAdminMode } = useAdminMode();
@@ -267,4 +267,4 @@ const Profile: React.FC = () => {
   );
 };
 
-export default Profile; 
+export default UserProfile; 

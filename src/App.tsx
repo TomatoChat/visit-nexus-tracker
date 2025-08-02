@@ -3,15 +3,15 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Link, useLocation, Navigate } from "react-router-dom";
-import Index from "@/pages/Index";
+import NewVisitOrder from "@/pages/NewVisitOrder";
 import NotFound from "@/pages/NotFound";
-import Profile from './pages/Profile';
+import UserProfile from './pages/UserProfile';
 
-import ToVisit from "@/pages/ToVisit";
-import Companies from "@/pages/Companies";
-import SellingPoints from "@/pages/SellingPoints";
-import People from "@/pages/People";
-import GeneralCategories from "@/pages/GeneralCategories";
+import SellingPointsToVisit from "@/pages/SellingPointsToVisit";
+import CompanyManagementPage from "@/pages/CompanyManagement";
+import SellingPointManagementPage from "@/pages/SellingPointManagement";
+import PersonManagementPage from "@/pages/PersonManagement";
+import CategoryManagement from "@/pages/CategoryManagement";
 import MyData from "@/pages/MyData";
 import { usePerformanceTracking } from "@/lib/performance";
 import PerformanceDashboard from "@/components/PerformanceDashboard";
@@ -345,14 +345,14 @@ const App = () => {
           <BrowserRouter>
             <AppLayout>
               <Routes>
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={<NewVisitOrder />} />
                 <Route path="/my-data" element={<MyData />} />
-                <Route path="/to-visit" element={<ToVisit />} />
-                <Route path="/companies" element={<ProtectedRoute><Companies /></ProtectedRoute>} />
-                <Route path="/selling-points" element={<ProtectedRoute><SellingPoints /></ProtectedRoute>} />
-                <Route path="/people" element={<ProtectedRoute><People /></ProtectedRoute>} />
-                <Route path="/general-categories" element={<ProtectedRoute><GeneralCategories /></ProtectedRoute>} />
-                <Route path="/profile" element={<Profile />} />
+                <Route path="/to-visit" element={<SellingPointsToVisit />} />
+                <Route path="/companies" element={<ProtectedRoute><CompanyManagementPage /></ProtectedRoute>} />
+                <Route path="/selling-points" element={<ProtectedRoute><SellingPointManagementPage /></ProtectedRoute>} />
+                <Route path="/people" element={<ProtectedRoute><PersonManagementPage /></ProtectedRoute>} />
+                <Route path="/general-categories" element={<ProtectedRoute><CategoryManagement /></ProtectedRoute>} />
+                <Route path="/profile" element={<UserProfile />} />
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />

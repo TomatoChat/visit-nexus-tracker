@@ -2,7 +2,7 @@ import { NewVisitForm } from "@/components/visit/NewVisitForm";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import Layout from '@/components/Layout';
 
-const Index = () => {
+const NewVisitOrder = () => {
   return (
     <Layout>
       {/* Mobile: Sidebar button and title row */}
@@ -19,4 +19,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default NewVisitOrder;

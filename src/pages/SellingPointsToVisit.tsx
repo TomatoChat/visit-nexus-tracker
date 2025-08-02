@@ -29,7 +29,7 @@ interface SellingPointWithCadence {
   companyDefaultCadence: number | null;
 }
 
-const ToVisit: React.FC = () => {
+const SellingPointsToVisit: React.FC = () => {
   const { toast } = useToast();
   const { userRole } = useRoles();
   const [sellingPoints, setSellingPoints] = useState<SellingPointWithCadence[]>([]);
@@ -403,4 +403,4 @@ const ToVisit: React.FC = () => {
   );
 };
 
-export default ToVisit; 
+export default SellingPointsToVisit; 
