@@ -13,6 +13,7 @@ import Companies from "@/pages/Companies";
 import SellingPoints from "@/pages/SellingPoints";
 import People from "@/pages/People";
 import GeneralCategories from "@/pages/GeneralCategories";
+import Orders from "@/pages/Orders";
 import { usePerformanceTracking } from "@/lib/performance";
 import PerformanceDashboard from "@/components/PerformanceDashboard";
 import {
@@ -36,7 +37,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Car, DatabaseZap, LogOut, Power, Lock, Building, MapPin, Users, Activity, FileText, User } from "lucide-react";
+import { Car, DatabaseZap, LogOut, Power, Lock, Building, MapPin, Users, Activity, FileText, User, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -114,7 +115,7 @@ function SidebarMenuContent() {
             <SidebarMenuButton asChild isActive={location.pathname === "/"}>
               <Link to="/" onClick={handleNavigationClick}>
                 <Car className="w-5 h-5 flex-shrink-0" />
-                {(state === 'expanded' || isMobile) && <span className="truncate">Nuovo Rapporto Visita</span>}
+                {(state === 'expanded' || isMobile) && <span className="truncate">Nuova Visita/Ordine</span>}
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -139,6 +140,16 @@ function SidebarMenuContent() {
             </SidebarMenuButton>
           </SidebarMenuItem>
 
+          {/* Orders - visible to all authenticated users */}
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={location.pathname === "/orders"}>
+              <Link to="/orders" onClick={handleNavigationClick}>
+                <ShoppingCart className="w-5 h-5 flex-shrink-0" />
+                {(state === 'expanded' || isMobile) && <span className="truncate">I miei ordini</span>}
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
           {/* Data Management Pages - only visible to admins */}
           {userRole === 'admin' && (
             <>
@@ -146,7 +157,7 @@ function SidebarMenuContent() {
                 <SidebarMenuButton asChild isActive={location.pathname === "/companies"}>
                   <Link to="/companies" onClick={handleNavigationClick}>
                     <Building className="w-5 h-5 flex-shrink-0" />
-                    {(state === 'expanded' || isMobile) && <span className="truncate">Aziende</span>}
+                    {(state === 'expanded' || isMobile) && <span className="truncate">Gestione Aziende</span>}
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -155,7 +166,7 @@ function SidebarMenuContent() {
                 <SidebarMenuButton asChild isActive={location.pathname === "/selling-points"}>
                   <Link to="/selling-points" onClick={handleNavigationClick}>
                     <MapPin className="w-5 h-5 flex-shrink-0" />
-                    {(state === 'expanded' || isMobile) && <span className="truncate">Punti Vendita</span>}
+                    {(state === 'expanded' || isMobile) && <span className="truncate">Gestione Punti Vendita</span>}
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -164,7 +175,7 @@ function SidebarMenuContent() {
                 <SidebarMenuButton asChild isActive={location.pathname === "/people"}>
                   <Link to="/people" onClick={handleNavigationClick}>
                     <Users className="w-5 h-5 flex-shrink-0" />
-                    {(state === 'expanded' || isMobile) && <span className="truncate">Persone</span>}
+                    {(state === 'expanded' || isMobile) && <span className="truncate">Gestione Persone</span>}
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -174,7 +185,7 @@ function SidebarMenuContent() {
                 <SidebarMenuButton asChild isActive={location.pathname === "/general-categories"}>
                   <Link to="/general-categories" onClick={handleNavigationClick}>
                     <DatabaseZap className="w-5 h-5 flex-shrink-0" />
-                    {(state === 'expanded' || isMobile) && <span className="truncate">Categorie Generali</span>}
+                    {(state === 'expanded' || isMobile) && <span className="truncate">Gestione Categorie</span>}
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -348,6 +359,7 @@ const App = () => {
                 <Route path="/" element={<Index />} />
                 <Route path="/my-visits" element={<MyVisits />} />
                 <Route path="/to-visit" element={<ToVisit />} />
+                <Route path="/orders" element={<Orders />} />
                 <Route path="/companies" element={<ProtectedRoute><Companies /></ProtectedRoute>} />
                 <Route path="/selling-points" element={<ProtectedRoute><SellingPoints /></ProtectedRoute>} />
                 <Route path="/people" element={<ProtectedRoute><People /></ProtectedRoute>} />
