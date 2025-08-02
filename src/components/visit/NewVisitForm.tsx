@@ -650,36 +650,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = ({ activeTab }) => {
                     </div>
                   </div>
 
-                  {/* Order Selection - only show if placedOrder is true */}
-                  {placedOrder === true && (
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium flex items-center gap-2">
-                        <ShoppingCart className="w-4 h-4" />
-                        Seleziona Ordine (opzionale)
-                      </label>
-                      {isLoadingOrders ? (
-                        <div className="text-sm text-muted-foreground">Caricamento ordini...</div>
-                      ) : orders.length === 0 ? (
-                        <div className="text-sm text-muted-foreground">Nessun ordine disponibile per questo punto vendita</div>
-                      ) : (
-                        <SearchableSelect
-                          options={orders.map(order => ({
-                            value: order.id,
-                            label: `${order.supplierCompany?.name || 'N/A'} - ${format(new Date(order.orderDate), 'dd/MM/yyyy')}${order.notes ? ` - ${order.notes}` : ''}`
-                          }))}
-                          value={selectedOrderId || ''}
-                          onSelect={value => {
-                            if (typeof value === 'string') setSelectedOrderId(value || null);
-                          }}
-                          placeholder="Seleziona un ordine esistente..."
-                          searchPlaceholder="Cerca ordini..."
-                        />
-                      )}
-                      <div className="text-sm text-muted-foreground">
-                        Se non selezioni un ordine esistente, ne verrà creato uno nuovo automaticamente.
-                      </div>
-                    </div>
-                  )}
+
                   
                   {/* Hours Spent section */}
                   <div className="space-y-2 mt-6">
