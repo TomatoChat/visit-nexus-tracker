@@ -7,13 +7,12 @@ import Index from "@/pages/Index";
 import NotFound from "@/pages/NotFound";
 import Profile from './pages/Profile';
 
-import MyVisits from "@/pages/MyVisits";
 import ToVisit from "@/pages/ToVisit";
 import Companies from "@/pages/Companies";
 import SellingPoints from "@/pages/SellingPoints";
 import People from "@/pages/People";
 import GeneralCategories from "@/pages/GeneralCategories";
-import Orders from "@/pages/Orders";
+import MyData from "@/pages/MyData";
 import { usePerformanceTracking } from "@/lib/performance";
 import PerformanceDashboard from "@/components/PerformanceDashboard";
 import {
@@ -120,16 +119,6 @@ function SidebarMenuContent() {
             </SidebarMenuButton>
           </SidebarMenuItem>
           
-          {/* My Visits - visible to all authenticated users */}
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={location.pathname === "/my-visits"}>
-              <Link to="/my-visits" onClick={handleNavigationClick}>
-                <FileText className="w-5 h-5 flex-shrink-0" />
-                {(state === 'expanded' || isMobile) && <span className="truncate">Le mie visite</span>}
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-
           {/* To Visit - visible to all authenticated users */}
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={location.pathname === "/to-visit"}>
@@ -140,12 +129,12 @@ function SidebarMenuContent() {
             </SidebarMenuButton>
           </SidebarMenuItem>
 
-          {/* Orders - visible to all authenticated users */}
+          {/* My Data - visible to all authenticated users */}
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={location.pathname === "/orders"}>
-              <Link to="/orders" onClick={handleNavigationClick}>
-                <ShoppingCart className="w-5 h-5 flex-shrink-0" />
-                {(state === 'expanded' || isMobile) && <span className="truncate">I miei ordini</span>}
+            <SidebarMenuButton asChild isActive={location.pathname === "/my-data"}>
+              <Link to="/my-data" onClick={handleNavigationClick}>
+                <FileText className="w-5 h-5 flex-shrink-0" />
+                {(state === 'expanded' || isMobile) && <span className="truncate">I miei dati</span>}
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -357,9 +346,8 @@ const App = () => {
             <AppLayout>
               <Routes>
                 <Route path="/" element={<Index />} />
-                <Route path="/my-visits" element={<MyVisits />} />
+                <Route path="/my-data" element={<MyData />} />
                 <Route path="/to-visit" element={<ToVisit />} />
-                <Route path="/orders" element={<Orders />} />
                 <Route path="/companies" element={<ProtectedRoute><Companies /></ProtectedRoute>} />
                 <Route path="/selling-points" element={<ProtectedRoute><SellingPoints /></ProtectedRoute>} />
                 <Route path="/people" element={<ProtectedRoute><People /></ProtectedRoute>} />
