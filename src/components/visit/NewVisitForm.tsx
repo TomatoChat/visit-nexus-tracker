@@ -50,14 +50,11 @@ type SellingPointWithAddress = Database['public']['Tables']['sellingPoints']['Ro
 type VisitActivity = Database['public']['Tables']['visitActivities']['Row'];
 type Person = Database['public']['Tables']['people']['Row'];
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface NewVisitFormProps {
-  // Empty interface for future props
+  activeTab: 'visit' | 'order';
 }
 
-type TabType = 'visit' | 'order';
-
-export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
+export const NewVisitForm: React.FC<NewVisitFormProps> = ({ activeTab }) => {
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
   
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>('');
@@ -68,7 +65,6 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
   const [orderDate, setOrderDate] = useState<Date | undefined>(undefined);
   const [placedOrder, setPlacedOrder] = useState<boolean | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<TabType>('visit');
   const [notes, setNotes] = useState("");
   
   const [loading, setLoading] = useState<{ [key: string]: boolean }>({});
@@ -500,27 +496,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
             </div>
           )}
 
-          {/* Filter buttons */}
-          <div className="flex gap-2 mb-6">
-            <Button
-              variant={activeTab === 'visit' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveTab('visit')}
-              className="flex items-center gap-2"
-            >
-              <FileText className="w-4 h-4" />
-              Nuova Visita
-            </Button>
-            <Button
-              variant={activeTab === 'order' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveTab('order')}
-              className="flex items-center gap-2"
-            >
-              <ShoppingCart className="w-4 h-4" />
-              Nuovo Ordine
-            </Button>
-          </div>
+
 
           {/* Content */}
           {activeTab === 'visit' && (

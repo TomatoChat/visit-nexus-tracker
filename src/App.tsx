@@ -36,7 +36,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Car, DatabaseZap, LogOut, Power, Lock, Building, MapPin, Users, Activity, FileText, User, ShoppingCart } from "lucide-react";
+import { Car, DatabaseZap, LogOut, Power, Lock, Building, MapPin, Users, Activity, FileText, User, ShoppingCart, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -113,8 +113,8 @@ function SidebarMenuContent() {
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={location.pathname === "/"}>
               <Link to="/" onClick={handleNavigationClick}>
-                <Car className="w-5 h-5 flex-shrink-0" />
-                {(state === 'expanded' || isMobile) && <span className="truncate">Nuova Visita/Ordine</span>}
+                <Plus className="w-5 h-5 flex-shrink-0" />
+                {(state === 'expanded' || isMobile) && <span className="truncate">Nuovi dati</span>}
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

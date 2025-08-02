@@ -28,19 +28,15 @@ const MyData = () => {
             variant={activeTab === 'visits' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setActiveTab('visits')}
-            className="flex items-center gap-2"
           >
-            <FileText className="w-4 h-4" />
-            Le mie visite
+            Visite
           </Button>
           <Button
             variant={activeTab === 'orders' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setActiveTab('orders')}
-            className="flex items-center gap-2"
           >
-            <ShoppingCart className="w-4 h-4" />
-            I miei ordini
+            Ordini
           </Button>
         </div>
 
