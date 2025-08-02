@@ -22,7 +22,7 @@ const PEOPLE_TEMPLATE_HEADERS = [
   'ID Ruolo Persona', // selectedRoleId
 ];
 
-const People = () => {
+const PersonManagementPage = () => {
   const { userRole, loading, checkCanManageData } = useRoles();
   const { toast } = useToast();
   const [showSearch, setShowSearch] = useState(false);
@@ -241,7 +241,7 @@ const People = () => {
         </div>
         {/* Desktop: Title and actions */}
         <div className="hidden md:flex items-center justify-between gap-4 mb-8">
-          <h1 className="text-3xl font-bold text-left">Persone</h1>
+          <h1 className="text-3xl font-bold text-left">Gestione Persone</h1>
           <div className="flex items-center gap-2">
             {!showSearch && (
               <Button
@@ -311,4 +311,4 @@ const People = () => {
   );
 };
 
-export default People; 
+export default PersonManagementPage; 

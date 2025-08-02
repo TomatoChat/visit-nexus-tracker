@@ -16,7 +16,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Pencil, Trash2 } from 'lucide-react';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 
-const GeneralCategories = () => {
+const CategoryManagement = () => {
   const { userRole, loading, checkCanManageData } = useRoles();
   const { toast } = useToast();
   const [tab, setTab] = useState('activities');
@@ -225,7 +225,7 @@ const GeneralCategories = () => {
         </div>
         {/* Desktop: Title and actions */}
         <div className="hidden md:flex items-center justify-between gap-4 mb-8">
-          <h1 className="text-3xl font-bold text-left">Categorie Generali</h1>
+          <h1 className="text-3xl font-bold text-left">Gestione Categorie</h1>
           <div className="flex items-center gap-2">
             {!showSearch && (
               <Button
@@ -622,4 +622,4 @@ const GeneralCategories = () => {
   );
 };
 
-export default GeneralCategories; 
+export default CategoryManagement; 

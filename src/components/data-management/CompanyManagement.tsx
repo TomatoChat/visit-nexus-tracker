@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, Pencil, Search, Plus } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useCompanyCategories } from '@/hooks/use-data';
 
 type Company = Database['public']['Tables']['companies']['Row'];
@@ -29,6 +30,10 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
   const [companyTypeFilter, setCompanyTypeFilter] = useState<string>('all'); // 'all', 'supplier', 'seller'
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingCompany, setEditingCompany] = useState<(Company & { addresses: Address }) | null>(null);
+
+  // Confirmation dialogs
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState<(Company & { addresses: Address }) | null>(null);
 
   // Add New Company Form State
   const [companyName, setCompanyName] = useState('');
@@ -439,9 +444,8 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
                     className="text-destructive hover:bg-destructive/10"
                     aria-label="Elimina"
                     onClick={() => {
-                      if (confirm("Sei sicuro di voler eliminare questa azienda?")) {
-                        handleSoftDelete(editingCompany);
-                      }
+                      setSelectedCompany(editingCompany);
+                      setShowDeleteDialog(true);
                     }}
                   >
                     <Trash2 className="w-5 h-5" />
@@ -460,110 +464,137 @@ const CompanyManagement: React.FC<CompanyManagementProps> = ({ readOnly = false,
   }
 
   return (
-    <Card className="overflow-x-hidden">
+    <>
+      <Card className="overflow-x-hidden">
 
-      <CardContent>
-        {isLoading ? (
-          <p>Caricamento aziende...</p>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-            <table className="w-full divide-border divide-border">
-              <thead className="bg-muted">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/6">Nome</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/6">P.IVA</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/6">Tipo</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/6">Cadenza</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/3">Indirizzo</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-24">Azioni</th>
-                </tr>
-              </thead>
-              <tbody className="bg-background divide-border divide-border">
-                {filteredCompanies.map((company) => {
-                  const address = company.addresses; // No longer need cast due to state type
-                  return (
-                    <tr key={company.id} onClick={!readOnly ? () => handleEdit(company) : undefined} className={!readOnly ? "cursor-pointer hover:bg-muted/50" : "hover:bg-muted/50"}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{company.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{company.codeVAT}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                        {company.isSeller && company.isSupplier ? (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-info/10 text-info">
-                            Fornitore & Cliente
-                          </span>
-                        ) : company.isSeller ? (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-success/10 text-success">
-                            Cliente
-                          </span>
-                        ) : company.isSupplier ? (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-warning/10 text-warning">
-                            Fornitore
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
-                            N/A
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                        {company.isSupplier && company.visitCadence ? (
-                          <span className="text-blue-600 font-medium">
-                            {company.visitCadence} giorni
-                          </span>
-                        ) : company.isSupplier ? (
-                          <span className="text-muted-foreground text-xs">
-                            Non impostata
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">
-                            N/A
-                          </span>
-                        )}
-                      </td>
-                       <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                        {address ? `${address.addressLine1 || ''}${address.addressLine1 && address.city ? ', ' : ''}${address.city || ''}` : 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                        {!readOnly && (
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEdit(company);
-                              }}
-                              aria-label="Modifica"
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (confirm('Sei sicuro di voler eliminare questa azienda?')) {
-                                  handleSoftDelete(company);
-                                }
-                              }}
-                              aria-label="Elimina"
-                            >
-                              <Trash2 className="w-4 h-4 text-red-600" />
-                            </Button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          </>
-        )}
-        {filteredCompanies.length === 0 && !isLoading && <p>Nessuna azienda trovata.</p>}
-      </CardContent>
-    </Card>
+        <CardContent>
+          {isLoading ? (
+            <p>Caricamento aziende...</p>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+              <table className="w-full divide-border divide-border">
+                <thead className="bg-muted">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/6">Nome</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/6">P.IVA</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/6">Tipo</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/6">Cadenza</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/3">Indirizzo</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-24">Azioni</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-background divide-border divide-border">
+                  {filteredCompanies.map((company) => {
+                    const address = company.addresses; // No longer need cast due to state type
+                    return (
+                      <tr key={company.id} onClick={!readOnly ? () => handleEdit(company) : undefined} className={!readOnly ? "cursor-pointer hover:bg-muted/50" : "hover:bg-muted/50"}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{company.name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{company.codeVAT}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                          {company.isSeller && company.isSupplier ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-info/10 text-info">
+                              Fornitore & Cliente
+                            </span>
+                          ) : company.isSeller ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-success/10 text-success">
+                              Cliente
+                            </span>
+                          ) : company.isSupplier ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-warning/10 text-warning">
+                              Fornitore
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
+                              N/A
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                          {company.isSupplier && company.visitCadence ? (
+                            <span className="text-blue-600 font-medium">
+                              {company.visitCadence} giorni
+                            </span>
+                          ) : company.isSupplier ? (
+                            <span className="text-muted-foreground text-xs">
+                              Non impostata
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">
+                              N/A
+                            </span>
+                          )}
+                        </td>
+                         <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                          {address ? `${address.addressLine1 || ''}${address.addressLine1 && address.city ? ', ' : ''}${address.city || ''}` : 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                          {!readOnly && (
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEdit(company);
+                                }}
+                                aria-label="Modifica"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedCompany(company);
+                                  setShowDeleteDialog(true);
+                                }}
+                                aria-label="Elimina"
+                              >
+                                <Trash2 className="w-4 h-4 text-red-600" />
+                              </Button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            </>
+          )}
+          {filteredCompanies.length === 0 && !isLoading && <p>Nessuna azienda trovata.</p>}
+        </CardContent>
+      </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Conferma Eliminazione</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sei sicuro di voler eliminare questa azienda? Questa azione non può essere annullata.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (selectedCompany) {
+                  handleSoftDelete(selectedCompany);
+                  setSelectedCompany(null);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Elimina
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 

@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, Pencil, Search, Plus } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 type Activity = Database['public']['Tables']['visitActivities']['Row'];
 
@@ -28,6 +29,10 @@ const ActivityManagement: React.FC<ActivityManagementProps> = ({ readOnly = fals
   // Add New/Edit Form State
   const [name, setName] = useState('');
   const [formLoading, setFormLoading] = useState(false);
+
+  // Confirmation dialogs
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
 
   const fetchActivities = async () => {
     setIsLoading(true);
@@ -152,9 +157,8 @@ const ActivityManagement: React.FC<ActivityManagementProps> = ({ readOnly = fals
                     className="text-destructive hover:bg-destructive/10"
                     aria-label="Elimina"
                     onClick={() => {
-                      if (confirm("Sei sicuro di voler eliminare questa attività?")) {
-                        handleSoftDelete(editingActivity);
-                      }
+                      setSelectedActivity(editingActivity);
+                      setShowDeleteDialog(true);
                     }}
                   >
                     <Trash2 className="w-5 h-5" />
@@ -215,9 +219,8 @@ const ActivityManagement: React.FC<ActivityManagementProps> = ({ readOnly = fals
                               variant="outline"
                               onClick={e => {
                                 e.stopPropagation();
-                                if (confirm('Sei sicuro di voler eliminare questa attività?')) {
-                                  handleSoftDelete(activity);
-                                }
+                                setSelectedActivity(activity);
+                                setShowDeleteDialog(true);
                               }}
                               aria-label="Elimina"
                             >
@@ -236,6 +239,32 @@ const ActivityManagement: React.FC<ActivityManagementProps> = ({ readOnly = fals
         {filteredActivities.length === 0 && !isLoading && <p>Nessuna attività trovata.</p>}
       </CardContent>
     </Card>
+
+    {/* Delete Confirmation Dialog */}
+    <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Conferma Eliminazione</AlertDialogTitle>
+          <AlertDialogDescription>
+            Sei sicuro di voler eliminare questa attività? Questa azione non può essere annullata.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Annulla</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              if (selectedActivity) {
+                handleSoftDelete(selectedActivity);
+                setSelectedActivity(null);
+              }
+            }}
+            className="bg-red-600 hover:bg-red-700"
+          >
+            Elimina
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 };
 

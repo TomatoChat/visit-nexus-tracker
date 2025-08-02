@@ -452,6 +452,7 @@ export type Database = {
           supplierCompanyId: string
           updated_at: string
           visitDate: string
+          orderId: string | null
         }
         Insert: {
           activityId: string
@@ -463,6 +464,7 @@ export type Database = {
           supplierCompanyId: string
           updated_at?: string
           visitDate: string
+          orderId?: string | null
         }
         Update: {
           activityId?: string
@@ -474,6 +476,7 @@ export type Database = {
           supplierCompanyId?: string
           updated_at?: string
           visitDate?: string
+          orderId?: string | null
         }
         Relationships: [
           {
@@ -509,6 +512,13 @@ export type Database = {
             columns: ["supplierCompanyId"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visits_orderId_fkey"
+            columns: ["orderId"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
@@ -550,6 +560,64 @@ export type Database = {
             columns: ["visitId"]
             isOneToOne: false
             referencedRelation: "visits"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      orders: {
+        Row: {
+          id: string
+          supplierCompanyId: string
+          sellingPointId: string
+          orderDate: string
+          notes: string | null
+          userId: string
+          created_at: string
+          updated_at: string
+          isActive: boolean
+        }
+        Insert: {
+          id?: string
+          supplierCompanyId: string
+          sellingPointId: string
+          orderDate: string
+          notes?: string | null
+          userId: string
+          created_at?: string
+          updated_at?: string
+          isActive?: boolean
+        }
+        Update: {
+          id?: string
+          supplierCompanyId?: string
+          sellingPointId?: string
+          orderDate?: string
+          notes?: string | null
+          userId?: string
+          created_at?: string
+          updated_at?: string
+          isActive?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_supplierCompanyId_fkey"
+            columns: ["supplierCompanyId"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_sellingPointId_fkey"
+            columns: ["sellingPointId"]
+            isOneToOne: false
+            referencedRelation: "sellingPoints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_userId_fkey"
+            columns: ["userId"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           }
         ]

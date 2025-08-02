@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, Pencil, Search, Plus } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { 
   usePeople, 
   useCompanies, 
@@ -64,6 +65,10 @@ const PersonManagement: React.FC<PersonManagementProps> = ({ readOnly = false, s
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingPerson, setEditingPerson] = useState<Person | null>(null);
+
+  // Confirmation dialogs
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
 
   // Handle company selection logic for selling points
   useEffect(() => {
@@ -218,9 +223,8 @@ const PersonManagement: React.FC<PersonManagementProps> = ({ readOnly = false, s
                     className="text-destructive hover:bg-destructive/10"
                     aria-label="Elimina"
                     onClick={() => {
-                      if (confirm("Sei sicuro di voler eliminare questa persona?")) {
-                        handleSoftDelete(editingPerson);
-                      }
+                      setSelectedPerson(editingPerson);
+                      setShowDeleteDialog(true);
                     }}
                   >
                     <Trash2 className="w-5 h-5" />
@@ -239,71 +243,98 @@ const PersonManagement: React.FC<PersonManagementProps> = ({ readOnly = false, s
   }
 
   return (
-    <Card className="overflow-x-hidden">
+    <>
+      <Card className="overflow-x-hidden">
 
-      <CardContent>
-        {isLoading ? (<p>Caricamento...</p>) : (
-          <>
-            <div className="overflow-x-auto">
-                          <table className="w-full divide-border divide-gray-200">
-              <thead className="bg-muted">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/5">Nome Cognome</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/5">Nome</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/5">Azienda</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/5">P. Vendita</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/5">Ruolo</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-24">Azioni</th>
-                </tr>
-              </thead>
-                <tbody className="bg-background divide-border divide-gray-200">
-                  {filteredPeople.map(person => (
-                    <tr key={person.id} onClick={!readOnly ? () => handleEdit(person) : undefined} className={!readOnly ? "cursor-pointer hover:bg-muted/50" : "hover:bg-muted/50"}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{`${person.surname} ${person.name}`}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{`${person.name} ${person.surname}`}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{person.companies?.name || 'N/A'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{person.sellingPoints?.name || 'N/A'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{person.personRoles?.name || 'N/A'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                        {!readOnly && (
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEdit(person);
-                              }}
-                              aria-label="Modifica"
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (confirm('Sei sicuro di voler eliminare questa persona?')) {
-                                  handleSoftDelete(person);
-                                }
-                              }}
-                              aria-label="Elimina"
-                            >
-                              <Trash2 className="w-4 h-4 text-red-600" />
-                            </Button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
-        {filteredPeople.length === 0 && !isLoading && <p>Nessuna persona trovata.</p>}
-      </CardContent>
-    </Card>
+        <CardContent>
+          {isLoading ? (<p>Caricamento...</p>) : (
+            <>
+              <div className="overflow-x-auto">
+                            <table className="w-full divide-border divide-gray-200">
+                <thead className="bg-muted">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/5">Nome Cognome</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/5">Nome</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/5">Azienda</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/5">P. Vendita</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-1/5">Ruolo</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider w-24">Azioni</th>
+                  </tr>
+                </thead>
+                  <tbody className="bg-background divide-border divide-gray-200">
+                    {filteredPeople.map(person => (
+                      <tr key={person.id} onClick={!readOnly ? () => handleEdit(person) : undefined} className={!readOnly ? "cursor-pointer hover:bg-muted/50" : "hover:bg-muted/50"}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">{`${person.surname} ${person.name}`}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{`${person.name} ${person.surname}`}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{person.companies?.name || 'N/A'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{person.sellingPoints?.name || 'N/A'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{person.personRoles?.name || 'N/A'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                          {!readOnly && (
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEdit(person);
+                                }}
+                                aria-label="Modifica"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedPerson(person);
+                                  setShowDeleteDialog(true);
+                                }}
+                                aria-label="Elimina"
+                              >
+                                <Trash2 className="w-4 h-4 text-red-600" />
+                              </Button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+          {filteredPeople.length === 0 && !isLoading && <p>Nessuna persona trovata.</p>}
+        </CardContent>
+      </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Conferma Eliminazione</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sei sicuro di voler eliminare questa persona? Questa azione non può essere annullata.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (selectedPerson) {
+                  handleSoftDelete(selectedPerson);
+                  setSelectedPerson(null);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Elimina
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 

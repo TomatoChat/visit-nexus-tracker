@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MapPin, Building, Users, Activity, User, CalendarIcon, Power } from 'lucide-react';
+import { MapPin, Building, Users, Activity, User, CalendarIcon, Power, ShoppingCart, FileText } from 'lucide-react';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
+import { it } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
@@ -22,7 +23,6 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
-import { AgentOrAbove } from '@/components/ui/role-guard';
 import { PhotoUpload, PhotoUploadRef } from './PhotoUpload';
 import { 
   useAccountManagerSellingPoints,
@@ -37,7 +37,8 @@ import {
   useSellers,
   useSellingPoints,
   useFilteredSellingPoints,
-  useFilteredSellersBySupplier
+  useFilteredSellersBySupplier,
+  useOrdersBySellingPoint
 } from '@/hooks/use-data';
 import { formatDateForDatabase } from '@/lib/date-utils';
 import { useQuery } from '@tanstack/react-query';
@@ -49,12 +50,11 @@ type SellingPointWithAddress = Database['public']['Tables']['sellingPoints']['Ro
 type VisitActivity = Database['public']['Tables']['visitActivities']['Row'];
 type Person = Database['public']['Tables']['people']['Row'];
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface NewVisitFormProps {
-  // Empty interface for future props
+  activeTab: 'visit' | 'order';
 }
 
-export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
+export const NewVisitForm: React.FC<NewVisitFormProps> = ({ activeTab }) => {
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
   
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>('');
@@ -62,7 +62,10 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
   const [selectedSellingPointId, setSelectedSellingPointId] = useState<string>('');
   const [selectedActivityId, setSelectedActivityId] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [placedOrder, setPlacedOrder] = useState<boolean | null>(null);
+  const [orderDate, setOrderDate] = useState<Date | undefined>(undefined);
+  const [orderStatus, setOrderStatus] = useState<'placed' | 'not_placed' | 'will_be_placed' | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [notes, setNotes] = useState("");
   
   const [loading, setLoading] = useState<{ [key: string]: boolean }>({});
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
@@ -99,6 +102,9 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
     selectedSellerId,
     shouldUseAdminMode
   );
+
+  // Get orders for the selected selling point
+  const { data: orders = [], isLoading: isLoadingOrders } = useOrdersBySellingPoint(selectedSellingPointId);
   
   // Determine which selling points to use based on selection state
   let sellingPoints: SellingPointWithAddress[] = [];
@@ -263,10 +269,10 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
     }
   }, [selectedSellingPointId]);
 
-  // Set default for placedOrder to false when an activity is selected
+  // Set default for orderStatus to not_placed when an activity is selected
   useEffect(() => {
     if (selectedActivityId) {
-      setPlacedOrder(false);
+      setOrderStatus('not_placed');
       setVisitedPerson(false);
       setPersonVisitedId(null);
     }
@@ -286,13 +292,39 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
   const selectedSellingPoint = sellingPoints.find(p => p.id === selectedSellingPointId);
   const selectedActivity = activities.find(a => a.id === selectedActivityId);
 
-  const canSubmit = user && selectedSupplierId && selectedSellerId && selectedSellingPointId && selectedActivityId && placedOrder !== null;
+  const canSubmit = user && selectedSupplierId && selectedSellerId && selectedSellingPointId && selectedActivityId && orderStatus !== null;
 
-  const handleSubmit = async () => {
+  const handleSubmitVisit = async () => {
     if (!canSubmit) return;
     setLoading(prev => ({ ...prev, submitting: true }));
     
     try {
+      let orderId = selectedOrderId;
+      
+      // If order was placed or will be placed and no order is selected, create a new order
+      if ((orderStatus === 'placed' || orderStatus === 'will_be_placed') && !selectedOrderId) {
+        try {
+                      const { data: orderData, error: orderError } = await supabase
+              .from("orders")
+              .insert({
+                supplierCompanyId: selectedSupplierId,
+                sellingPointId: selectedSellingPointId,
+                orderDate: formatDateForDatabase(selectedDate),
+                notes: `Ordine creato da visita - ${selectedActivity?.name || 'Attività'}`,
+                userId: user!.id,
+                received: orderStatus === 'placed', // true if placed, false if will be placed
+              })
+              .select()
+              .single();
+
+          if (orderError) throw orderError;
+          orderId = orderData.id;
+        } catch (orderError) {
+          console.error("Error creating order:", orderError);
+          // Continue with visit creation even if order creation fails
+        }
+      }
+
       const visitData = {
         supplierCompanyId: selectedSupplierId,
         sellingPointId: selectedSellingPointId,
@@ -300,8 +332,8 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
         agentId: user!.id,
         visitDate: formatDateForDatabase(selectedDate),
         personVisitedId: visitedPerson ? personVisitedId : null,
-        placedOrder: placedOrder,
         hoursSpend: hoursSpent ? parseInt(hoursSpent, 10) : null,
+        orderId: orderId,
       };
 
       const result = await createVisitMutation.mutateAsync(visitData);
@@ -323,14 +355,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
       setResultDialogContent('Visita registrata correttamente!');
       setShowResultDialog(true);
       // Reset form after successful submission
-      setSelectedSupplierId('');
-      setSelectedSellerId('');
-      setSelectedSellingPointId('');
-      setSelectedActivityId('');
-      setSelectedDate(new Date());
-      setPlacedOrder(null);
-      setPhotos([]);
-      setHoursSpent('');
+      resetForm();
     } catch (error) {
       console.error('Error submitting visit:', error);
       setResultDialogContent('Errore nell\'invio della visita. Per favore riprova più tardi.');
@@ -338,6 +363,58 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
     } finally {
       setLoading(prev => ({ ...prev, submitting: false }));
     }
+  };
+
+  const handleSubmitOrder = async () => {
+    if (!user || !selectedSupplierId || !selectedSellerId || !selectedSellingPointId || !orderDate) {
+      setResultDialogContent('Compila tutti i campi obbligatori per creare l\'ordine.');
+      setShowResultDialog(true);
+      return;
+    }
+
+    setLoading(prev => ({ ...prev, submitting: true }));
+    
+    try {
+      const orderData: any = {
+        supplierCompanyId: selectedSupplierId,
+        sellingPointId: selectedSellingPointId,
+        orderDate: formatDateForDatabase(orderDate),
+        notes: notes.trim() || null,
+        userId: user.id,
+        received: false, // Default to not received
+      };
+
+      const { error } = await supabase
+        .from("orders")
+        .insert(orderData);
+
+      if (error) throw error;
+
+      setResultDialogContent('Ordine creato con successo!');
+      setShowResultDialog(true);
+      // Reset form after successful submission
+      resetForm();
+    } catch (error) {
+      console.error('Error submitting order:', error);
+      setResultDialogContent('Errore nell\'invio dell\'ordine. Per favore riprova più tardi.');
+      setShowResultDialog(true);
+    } finally {
+      setLoading(prev => ({ ...prev, submitting: false }));
+    }
+  };
+
+  const resetForm = () => {
+    setSelectedSupplierId('');
+    setSelectedSellerId('');
+    setSelectedSellingPointId('');
+    setSelectedActivityId('');
+    setSelectedDate(new Date());
+    setOrderDate(undefined);
+    setOrderStatus(null);
+    setSelectedOrderId(null);
+    setPhotos([]);
+    setHoursSpent('');
+    setNotes("");
   };
 
   const handleLogout = async () => {
@@ -375,24 +452,24 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
   }
 
   return (
-    <AgentOrAbove>
-      <>
-        {/* Logout Confirmation Dialog */}
-        <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Vuoi uscire?</AlertDialogTitle>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Annulla</AlertDialogCancel>
-              <AlertDialogAction onClick={confirmLogout}>Sì</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-        {/* Submission Result Dialog */}
-        <AlertDialog open={showResultDialog} onOpenChange={setShowResultDialog}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
+    <div>
+      {/* Logout Confirmation Dialog */}
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Vuoi uscire?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmLogout}>Sì</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      {/* Submission Result Dialog */}
+      <AlertDialog open={showResultDialog} onOpenChange={setShowResultDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
             <AlertDialogTitle>Risultato</AlertDialogTitle>
             <AlertDialogDescription>{resultDialogContent}</AlertDialogDescription>
           </AlertDialogHeader>
@@ -401,228 +478,382 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
       <Card className="w-full">
-          <CardContent className="p-6 space-y-4 md:space-y-6">
-            {/* Admin mode notice */}
-            {shouldUseAdminMode && (
-              <div className="p-4 bg-info/10 border border-info/20 rounded-lg">
-                <p className="text-blue-800">
-                  <strong>Modalità Amministratore:</strong> Puoi vedere tutti i fornitori, clienti e punti vendita nel sistema.
-                </p>
-              </div>
-            )}
-            
-            {/* Check if user has assigned selling points (only for non-admin users or admins in user mode) */}
-            {!shouldUseAdminMode && !isLoadingSellingPoints && !hasAssignedSellingPoints && (
-              <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg">
-                <p className="text-yellow-800">
-                  <strong>Attenzione:</strong> Non hai punti vendita assegnati. 
-                  Contatta l'amministratore per ricevere le assegnazioni necessarie.
-                </p>
-              </div>
-            )}
-            
-            {/* Date Picker */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium flex items-center gap-2">
-                <CalendarIcon className="w-4 h-4" />
-                Data visita
-              </label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !selectedDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {selectedDate ? formatDateForDisplay(selectedDate) : <span>Scegli una data</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={(date) => date && setSelectedDate(date)}
-                    disabled={(date) => date > new Date()}
-                    initialFocus
-                    className="p-3 pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
+        <CardContent className="p-6">
+          {/* Admin mode notice */}
+          {shouldUseAdminMode && (
+            <div className="p-4 bg-info/10 border border-info/20 rounded-lg mb-6">
+              <p className="text-blue-800">
+                <strong>Modalità Amministratore:</strong> Puoi vedere tutti i fornitori, clienti e punti vendita nel sistema.
+              </p>
             </div>
-            {/* Step 1: Fornitore */}
-            <div className="space-y-2 mt-6">
-              <label className="text-sm font-medium flex items-center gap-2">
-                <Building className="w-4 h-4" />
-                Fornitore
-              </label>
-              <SearchableSelect
-                options={supplierOptions}
-                value={selectedSupplierId}
-                onSelect={value => {
-                  if (typeof value === 'string') setSelectedSupplierId(value);
-                }}
-                placeholder="Scegli un'azienda fornitrice..."
-                searchPlaceholder="Cerca fornitori..."
-                disabled={shouldUseAdminMode ? isLoadingAllSuppliers : (isLoadingSuppliers || !hasAssignedSellingPoints)}
-              />
+          )}
+          
+          {/* Check if user has assigned selling points (only for non-admin users or admins in user mode) */}
+          {!shouldUseAdminMode && !isLoadingSellingPoints && !hasAssignedSellingPoints && (
+            <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg mb-6">
+              <p className="text-yellow-800">
+                <strong>Attenzione:</strong> Non hai punti vendita assegnati. 
+                Contatta l'amministratore per ricevere le assegnazioni necessarie.
+              </p>
             </div>
+          )}
 
-            {/* Step 2: Cliente */}
-            {selectedSupplierId && (
+
+
+          {/* Content */}
+          {activeTab === 'visit' && (
+            <div className="space-y-4 md:space-y-6">
+              {/* Date Picker */}
               <div className="space-y-2">
                 <label className="text-sm font-medium flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  Cliente
+                  <CalendarIcon className="w-4 h-4" />
+                  Data visita
+                </label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !selectedDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {selectedDate ? formatDateForDisplay(selectedDate) : <span>Scegli una data</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={(date) => date && setSelectedDate(date)}
+                      disabled={(date) => date > new Date()}
+                      initialFocus
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              {/* Step 1: Fornitore */}
+              <div className="space-y-2 mt-6">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <Building className="w-4 h-4" />
+                  Fornitore
                 </label>
                 <SearchableSelect
-                  options={sellerOptions}
-                  value={selectedSellerId}
+                  options={supplierOptions}
+                  value={selectedSupplierId}
                   onSelect={value => {
-                    if (typeof value === 'string') setSelectedSellerId(value);
+                    if (typeof value === 'string') setSelectedSupplierId(value);
                   }}
-                  placeholder="Scegli un cliente..."
-                  searchPlaceholder="Cerca clienti..."
-                  disabled={isLoadingSellerOptions}
+                  placeholder="Scegli un'azienda fornitrice..."
+                  searchPlaceholder="Cerca fornitori..."
+                  disabled={shouldUseAdminMode ? isLoadingAllSuppliers : (isLoadingSuppliers || !hasAssignedSellingPoints)}
                 />
               </div>
-            )}
 
-            {/* Step 3: Punto Vendita */}
-            {selectedSellerId && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
-                  Punto vendita
-                </label>
-                {selectedSupplierId && selectedSellerId && !isLoadingSellingPointsData && sellingPointOptions.length === 0 && (
-                  <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg">
-                    <p className="text-yellow-800">
-                      <strong>Nessun punto vendita disponibile:</strong> {shouldUseAdminMode 
-                        ? 'Non ci sono punti vendita che abbiano una relazione con il fornitore e cliente selezionati.'
-                        : 'Non ci sono punti vendita assegnati a te che abbiano una relazione con il fornitore e cliente selezionati.'
+              {/* Step 2: Cliente */}
+              {selectedSupplierId && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    Cliente
+                  </label>
+                  <SearchableSelect
+                    options={sellerOptions}
+                    value={selectedSellerId}
+                    onSelect={value => {
+                      if (typeof value === 'string') setSelectedSellerId(value);
+                    }}
+                    placeholder="Scegli un cliente..."
+                    searchPlaceholder="Cerca clienti..."
+                    disabled={isLoadingSellerOptions}
+                  />
+                </div>
+              )}
+
+              {/* Step 3: Punto Vendita */}
+              {selectedSellerId && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
+                    Punto vendita
+                  </label>
+                  {selectedSupplierId && selectedSellerId && !isLoadingSellingPointsData && sellingPointOptions.length === 0 && (
+                    <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg">
+                      <p className="text-yellow-800">
+                        <strong>Nessun punto vendita disponibile:</strong> {shouldUseAdminMode 
+                          ? 'Non ci sono punti vendita che abbiano una relazione con il fornitore e cliente selezionati.'
+                          : 'Non ci sono punti vendita assegnati a te che abbiano una relazione con il fornitore e cliente selezionati.'
+                        }
+                      </p>
+                    </div>
+                  )}
+                  <SearchableSelect
+                    options={sellingPointOptions}
+                    value={selectedSellingPointId}
+                    onSelect={value => {
+                      if (typeof value === 'string') {
+                        setSelectedSellingPointId(value);
+                        setSelectedOrderId(null); // Reset order selection when selling point changes
                       }
-                    </p>
-                  </div>
-                )}
-                <SearchableSelect
-                  options={sellingPointOptions}
-                  value={selectedSellingPointId}
-                  onSelect={value => {
-                    if (typeof value === 'string') setSelectedSellingPointId(value);
-                  }}
-                  placeholder="Scegli un punto vendita..."
-                  searchPlaceholder="Cerca punti vendita..."
-                  disabled={isLoadingSellingPointsData}
-                />
-              </div>
-            )}
-
-            {/* Step 4: Attività */}
-            {selectedSellingPointId && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2">
-                  <Activity className="w-4 h-4" />
-                  Attività
-                </label>
-                <SearchableSelect
-                  options={activityOptions}
-                  value={selectedActivityId}
-                  onSelect={value => {
-                    if (typeof value === 'string') setSelectedActivityId(value);
-                  }}
-                  placeholder="Scegli un'attività..."
-                  searchPlaceholder="Cerca attività..."
-                  disabled={isLoadingActivities}
-                />
-              </div>
-            )}
-
-            {/* Person selection section - hidden */}
-            {selectedActivityId && (
-              <>
-                {/* Order section */}
-                <div className="space-y-2 mt-6">
-                  <label className="text-sm font-medium flex items-center gap-2" htmlFor="ordine-completato-switch">
-                    Ordine
-                  </label>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant={placedOrder === true ? 'default' : 'outline'}
-                      onClick={() => setPlacedOrder(true)}
-                    >
-                      Sì
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={placedOrder === false ? 'default' : 'outline'}
-                      onClick={() => setPlacedOrder(false)}
-                    >
-                      No
-                    </Button>
-                  </div>
-                </div>
-                {/* Hours Spent section */}
-                <div className="space-y-2 mt-6">
-                  <label className="text-sm font-medium flex items-center gap-2" htmlFor="hours-spent-input">
-                    Ore trascorse (opzionale)
-                  </label>
-                  <input
-                    id="hours-spent-input"
-                    type="number"
-                    min="0"
-                    step="1"
-                    className="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
-                    placeholder="Quante ore hai trascorso?"
-                    value={hoursSpent}
-                    onChange={e => setHoursSpent(e.target.value.replace(/[^0-9]/g, ''))}
-                    disabled={loading.submitting}
+                    }}
+                    placeholder="Scegli un punto vendita..."
+                    searchPlaceholder="Cerca punti vendita..."
+                    disabled={isLoadingSellingPointsData}
                   />
                 </div>
-                {/* Photo Upload Section */}
-                <PhotoUpload
-                  ref={photoUploadRef}
-                  onPhotosChange={setPhotos}
-                  disabled={loading.submitting}
-                />
+              )}
 
-                {canSubmit && (
-                  <div className="space-y-3 p-4 bg-info/10 rounded-lg text-foreground">
-                    <h3 className="font-medium text-blue-900">Riepilogo visita</h3>
-                    <div className="space-y-1 text-sm">
-                      <p><span className="font-medium">Email utente:</span> {user?.email}</p>
-                      <p><span className="font-medium">Data:</span> {formatDateForDisplay(selectedDate)}</p>
-                      <p><span className="font-medium">Fornitore:</span> {selectedSupplier?.name}</p>
-                      <p><span className="font-medium">Cliente:</span> {selectedSeller?.name}</p>
-                      <p><span className="font-medium">Punto vendita:</span> {selectedSellingPoint?.name}</p>
-                      <p><span className="font-medium">Attività:</span> {selectedActivity?.name}</p>
-                      <p><span className="font-medium">Ordine:</span> {placedOrder ? 'Sì' : 'No'}</p>
-                      {hoursSpent && (
-                        <p><span className="font-medium">Ore trascorse:</span> {hoursSpent}</p>
-                      )}
-                      {photos.length > 0 && (
-                        <p><span className="font-medium">Foto:</span> {photos.length} foto selezionate</p>
-                      )}
+              {/* Step 4: Attività */}
+              {selectedSellingPointId && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <Activity className="w-4 h-4" />
+                    Attività
+                  </label>
+                  <SearchableSelect
+                    options={activityOptions}
+                    value={selectedActivityId}
+                    onSelect={value => {
+                      if (typeof value === 'string') setSelectedActivityId(value);
+                    }}
+                    placeholder="Scegli un'attività..."
+                    searchPlaceholder="Cerca attività..."
+                    disabled={isLoadingActivities}
+                  />
+                </div>
+              )}
+
+              {/* Person selection section - hidden */}
+              {selectedActivityId && (
+                <>
+                  {/* Order section */}
+                  <div className="space-y-2 mt-6">
+                    <label className="text-sm font-medium flex items-center gap-2" htmlFor="ordine-completato-switch">
+                      Ordine
+                    </label>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant={orderStatus === 'placed' ? 'default' : 'outline'}
+                        onClick={() => setOrderStatus('placed')}
+                      >
+                        Effettuato
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={orderStatus === 'will_be_placed' ? 'default' : 'outline'}
+                        onClick={() => setOrderStatus('will_be_placed')}
+                      >
+                        Sarà effettuato
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={orderStatus === 'not_placed' ? 'default' : 'outline'}
+                        onClick={() => setOrderStatus('not_placed')}
+                      >
+                        Non effettuato
+                      </Button>
                     </div>
                   </div>
-                )}
+
+
+                  
+                  {/* Hours Spent section */}
+                  <div className="space-y-2 mt-6">
+                    <label className="text-sm font-medium flex items-center gap-2" htmlFor="hours-spent-input">
+                      Ore trascorse (opzionale)
+                    </label>
+                    <input
+                      id="hours-spent-input"
+                      type="number"
+                      min="0"
+                      step="1"
+                      className="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
+                      placeholder="Quante ore hai trascorso?"
+                      value={hoursSpent}
+                      onChange={e => setHoursSpent(e.target.value.replace(/[^0-9]/g, ''))}
+                      disabled={loading.submitting}
+                    />
+                  </div>
+                  
+                  {/* Photo Upload Section */}
+                  <PhotoUpload
+                    ref={photoUploadRef}
+                    onPhotosChange={setPhotos}
+                    disabled={loading.submitting}
+                  />
+
+                  {canSubmit && (
+                    <div className="space-y-3 p-4 bg-info/10 rounded-lg text-foreground">
+                      <h3 className="font-medium text-blue-900">Riepilogo visita</h3>
+                      <div className="space-y-1 text-sm">
+                        <p><span className="font-medium">Email utente:</span> {user?.email}</p>
+                        <p><span className="font-medium">Data:</span> {formatDateForDisplay(selectedDate)}</p>
+                        <p><span className="font-medium">Fornitore:</span> {selectedSupplier?.name}</p>
+                        <p><span className="font-medium">Cliente:</span> {selectedSeller?.name}</p>
+                        <p><span className="font-medium">Punto vendita:</span> {selectedSellingPoint?.name}</p>
+                        <p><span className="font-medium">Attività:</span> {selectedActivity?.name}</p>
+                        <p><span className="font-medium">Ordine:</span> {
+                          orderStatus === 'placed' ? 'Effettuato' : 
+                          orderStatus === 'will_be_placed' ? 'Sarà effettuato' : 
+                          orderStatus === 'not_placed' ? 'Non effettuato' : 'N/A'
+                        }</p>
+                        {(orderStatus === 'placed' || orderStatus === 'will_be_placed') && selectedOrderId && (
+                          <p><span className="font-medium">Ordine collegato:</span> Sì</p>
+                        )}
+                        {hoursSpent && (
+                          <p><span className="font-medium">Ore trascorse:</span> {hoursSpent}</p>
+                        )}
+                        {photos.length > 0 && (
+                          <p><span className="font-medium">Foto:</span> {photos.length} foto selezionate</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  <Button 
+                    onClick={handleSubmitVisit}
+                    disabled={!canSubmit || loading.submitting}
+                    className="w-full"
+                    size="lg"
+                  >
+                    {loading.submitting ? 'Invio in corso...' : 'Invia rapporto visita'}
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'order' && (
+            <div className="space-y-4 md:space-y-6">
+              {/* Step 1: Fornitore */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <Building className="w-4 h-4" />
+                  Fornitore *
+                </label>
+                <SearchableSelect
+                  options={supplierOptions}
+                  value={selectedSupplierId}
+                  onSelect={value => {
+                    if (typeof value === 'string') setSelectedSupplierId(value);
+                  }}
+                  placeholder="Seleziona un'azienda fornitrice..."
+                  searchPlaceholder="Cerca fornitori..."
+                  disabled={shouldUseAdminMode ? isLoadingAllSuppliers : (isLoadingSuppliers || !hasAssignedSellingPoints)}
+                />
+              </div>
+
+              {/* Step 2: Cliente */}
+              {selectedSupplierId && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    Cliente *
+                  </label>
+                  <SearchableSelect
+                    options={sellerOptions}
+                    value={selectedSellerId}
+                    onSelect={value => {
+                      if (typeof value === 'string') setSelectedSellerId(value);
+                    }}
+                    placeholder="Seleziona un cliente..."
+                    searchPlaceholder="Cerca clienti..."
+                    disabled={isLoadingSellerOptions}
+                  />
+                </div>
+              )}
+
+              {/* Step 3: Punto Vendita */}
+              {selectedSellerId && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
+                    Punto Vendita *
+                  </label>
+                  <SearchableSelect
+                    options={sellingPointOptions}
+                    value={selectedSellingPointId}
+                    onSelect={value => {
+                      if (typeof value === 'string') setSelectedSellingPointId(value);
+                    }}
+                    placeholder="Seleziona un punto vendita..."
+                    searchPlaceholder="Cerca punti vendita..."
+                    disabled={isLoadingSellingPointsData}
+                  />
+                </div>
+              )}
+
+              {/* Step 4: Data Ordine */}
+              {selectedSellingPointId && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <CalendarIcon className="w-4 h-4" />
+                    Data Ordine *
+                  </label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !orderDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {orderDate ? format(orderDate, "PPP", { locale: it }) : "Seleziona data"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={orderDate}
+                        onSelect={setOrderDate}
+                        initialFocus
+                        locale={it}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              )}
+
+
+
+              {/* Step 5: Note */}
+              {selectedSellingPointId && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    Note
+                  </label>
+                  <textarea
+                    className="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
+                    placeholder="Inserisci note aggiuntive..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+              )}
+
+              {/* Submit Button */}
+              {selectedSellingPointId && (
                 <Button 
-                  onClick={handleSubmit}
-                  disabled={!canSubmit || loading.submitting}
+                  onClick={handleSubmitOrder}
+                  disabled={!user || !selectedSupplierId || !selectedSellerId || !selectedSellingPointId || !orderDate || loading.submitting}
                   className="w-full"
                   size="lg"
                 >
-                  {loading.submitting ? 'Invio in corso...' : 'Invia rapporto visita'}
+                  {loading.submitting ? 'Creazione in corso...' : 'Crea Ordine'}
                 </Button>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </>
-    </AgentOrAbove>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };

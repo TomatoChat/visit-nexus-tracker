@@ -3,16 +3,17 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Link, useLocation, Navigate } from "react-router-dom";
-import Index from "@/pages/Index";
+import NewVisitOrder from "@/pages/NewVisitOrder";
 import NotFound from "@/pages/NotFound";
-import Profile from './pages/Profile';
+import UserProfile from './pages/UserProfile';
 
-import MyVisits from "@/pages/MyVisits";
-import ToVisit from "@/pages/ToVisit";
-import Companies from "@/pages/Companies";
-import SellingPoints from "@/pages/SellingPoints";
-import People from "@/pages/People";
-import GeneralCategories from "@/pages/GeneralCategories";
+import SellingPointsToVisit from "@/pages/SellingPointsToVisit";
+import CompanyManagementPage from "@/pages/CompanyManagement";
+import SellingPointManagementPage from "@/pages/SellingPointManagement";
+import PersonManagementPage from "@/pages/PersonManagement";
+import CategoryManagement from "@/pages/CategoryManagement";
+import OrderManagementPage from "@/pages/OrderManagement";
+import MyData from "@/pages/MyData";
 import { usePerformanceTracking } from "@/lib/performance";
 import PerformanceDashboard from "@/components/PerformanceDashboard";
 import {
@@ -36,7 +37,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Car, DatabaseZap, LogOut, Power, Lock, Building, MapPin, Users, Activity, FileText, User } from "lucide-react";
+import { Car, DatabaseZap, LogOut, Power, Lock, Building, MapPin, Users, Activity, FileText, User, ShoppingCart, Plus, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -113,22 +114,12 @@ function SidebarMenuContent() {
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={location.pathname === "/"}>
               <Link to="/" onClick={handleNavigationClick}>
-                <Car className="w-5 h-5 flex-shrink-0" />
-                {(state === 'expanded' || isMobile) && <span className="truncate">Nuovo Rapporto Visita</span>}
+                <Plus className="w-5 h-5 flex-shrink-0" />
+                {(state === 'expanded' || isMobile) && <span className="truncate">Nuovi dati</span>}
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           
-          {/* My Visits - visible to all authenticated users */}
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={location.pathname === "/my-visits"}>
-              <Link to="/my-visits" onClick={handleNavigationClick}>
-                <FileText className="w-5 h-5 flex-shrink-0" />
-                {(state === 'expanded' || isMobile) && <span className="truncate">Le mie visite</span>}
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-
           {/* To Visit - visible to all authenticated users */}
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={location.pathname === "/to-visit"}>
@@ -139,6 +130,28 @@ function SidebarMenuContent() {
             </SidebarMenuButton>
           </SidebarMenuItem>
 
+          {/* My Data - visible to all authenticated users */}
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={location.pathname === "/my-data"}>
+              <Link to="/my-data" onClick={handleNavigationClick}>
+                <FileText className="w-5 h-5 flex-shrink-0" />
+                {(state === 'expanded' || isMobile) && <span className="truncate">I miei dati</span>}
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          {/* Order Management - only visible to admins */}
+          {userRole === 'admin' && (
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={location.pathname === "/orders"}>
+                <Link to="/orders" onClick={handleNavigationClick}>
+                  <Package className="w-5 h-5 flex-shrink-0" />
+                  {(state === 'expanded' || isMobile) && <span className="truncate">Gestione Ordini</span>}
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
+
           {/* Data Management Pages - only visible to admins */}
           {userRole === 'admin' && (
             <>
@@ -146,7 +159,7 @@ function SidebarMenuContent() {
                 <SidebarMenuButton asChild isActive={location.pathname === "/companies"}>
                   <Link to="/companies" onClick={handleNavigationClick}>
                     <Building className="w-5 h-5 flex-shrink-0" />
-                    {(state === 'expanded' || isMobile) && <span className="truncate">Aziende</span>}
+                    {(state === 'expanded' || isMobile) && <span className="truncate">Gestione Aziende</span>}
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -155,7 +168,7 @@ function SidebarMenuContent() {
                 <SidebarMenuButton asChild isActive={location.pathname === "/selling-points"}>
                   <Link to="/selling-points" onClick={handleNavigationClick}>
                     <MapPin className="w-5 h-5 flex-shrink-0" />
-                    {(state === 'expanded' || isMobile) && <span className="truncate">Punti Vendita</span>}
+                    {(state === 'expanded' || isMobile) && <span className="truncate">Gestione Punti Vendita</span>}
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -164,7 +177,7 @@ function SidebarMenuContent() {
                 <SidebarMenuButton asChild isActive={location.pathname === "/people"}>
                   <Link to="/people" onClick={handleNavigationClick}>
                     <Users className="w-5 h-5 flex-shrink-0" />
-                    {(state === 'expanded' || isMobile) && <span className="truncate">Persone</span>}
+                    {(state === 'expanded' || isMobile) && <span className="truncate">Gestione Persone</span>}
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -174,7 +187,7 @@ function SidebarMenuContent() {
                 <SidebarMenuButton asChild isActive={location.pathname === "/general-categories"}>
                   <Link to="/general-categories" onClick={handleNavigationClick}>
                     <DatabaseZap className="w-5 h-5 flex-shrink-0" />
-                    {(state === 'expanded' || isMobile) && <span className="truncate">Categorie Generali</span>}
+                    {(state === 'expanded' || isMobile) && <span className="truncate">Gestione Categorie</span>}
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -345,14 +358,15 @@ const App = () => {
           <BrowserRouter>
             <AppLayout>
               <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/my-visits" element={<MyVisits />} />
-                <Route path="/to-visit" element={<ToVisit />} />
-                <Route path="/companies" element={<ProtectedRoute><Companies /></ProtectedRoute>} />
-                <Route path="/selling-points" element={<ProtectedRoute><SellingPoints /></ProtectedRoute>} />
-                <Route path="/people" element={<ProtectedRoute><People /></ProtectedRoute>} />
-                <Route path="/general-categories" element={<ProtectedRoute><GeneralCategories /></ProtectedRoute>} />
-                <Route path="/profile" element={<Profile />} />
+                <Route path="/" element={<NewVisitOrder />} />
+                <Route path="/my-data" element={<MyData />} />
+                <Route path="/to-visit" element={<SellingPointsToVisit />} />
+                <Route path="/companies" element={<ProtectedRoute><CompanyManagementPage /></ProtectedRoute>} />
+                <Route path="/selling-points" element={<ProtectedRoute><SellingPointManagementPage /></ProtectedRoute>} />
+                <Route path="/people" element={<ProtectedRoute><PersonManagementPage /></ProtectedRoute>} />
+                <Route path="/orders" element={<ProtectedRoute><OrderManagementPage /></ProtectedRoute>} />
+                <Route path="/general-categories" element={<ProtectedRoute><CategoryManagement /></ProtectedRoute>} />
+                <Route path="/profile" element={<UserProfile />} />
 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />

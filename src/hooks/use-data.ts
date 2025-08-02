@@ -25,6 +25,10 @@ type Visit = Database['public']['Tables']['visits']['Row'] & {
   sellingPoint?: { name: string };
 };
 type CompanyCategory = Database['public']['Tables']['companyCategories']['Row'];
+type Order = Database['public']['Tables']['orders']['Row'] & {
+  supplierCompany?: { name: string };
+  sellingPoint?: { name: string };
+};
 
 // Query Keys
 export const queryKeys = {
@@ -38,6 +42,8 @@ export const queryKeys = {
   suppliers: ['suppliers'] as const,
   sellers: ['sellers'] as const,
   companyCategories: ['companyCategories'] as const,
+  orders: ['orders'] as const,
+  ordersBySellingPoint: (sellingPointId: string) => ['orders', 'sellingPoint', sellingPointId] as const,
   sellingPointsBySeller: (sellerId: string) => ['sellingPoints', 'seller', sellerId] as const,
   sellingPointsBySupplier: (supplierId: string, sellerId: string) => 
     ['sellingPoints', 'supplier', supplierId, 'seller', sellerId] as const,
@@ -980,4 +986,49 @@ export const useFilteredSellersBySupplier = (supplierId: string) => {
   });
 };
 
-export type { Activity, PersonRole, CompanyCategory }; 
+// Orders
+export const useOrders = () => {
+  return useQuery({
+    queryKey: queryKeys.orders,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          supplierCompany:companies(name),
+          sellingPoint:sellingPoints(name)
+        `)
+        .eq('isActive', true)
+        .order('orderDate', { ascending: false });
+      if (error) throw error;
+      return data as Order[];
+    },
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+export const useOrdersBySellingPoint = (sellingPointId: string) => {
+  return useQuery({
+    queryKey: queryKeys.ordersBySellingPoint(sellingPointId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          supplierCompany:companies(name),
+          sellingPoint:sellingPoints(name)
+        `)
+        .eq('sellingPointId', sellingPointId)
+        .eq('isActive', true)
+        .order('orderDate', { ascending: false });
+      if (error) throw error;
+      return data as Order[];
+    },
+    enabled: !!sellingPointId,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+export type { Activity, PersonRole, CompanyCategory, Order }; 

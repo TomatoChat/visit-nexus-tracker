@@ -31,7 +31,7 @@ const SELLING_POINT_TEMPLATE_HEADERS = [
   'ID Fornitore 4',
 ];
 
-const SellingPoints = () => {
+const SellingPointManagementPage = () => {
   const { userRole, loading, checkCanManageData } = useRoles();
   const { toast } = useToast();
   const [showSearch, setShowSearch] = useState(false);
@@ -316,7 +316,7 @@ const SellingPoints = () => {
         </div>
         {/* Desktop: Title and actions */}
         <div className="hidden md:flex items-center justify-between gap-4 mb-8">
-          <h1 className="text-3xl font-bold text-left">Punti Vendita</h1>
+          <h1 className="text-3xl font-bold text-left">Gestione Punti Vendita</h1>
           <div className="flex items-center gap-2">
             {!showSearch && (
               <Button
@@ -435,4 +435,4 @@ const SellingPoints = () => {
   );
 };
 
-export default SellingPoints; 
+export default SellingPointManagementPage; 

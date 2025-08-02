@@ -29,7 +29,7 @@ const COMPANY_TEMPLATE_HEADERS = [
   'ID Categoria', // selectedCategoryId (Required in database)
 ];
 
-const Companies = () => {
+const CompanyManagementPage = () => {
   const { userRole, loading, checkCanManageData } = useRoles();
   const { toast } = useToast();
   const [showSearch, setShowSearch] = useState(false);
@@ -281,7 +281,7 @@ const Companies = () => {
         </div>
         {/* Desktop: Title and actions */}
         <div className="hidden md:flex items-center justify-between gap-4 mb-8">
-          <h1 className="text-3xl font-bold text-left">Aziende</h1>
+          <h1 className="text-3xl font-bold text-left">Gestione Aziende</h1>
           <div className="flex items-center gap-2">
             {!showSearch && (
               <Button
@@ -354,4 +354,4 @@ const Companies = () => {
   );
 };
 
-export default Companies; 
+export default CompanyManagementPage; 
