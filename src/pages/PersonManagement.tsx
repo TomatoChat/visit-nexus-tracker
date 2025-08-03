@@ -5,12 +5,12 @@ import PersonManagement from '@/components/data-management/PersonManagement';
 import BulkUploadDialog from '@/components/data-management/BulkUploadDialog';
 import { useRoles } from '@/hooks/use-roles';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Search, Plus, UploadCloud } from 'lucide-react';
+import { Plus, UploadCloud } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateAndDownloadXlsxTemplate, parseXlsxFile, parseCsvFile } from '@/lib/xlsx-utils';
 import { mockBulkUploadPeople } from '@/lib/mock-bulk-api'; // Import mock API
 import { supabase } from '@/integrations/supabase/client';
+import PersonFilter, { PersonFilters } from '@/components/ui/person-filter';
 
 const PEOPLE_TEMPLATE_HEADERS = [
   'Nome', // name
@@ -25,12 +25,10 @@ const PEOPLE_TEMPLATE_HEADERS = [
 const PersonManagementPage = () => {
   const { userRole, loading, checkCanManageData } = useRoles();
   const { toast } = useToast();
-  const [showSearch, setShowSearch] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const searchInputRef = React.useRef<HTMLInputElement>(null);
   const [triggerAddForm, setTriggerAddForm] = useState(false);
   const [canManage, setCanManage] = useState(false); // State for RBAC
   const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false); // State for dialog
+  const [filters, setFilters] = useState<PersonFilters>({});
 
   useEffect(() => {
     const verifyPermissions = async () => {
@@ -142,6 +140,14 @@ const PersonManagementPage = () => {
     }
   }, [toast, setIsBulkUploadOpen]);
 
+  const handleFiltersChange = (newFilters: PersonFilters) => {
+    setFilters(newFilters);
+  };
+
+  const handleClearFilters = () => {
+    setFilters({});
+  };
+
   // Show loading state while determining user role
   if (loading) {
     return (
@@ -191,30 +197,11 @@ const PersonManagementPage = () => {
             <h1 className="text-lg font-bold">Persone</h1>
           </div>
           <div className="flex items-center gap-2">
-            {!showSearch && (
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Cerca"
-                onClick={() => setShowSearch(true)}
-              >
-                <Search className="w-5 h-5" />
-              </Button>
-            )}
-            {showSearch && (
-              <Input
-                ref={searchInputRef}
-                autoFocus
-                className="w-32"
-                placeholder="Cerca..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                onBlur={() => setShowSearch(false)}
-                onKeyDown={e => {
-                  if (e.key === 'Escape') setShowSearch(false);
-                }}
-              />
-            )}
+            <PersonFilter 
+              filters={filters}
+              onFiltersChange={handleFiltersChange}
+              onClearFilters={handleClearFilters}
+            />
             {!userRole?.includes('internalAgent') && (
               <Button
                 variant="ghost"
@@ -243,30 +230,11 @@ const PersonManagementPage = () => {
         <div className="hidden md:flex items-center justify-between gap-4 mb-8">
           <h1 className="text-3xl font-bold text-left">Gestione Persone</h1>
           <div className="flex items-center gap-2">
-            {!showSearch && (
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Cerca"
-                onClick={() => setShowSearch(true)}
-              >
-                <Search className="w-5 h-5" />
-              </Button>
-            )}
-            {showSearch && (
-              <Input
-                ref={searchInputRef}
-                autoFocus
-                className="w-48"
-                placeholder="Cerca persone..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                onBlur={() => setShowSearch(false)}
-                onKeyDown={e => {
-                  if (e.key === 'Escape') setShowSearch(false);
-                }}
-              />
-            )}
+            <PersonFilter 
+              filters={filters}
+              onFiltersChange={handleFiltersChange}
+              onClearFilters={handleClearFilters}
+            />
             {!userRole?.includes('internalAgent') && (
               <Button
                 variant="ghost"
@@ -293,9 +261,10 @@ const PersonManagementPage = () => {
         </div>
         <PersonManagement
           readOnly={userRole === 'internalAgent'}
-          searchTerm={searchTerm}
+          searchTerm=""
           triggerAddForm={triggerAddForm}
           onAddFormShown={() => setTriggerAddForm(false)}
+          filters={filters}
         />
         {canManage && (
           <BulkUploadDialog

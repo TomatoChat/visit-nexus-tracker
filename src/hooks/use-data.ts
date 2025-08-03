@@ -30,6 +30,12 @@ type Order = Database['public']['Tables']['orders']['Row'] & {
   sellingPoint?: { name: string };
 };
 
+export interface DataFilters {
+  supplierId?: string;
+  sellerId?: string;
+  sellingPointId?: string;
+}
+
 // Query Keys
 export const queryKeys = {
   companies: ['companies'] as const,
@@ -455,11 +461,11 @@ export const useAddressesBySearch = (search: string) => {
 };
 
 // Visits
-export const useUserVisits = (userId: string) => {
+export const useUserVisits = (userId: string, filters?: DataFilters) => {
   return useQuery({
-    queryKey: queryKeys.userVisits(userId),
+    queryKey: [...queryKeys.userVisits(userId), filters],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('visits')
         .select(`
           id,
@@ -468,10 +474,98 @@ export const useUserVisits = (userId: string) => {
           supplierCompany:supplierCompanyId ( name ),
           sellingPoint:sellingPointId ( name )
         `)
-        .eq('agentId', userId)
-        .order('visitDate', { ascending: false });
+        .eq('agentId', userId);
+
+      // Apply filters
+      if (filters) {
+        if (filters.supplierId) {
+          query = query.eq('supplierCompanyId', filters.supplierId);
+        }
+        if (filters.sellingPointId) {
+          query = query.eq('sellingPointId', filters.sellingPointId);
+        }
+        // Note: sellerId filtering would require additional logic based on your data structure
+        // For now, we'll skip it as it might require a different approach
+      }
+
+      const { data, error } = await query.order('visitDate', { ascending: false });
       if (error) throw error;
+      
       return data as Visit[];
+    },
+    enabled: !!userId,
+    staleTime: 1 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+};
+
+export const useUserOrders = (userId: string, filters?: DataFilters) => {
+  return useQuery({
+    queryKey: [...queryKeys.orders, 'user', userId, filters],
+    queryFn: async () => {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
+      // Get selling points where user is account manager
+      const { data: accountManagerSellingPoints, error: amError } = await supabase
+        .from("sellingPoints")
+        .select("id")
+        .eq("accountManager", user.id)
+        .eq("isactive", true);
+
+      if (amError) throw amError;
+
+      // Get selling points where user is service person
+      const { data: serviceSellingPoints, error: spError } = await supabase
+        .from("sellingPointServicePeople")
+        .select("sellingPointId")
+        .eq("userId", user.id)
+        .eq("isactive", true);
+
+      if (spError) throw spError;
+
+      // Combine all selling point IDs where user has access
+      const userSellingPointIds = [
+        ...(accountManagerSellingPoints?.map(sp => sp.id) || []),
+        ...(serviceSellingPoints?.map(sp => sp.sellingPointId) || [])
+      ];
+
+      // Remove duplicates
+      const uniqueSellingPointIds = Array.from(new Set(userSellingPointIds));
+
+      // Build the query
+      let query = supabase
+        .from("orders")
+        .select(`
+          *,
+          supplierCompany:companies(name),
+          sellingPoint:"sellingPoints"(name)
+        `)
+        .eq("isActive", true);
+
+      // Filter by user's orders OR orders for selling points where user is account manager
+      if (uniqueSellingPointIds.length > 0) {
+        query = query.or(`userId.eq.${user.id},sellingPointId.in.(${uniqueSellingPointIds.join(',')})`);
+      } else {
+        // If user has no assigned selling points, only show their own orders
+        query = query.eq("userId", user.id);
+      }
+
+      // Apply filters
+      if (filters) {
+        if (filters.supplierId) {
+          query = query.eq('supplierCompanyId', filters.supplierId);
+        }
+        if (filters.sellingPointId) {
+          query = query.eq('sellingPointId', filters.sellingPointId);
+        }
+      }
+
+      const { data, error } = await query.order("orderDate", { ascending: false });
+      if (error) throw error;
+      
+      return data as Order[];
     },
     enabled: !!userId,
     staleTime: 1 * 60 * 1000,
