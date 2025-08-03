@@ -187,30 +187,31 @@ The application uses the following main entities:
 
 ## 🔧 Development
 
-### Available Scripts
-```bash
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run build:dev    # Build for development
-npm run lint         # Run ESLint
-npm run preview      # Preview production build
-```
-
 ### Project Structure
 ```
-src/
-├── components/          # Reusable UI components
-│   ├── data-management/ # Data management components
-│   ├── ui/             # Base UI components (shadcn/ui)
-│   │   ├── protected-route.tsx # Route protection component
-│   │   └── role-guard.tsx      # Role-based UI guards
-│   └── visit/          # Visit-specific components
-├── hooks/              # Custom React hooks
-├── integrations/       # External service integrations
-│   └── supabase/      # Supabase client and types
-├── lib/               # Utility functions and helpers
-├── pages/             # Page components
-└── main.tsx          # Application entry point
+visit-nexus-tracker/
+├── apps/                     # Application modules
+│   └── visit-nexus-tracker/  # Main web application
+├── packages/                 # Shared packages
+│   └── shared/              # Shared utilities and types
+├── database/                # Database migrations and schemas
+├── scripts/                 # Utility scripts
+│   ├── checkDatabase.js     # Database validation script
+│   └── sellingPointAccountManagers.py # Account management script
+├── src/                     # Main application source
+│   ├── components/          # Reusable UI components
+│   │   ├── data-management/ # Data management components
+│   │   ├── ui/             # Base UI components (shadcn/ui)
+│   │   │   ├── protected-route.tsx # Route protection component
+│   │   │   └── role-guard.tsx      # Role-based UI guards
+│   │   └── visit/          # Visit-specific components
+│   ├── hooks/              # Custom React hooks
+│   ├── integrations/       # External service integrations
+│   │   └── supabase/      # Supabase client and types
+│   ├── lib/               # Utility functions and helpers
+│   ├── pages/             # Page components
+│   └── main.tsx          # Application entry point
+└── public/                # Static assets
 ```
 
 ## 🔐 Security Features
