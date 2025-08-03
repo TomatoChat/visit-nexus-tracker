@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { OrderFilters } from '@/components/ui/order-filter';
 
 type Order = Database['public']['Tables']['orders']['Row'] & {
   companies?: Database['public']['Tables']['companies']['Row'];
@@ -17,9 +18,10 @@ type Order = Database['public']['Tables']['orders']['Row'] & {
 
 interface OrderManagementProps {
   readOnly?: boolean;
+  filters?: OrderFilters;
 }
 
-const OrderManagement: React.FC<OrderManagementProps> = ({ readOnly = false }) => {
+const OrderManagement: React.FC<OrderManagementProps> = ({ readOnly = false, filters = {} }) => {
   const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [userDetails, setUserDetails] = useState<{ [key: string]: { first_name: string; last_name: string; auth_email: string } }>({});
@@ -114,10 +116,21 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ readOnly = false }) =
 
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
+      // Status filter
       const statusMatch = activeTab === 'received' ? order.received : !order.received;
-      return statusMatch;
+      
+      // Supplier filter
+      const supplierMatch = !filters.supplierId || order.supplierCompanyId === filters.supplierId;
+      
+      // Selling point filter
+      const sellingPointMatch = !filters.sellingPointId || order.sellingPointId === filters.sellingPointId;
+      
+      // User filter
+      const userMatch = !filters.userId || order.userId === filters.userId;
+      
+      return statusMatch && supplierMatch && sellingPointMatch && userMatch;
     });
-  }, [orders, activeTab]);
+  }, [orders, activeTab, filters]);
 
   return (
     <div className="w-full pb-2 md:pb-0">
