@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { generateAndDownloadXlsxTemplate, parseXlsxFile, parseCsvFile } from '@/lib/xlsx-utils';
 import { mockBulkUploadPeople } from '@/lib/mock-bulk-api'; // Import mock API
 import { supabase } from '@/integrations/supabase/client';
+import PersonFilter, { PersonFilters } from '@/components/ui/person-filter';
 
 const PEOPLE_TEMPLATE_HEADERS = [
   'Nome', // name
@@ -27,6 +28,7 @@ const PersonManagementPage = () => {
   const [triggerAddForm, setTriggerAddForm] = useState(false);
   const [canManage, setCanManage] = useState(false); // State for RBAC
   const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false); // State for dialog
+  const [filters, setFilters] = useState<PersonFilters>({});
 
   useEffect(() => {
     const verifyPermissions = async () => {
@@ -138,6 +140,14 @@ const PersonManagementPage = () => {
     }
   }, [toast, setIsBulkUploadOpen]);
 
+  const handleFiltersChange = (newFilters: PersonFilters) => {
+    setFilters(newFilters);
+  };
+
+  const handleClearFilters = () => {
+    setFilters({});
+  };
+
   // Show loading state while determining user role
   if (loading) {
     return (
@@ -187,6 +197,11 @@ const PersonManagementPage = () => {
             <h1 className="text-lg font-bold">Persone</h1>
           </div>
           <div className="flex items-center gap-2">
+            <PersonFilter 
+              filters={filters}
+              onFiltersChange={handleFiltersChange}
+              onClearFilters={handleClearFilters}
+            />
             {!userRole?.includes('internalAgent') && (
               <Button
                 variant="ghost"
@@ -215,6 +230,11 @@ const PersonManagementPage = () => {
         <div className="hidden md:flex items-center justify-between gap-4 mb-8">
           <h1 className="text-3xl font-bold text-left">Gestione Persone</h1>
           <div className="flex items-center gap-2">
+            <PersonFilter 
+              filters={filters}
+              onFiltersChange={handleFiltersChange}
+              onClearFilters={handleClearFilters}
+            />
             {!userRole?.includes('internalAgent') && (
               <Button
                 variant="ghost"
@@ -244,6 +264,7 @@ const PersonManagementPage = () => {
           searchTerm=""
           triggerAddForm={triggerAddForm}
           onAddFormShown={() => setTriggerAddForm(false)}
+          filters={filters}
         />
         {canManage && (
           <BulkUploadDialog

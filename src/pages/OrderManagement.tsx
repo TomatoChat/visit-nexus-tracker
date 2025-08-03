@@ -18,11 +18,10 @@ const OrderManagementPage = () => {
   return (
     <Layout>
       <div className="w-full pb-2 md:pb-0">
-        {/* Mobile: Sidebar button, title, and actions */}
+        {/* Mobile: Sidebar button and actions */}
         <div className="flex flex-row items-center justify-between gap-2 md:hidden mb-4">
           <div className="flex items-center gap-2">
             <SidebarTrigger />
-            <h1 className="text-lg font-bold">Gestione Ordini</h1>
           </div>
           <OrderFilter 
             filters={filters}

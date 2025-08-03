@@ -18,6 +18,7 @@ import {
   useUpdatePerson,
   useDeletePerson
 } from '@/hooks/use-data';
+import { PersonFilters } from '@/components/ui/person-filter';
 
 type Person = Database['public']['Tables']['people']['Row'] & {
   companies: Database['public']['Tables']['companies']['Row'] | null,
@@ -33,9 +34,10 @@ interface PersonManagementProps {
   searchTerm?: string;
   triggerAddForm?: boolean;
   onAddFormShown?: () => void;
+  filters?: PersonFilters;
 }
 
-const PersonManagement: React.FC<PersonManagementProps> = ({ readOnly = false, searchTerm = '', triggerAddForm = false, onAddFormShown }) => {
+const PersonManagement: React.FC<PersonManagementProps> = ({ readOnly = false, searchTerm = '', triggerAddForm = false, onAddFormShown, filters = {} }) => {
   const { toast } = useToast();
   
   // Form State
@@ -98,54 +100,72 @@ const PersonManagement: React.FC<PersonManagementProps> = ({ readOnly = false, s
       return;
     }
     try {
-      const { data, error } = await supabase.from('personRoles').insert(newRole).select().single();
+      const { error } = await supabase
+        .from('personRoles')
+        .insert({ ...newRole, isactive: true });
+      
       if (error) throw error;
-      setSelectedRoleId(data.id);
+      
+      toast({ title: 'Successo!', description: 'Ruolo creato con successo!' });
       setShowNewRoleForm(false);
       setNewRole({ name: '', isAgent: false, isExternal: false });
-      toast({ title: 'Successo!', description: 'Ruolo creato!' });
     } catch (error: any) {
-      toast({ title: 'Errore', description: error.message || 'Impossibile creare ruolo.', variant: 'destructive' });
+      toast({ title: 'Errore', description: error.message || 'Impossibile creare il ruolo.', variant: 'destructive' });
     }
   };
 
   const resetForm = () => {
-    setName(''); setSurname(''); setEmail(''); setPhoneNumber('');
-    setSelectedCompanyId(undefined); setSelectedSellingPointId(undefined); setSelectedRoleId(undefined);
+    setName('');
+    setSurname('');
+    setEmail('');
+    setPhoneNumber('');
+    setSelectedCompanyId(undefined);
+    setSelectedSellingPointId(undefined);
+    setSelectedRoleId(undefined);
     setEditingPerson(null);
-    setShowNewRoleForm(false); setNewRole({ name: '', isAgent: false, isExternal: false });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !surname || !email || !phoneNumber || !selectedCompanyId || !selectedRoleId) {
-      toast({ title: 'Errore validazione', description: 'Compila tutti i campi obbligatori (*).', variant: 'destructive' });
+    
+    if (!selectedCompanyId || !selectedRoleId) {
+      toast({ title: 'Errore validazione', description: 'Azienda e ruolo sono obbligatori.', variant: 'destructive' });
       return;
     }
-    const personData: Database['public']['Tables']['people']['Insert'] = {
-      name, surname, email, phoneNumber, companyId: selectedCompanyId, roleId: selectedRoleId,
-      sellingPointId: selectedSellingPointId || null,
+
+    const personData = {
+      name,
+      surname,
+      email,
+      phoneNumber,
+      companyId: selectedCompanyId,
+      sellingPointId: selectedSellingPointId,
+      roleId: selectedRoleId,
+      isActive: true,
     };
+
     try {
-      let error;
       if (editingPerson) {
-        const { error: uError } = await supabase.from('people').update(personData).eq('id', editingPerson.id);
-        error = uError;
+        await updatePersonMutation.mutateAsync({ id: editingPerson.id, ...personData });
+        toast({ title: 'Successo!', description: 'Persona aggiornata con successo!' });
       } else {
-        const { error: iError } = await supabase.from('people').insert(personData);
-        error = iError;
+        await createPersonMutation.mutateAsync(personData);
+        toast({ title: 'Successo!', description: 'Persona creata con successo!' });
       }
-      if (error) throw error;
-      toast({ title: 'Successo!', description: `Persona ${editingPerson ? 'aggiornata' : 'creata'}!` });
-      setShowAddForm(false); resetForm();
+      
+      setShowAddForm(false);
+      resetForm();
     } catch (error: any) {
-      toast({ title: 'Errore', description: error.message || `Impossibile ${editingPerson ? 'aggiornare' : 'creare'} persona.`, variant: 'destructive' });
+      toast({ title: 'Errore', description: error.message || 'Impossibile salvare la persona.', variant: 'destructive' });
     }
   };
 
   const handleEdit = (person: Person) => {
     setEditingPerson(person);
-    setName(person.name); setSurname(person.surname); setEmail(person.email); setPhoneNumber(person.phoneNumber);
+    setName(person.name);
+    setSurname(person.surname);
+    setEmail(person.email);
+    setPhoneNumber(person.phoneNumber);
     setSelectedCompanyId(person.companyId);
     // setSelectedSellingPointId might need a delay if company change triggers its reset/fetch
     // Trigger useEffect for selling points by setting company first
@@ -170,12 +190,25 @@ const PersonManagement: React.FC<PersonManagementProps> = ({ readOnly = false, s
   };
 
   const filteredPeople = useMemo(() => {
-    return people.filter(p =>
-      `${p.name} ${p.surname}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.companies?.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [people, searchTerm]);
+    return people.filter(p => {
+      // Search term filter
+      const searchMatch = 
+        `${p.name} ${p.surname}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.companies?.name.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Company filter
+      const companyMatch = !filters.companyId || p.companyId === filters.companyId;
+      
+      // Selling point filter
+      const sellingPointMatch = !filters.sellingPointId || p.sellingPointId === filters.sellingPointId;
+      
+      // Role filter
+      const roleMatch = !filters.roleId || p.roleId === filters.roleId;
+      
+      return searchMatch && companyMatch && sellingPointMatch && roleMatch;
+    });
+  }, [people, searchTerm, filters]);
 
   if (showAddForm || editingPerson) {
     return (
