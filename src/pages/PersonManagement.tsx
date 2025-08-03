@@ -5,8 +5,7 @@ import PersonManagement from '@/components/data-management/PersonManagement';
 import BulkUploadDialog from '@/components/data-management/BulkUploadDialog';
 import { useRoles } from '@/hooks/use-roles';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Search, Plus, UploadCloud } from 'lucide-react';
+import { Plus, UploadCloud } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateAndDownloadXlsxTemplate, parseXlsxFile, parseCsvFile } from '@/lib/xlsx-utils';
 import { mockBulkUploadPeople } from '@/lib/mock-bulk-api'; // Import mock API
@@ -25,9 +24,6 @@ const PEOPLE_TEMPLATE_HEADERS = [
 const PersonManagementPage = () => {
   const { userRole, loading, checkCanManageData } = useRoles();
   const { toast } = useToast();
-  const [showSearch, setShowSearch] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const searchInputRef = React.useRef<HTMLInputElement>(null);
   const [triggerAddForm, setTriggerAddForm] = useState(false);
   const [canManage, setCanManage] = useState(false); // State for RBAC
   const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false); // State for dialog
@@ -191,30 +187,6 @@ const PersonManagementPage = () => {
             <h1 className="text-lg font-bold">Persone</h1>
           </div>
           <div className="flex items-center gap-2">
-            {!showSearch && (
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Cerca"
-                onClick={() => setShowSearch(true)}
-              >
-                <Search className="w-5 h-5" />
-              </Button>
-            )}
-            {showSearch && (
-              <Input
-                ref={searchInputRef}
-                autoFocus
-                className="w-32"
-                placeholder="Cerca..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                onBlur={() => setShowSearch(false)}
-                onKeyDown={e => {
-                  if (e.key === 'Escape') setShowSearch(false);
-                }}
-              />
-            )}
             {!userRole?.includes('internalAgent') && (
               <Button
                 variant="ghost"
@@ -243,30 +215,6 @@ const PersonManagementPage = () => {
         <div className="hidden md:flex items-center justify-between gap-4 mb-8">
           <h1 className="text-3xl font-bold text-left">Gestione Persone</h1>
           <div className="flex items-center gap-2">
-            {!showSearch && (
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Cerca"
-                onClick={() => setShowSearch(true)}
-              >
-                <Search className="w-5 h-5" />
-              </Button>
-            )}
-            {showSearch && (
-              <Input
-                ref={searchInputRef}
-                autoFocus
-                className="w-48"
-                placeholder="Cerca persone..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                onBlur={() => setShowSearch(false)}
-                onKeyDown={e => {
-                  if (e.key === 'Escape') setShowSearch(false);
-                }}
-              />
-            )}
             {!userRole?.includes('internalAgent') && (
               <Button
                 variant="ghost"
@@ -293,7 +241,7 @@ const PersonManagementPage = () => {
         </div>
         <PersonManagement
           readOnly={userRole === 'internalAgent'}
-          searchTerm={searchTerm}
+          searchTerm=""
           triggerAddForm={triggerAddForm}
           onAddFormShown={() => setTriggerAddForm(false)}
         />

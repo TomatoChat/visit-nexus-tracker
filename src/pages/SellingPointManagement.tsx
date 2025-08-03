@@ -5,13 +5,11 @@ import SellingPointManagement from '@/components/data-management/SellingPointMan
 import BulkUploadDialog from '@/components/data-management/BulkUploadDialog';
 import { useRoles } from '@/hooks/use-roles';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Search, Plus, Filter, UploadCloud } from 'lucide-react';
-import { useSellers, useAllUsers } from '@/hooks/use-data';
-import { SearchableSelect } from '@/components/ui/searchable-select';
+import { Plus, UploadCloud } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateAndDownloadXlsxTemplate, parseXlsxFile, parseCsvFile } from '@/lib/xlsx-utils';
 import { supabase } from '@/integrations/supabase/client';
+import SellingPointFilter, { SellingPointFilters } from '@/components/ui/selling-point-filter';
 
 const SELLING_POINT_TEMPLATE_HEADERS = [
   'Nome Punto Vendita', // name
@@ -34,21 +32,10 @@ const SELLING_POINT_TEMPLATE_HEADERS = [
 const SellingPointManagementPage = () => {
   const { userRole, loading, checkCanManageData } = useRoles();
   const { toast } = useToast();
-  const [showSearch, setShowSearch] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const searchInputRef = React.useRef<HTMLInputElement>(null);
   const [triggerAddForm, setTriggerAddForm] = useState(false);
-  const [showFilter, setShowFilter] = useState(false);
-  const [selectedSellerFilters, setSelectedSellerFilters] = useState<string[]>([]);
   const [canManage, setCanManage] = useState(false); // State for RBAC
   const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false); // State for dialog
-  const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
-  const [showAccountManagerDropdown, setShowAccountManagerDropdown] = useState(false);
-  
-  // Fetch seller companies for filter
-  const { data: sellers = [], isLoading: isLoadingSellers } = useSellers();
-  const { data: users = [], isLoading: isLoadingUsers } = useAllUsers();
-  const [selectedAccountManager, setSelectedAccountManager] = useState<string | null>(null);
+  const [filters, setFilters] = useState<SellingPointFilters>({});
 
   useEffect(() => {
     const verifyPermissions = async () => {
@@ -60,19 +47,12 @@ const SellingPointManagementPage = () => {
     }
   }, [loading, checkCanManageData]);
 
-  useEffect(() => {
-    if (showFilter) {
-      setShowCompanyDropdown(true);
-      setShowAccountManagerDropdown(true);
-    }
-  }, [showFilter]);
-
   // Placeholder handlers for the dialog
   const handleDownloadTemplate = useCallback(async () => {
     // Fetch latest sellers and suppliers for the reference tabs
     const { data: freshSellers } = await supabase.from('companies').select('id, name').eq('isSeller', true).eq('isActive', true).order('name', { ascending: true });
     const { data: freshSuppliers } = await supabase.from('companies').select('id, name').eq('isSupplier', true).eq('isActive', true).order('name', { ascending: true });
-    const sellersList = freshSellers || sellers || [];
+    const sellersList = freshSellers || [];
     const suppliersList = freshSuppliers || [];
     const referenceData = {
       'Aziende Venditrici': [
@@ -86,7 +66,7 @@ const SellingPointManagementPage = () => {
     };
     generateAndDownloadXlsxTemplate(SELLING_POINT_TEMPLATE_HEADERS, 'Selling_Points', 'Data', referenceData);
     toast({ title: 'Template Downloaded', description: 'Il file template_selling_points.xlsx è stato scaricato.' });
-  }, [toast, sellers]);
+  }, [toast]);
 
   const handleFileUpload = useCallback(async (file: File) => {
     toast({ title: 'Elaborazione file...', description: 'Lettura e validazione del file caricato per Punti Vendita.' });
@@ -190,20 +170,16 @@ const SellingPointManagementPage = () => {
     }
   }, [toast, setIsBulkUploadOpen]);
 
-  // Multi-select handler for companies
-  const handleCompanyMultiSelect = (selected) => {
-    // selected can be a string (single) or array (multi)
-    if (Array.isArray(selected)) {
-      setSelectedSellerFilters(selected);
-    } else if (selected) {
-      setSelectedSellerFilters([selected]);
-    } else {
-      setSelectedSellerFilters([]);
-    }
+  const handleFiltersChange = (newFilters: SellingPointFilters) => {
+    setFilters(newFilters);
   };
 
-  // Show loading state while determining user role or sellers
-  if (loading || isLoadingSellers || isLoadingUsers) {
+  const handleClearFilters = () => {
+    setFilters({});
+  };
+
+  // Show loading state while determining user role
+  if (loading) {
     return (
       <Layout>
         <div className="w-full pb-2 md:p-8">
@@ -241,12 +217,6 @@ const SellingPointManagementPage = () => {
     );
   }
 
-  // Prepare filter options
-  const filterOptions = sellers.map(seller => ({
-    value: seller.id,
-    label: seller.name
-  }));
-
   return (
     <Layout>
       <div className="w-full pb-2 md:pb-0">
@@ -257,39 +227,11 @@ const SellingPointManagementPage = () => {
             <h1 className="text-lg font-bold">Punti Vendita</h1>
           </div>
           <div className="flex items-center gap-2">
-            {!showSearch && (
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Cerca"
-                onClick={() => setShowSearch(true)}
-              >
-                <Search className="w-5 h-5" />
-              </Button>
-            )}
-            {showSearch && (
-              <Input
-                ref={searchInputRef}
-                autoFocus
-                className="w-32"
-                placeholder="Cerca..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                onBlur={() => setShowSearch(false)}
-                onKeyDown={e => {
-                  if (e.key === 'Escape') setShowSearch(false);
-                }}
-              />
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Filtra per azienda cliente"
-              onClick={() => setShowFilter(!showFilter)}
-              className={showFilter ? "bg-info/10 text-info" : ""}
-            >
-              <Filter className="w-5 h-5" />
-            </Button>
+            <SellingPointFilter 
+              filters={filters}
+              onFiltersChange={handleFiltersChange}
+              onClearFilters={handleClearFilters}
+            />
             {!userRole?.includes('internalAgent') && (
               <Button
                 variant="ghost"
@@ -318,39 +260,11 @@ const SellingPointManagementPage = () => {
         <div className="hidden md:flex items-center justify-between gap-4 mb-8">
           <h1 className="text-3xl font-bold text-left">Gestione Punti Vendita</h1>
           <div className="flex items-center gap-2">
-            {!showSearch && (
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Cerca"
-                onClick={() => setShowSearch(true)}
-              >
-                <Search className="w-5 h-5" />
-              </Button>
-            )}
-            {showSearch && (
-              <Input
-                ref={searchInputRef}
-                autoFocus
-                className="w-48"
-                placeholder="Cerca punti vendita..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                onBlur={() => setShowSearch(false)}
-                onKeyDown={e => {
-                  if (e.key === 'Escape') setShowSearch(false);
-                }}
-              />
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Filtra per azienda cliente"
-              onClick={() => setShowFilter(!showFilter)}
-              className={showFilter ? "bg-info/10 text-info" : ""}
-            >
-              <Filter className="w-5 h-5" />
-            </Button>
+            <SellingPointFilter 
+              filters={filters}
+              onFiltersChange={handleFiltersChange}
+              onClearFilters={handleClearFilters}
+            />
             {!userRole?.includes('internalAgent') && (
               <Button
                 variant="ghost"
@@ -375,51 +289,14 @@ const SellingPointManagementPage = () => {
             )}
           </div>
         </div>
-
-        {/* Filter Dropdown */}
-        {showFilter && (
-          <div className="mb-4 p-4 bg-muted rounded-lg border">
-            {/* Azienda Cliente Multi-Select */}
-            <div className="mb-3">
-              <label className="flex items-center gap-2 text-sm font-medium mb-1">
-                <Filter className="w-4 h-4" />
-                Filtra per azienda cliente
-              </label>
-              {showCompanyDropdown && (
-                <SearchableSelect
-                  options={filterOptions}
-                  value={selectedSellerFilters}
-                  onSelect={handleCompanyMultiSelect}
-                  placeholder="Seleziona una o più aziende"
-                  searchPlaceholder="Cerca azienda..."
-                  isMulti
-                />
-              )}
-            </div>
-            {/* Responsabile Cliente Filter */}
-            <div className="mb-3">
-              <label className="block text-sm font-medium mb-1">Filtra per Responsabile Cliente</label>
-              {showAccountManagerDropdown && (
-                <SearchableSelect
-                  options={[{ value: '', label: 'Tutti gli utenti' }, ...users.map(u => ({ value: u.id, label: u.displayName }))]}
-                  value={selectedAccountManager || ''}
-                  onSelect={val => typeof val === 'string' ? setSelectedAccountManager(val) : setSelectedAccountManager(val[0] || null)}
-                  placeholder={isLoadingUsers ? 'Caricamento utenti...' : 'Seleziona responsabile'}
-                  searchPlaceholder="Cerca responsabile..."
-                  disabled={isLoadingUsers}
-                />
-              )}
-            </div>
-          </div>
-        )}
         
         <SellingPointManagement 
           readOnly={userRole === 'internalAgent'} 
-          searchTerm={searchTerm} 
-          sellerFilters={selectedSellerFilters}
+          searchTerm=""
+          sellerFilters={filters.sellerCompanyIds || []}
           triggerAddForm={triggerAddForm}
           onAddFormShown={() => setTriggerAddForm(false)}
-          accountManagerFilter={selectedAccountManager}
+          accountManagerFilter={filters.accountManagerId}
         />
         {canManage && (
           <BulkUploadDialog

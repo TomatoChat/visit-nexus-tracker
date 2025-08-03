@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, CheckCircle, Clock, Search, Plus } from 'lucide-react';
+import { Trash2, CheckCircle, Clock, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
@@ -18,20 +17,14 @@ type Order = Database['public']['Tables']['orders']['Row'] & {
 
 interface OrderManagementProps {
   readOnly?: boolean;
-  searchTerm?: string;
 }
 
-const OrderManagement: React.FC<OrderManagementProps> = ({ readOnly = false, searchTerm = '' }) => {
+const OrderManagement: React.FC<OrderManagementProps> = ({ readOnly = false }) => {
   const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [userDetails, setUserDetails] = useState<{ [key: string]: { first_name: string; last_name: string; auth_email: string } }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'pending' | 'received'>('pending');
-  
-  // Search functionality
-  const [showSearch, setShowSearch] = useState(false);
-  const [searchTermLocal, setSearchTermLocal] = useState('');
-  const searchInputRef = React.useRef<HTMLInputElement>(null);
 
   // Confirmation dialogs
   const [showMarkReceivedDialog, setShowMarkReceivedDialog] = useState(false);
@@ -120,20 +113,11 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ readOnly = false, sea
   };
 
   const filteredOrders = useMemo(() => {
-    const searchTermToUse = searchTerm || searchTermLocal;
     return orders.filter(order => {
-      const searchTermMatch = 
-        order.companies?.name?.toLowerCase().includes(searchTermToUse.toLowerCase()) ||
-        order.sellingPoints?.name?.toLowerCase().includes(searchTermToUse.toLowerCase()) ||
-        order.notes?.toLowerCase().includes(searchTermToUse.toLowerCase()) ||
-        userDetails[order.userId]?.auth_email?.toLowerCase().includes(searchTermToUse.toLowerCase()) ||
-        `${userDetails[order.userId]?.first_name} ${userDetails[order.userId]?.last_name}`.toLowerCase().includes(searchTermToUse.toLowerCase());
-
       const statusMatch = activeTab === 'received' ? order.received : !order.received;
-
-      return searchTermMatch && statusMatch;
+      return statusMatch;
     });
-  }, [orders, searchTerm, searchTermLocal, activeTab, userDetails]);
+  }, [orders, activeTab]);
 
   return (
     <div className="w-full pb-2 md:pb-0">
@@ -142,62 +126,10 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ readOnly = false, sea
         <div className="flex items-center gap-2">
           <h1 className="text-lg font-bold">Gestione Ordini</h1>
         </div>
-        <div className="flex items-center gap-2">
-          {!showSearch && (
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Cerca"
-              onClick={() => setShowSearch(true)}
-            >
-              <Search className="w-5 h-5" />
-            </Button>
-          )}
-          {showSearch && (
-            <Input
-              ref={searchInputRef}
-              autoFocus
-              className="w-32"
-              placeholder="Cerca..."
-              value={searchTermLocal}
-              onChange={e => setSearchTermLocal(e.target.value)}
-              onBlur={() => setShowSearch(false)}
-              onKeyDown={e => {
-                if (e.key === 'Escape') setShowSearch(false);
-              }}
-            />
-          )}
-        </div>
       </div>
       {/* Desktop: Title and actions */}
       <div className="hidden md:flex items-center justify-between gap-4 mb-8">
         <h1 className="text-3xl font-bold text-left">Gestione Ordini</h1>
-        <div className="flex items-center gap-2">
-          {!showSearch && (
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Cerca"
-              onClick={() => setShowSearch(true)}
-            >
-              <Search className="w-5 h-5" />
-            </Button>
-          )}
-          {showSearch && (
-            <Input
-              ref={searchInputRef}
-              autoFocus
-              className="w-48"
-              placeholder="Cerca ordini..."
-              value={searchTermLocal}
-              onChange={e => setSearchTermLocal(e.target.value)}
-              onBlur={() => setShowSearch(false)}
-              onKeyDown={e => {
-                if (e.key === 'Escape') setShowSearch(false);
-              }}
-            />
-          )}
-        </div>
       </div>
       
       {/* Filter buttons */}

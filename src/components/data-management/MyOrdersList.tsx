@@ -68,7 +68,7 @@ const MyOrdersList: React.FC<MyOrdersListProps> = ({ filters = {} }) => {
                   Data
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Azienda Fornitrice
+                  Fornitore
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Punto Vendita
