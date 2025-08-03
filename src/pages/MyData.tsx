@@ -4,7 +4,7 @@ import Layout from '@/components/Layout';
 import MyOrdersList from '@/components/data-management/MyOrdersList';
 import MyVisitsList from '@/components/data-management/MyVisitsList';
 import { Button } from '@/components/ui/button';
-import { FileText, ShoppingCart } from 'lucide-react';
+import { FileText, ShoppingCart, Activity } from 'lucide-react';
 
 const MyData = () => {
   const [activeTab, setActiveTab] = useState('visits');
@@ -28,14 +28,18 @@ const MyData = () => {
             variant={activeTab === 'visits' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setActiveTab('visits')}
+            className="flex items-center gap-2"
           >
+            <Activity className="w-4 h-4" />
             Visite
           </Button>
           <Button
             variant={activeTab === 'orders' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setActiveTab('orders')}
+            className="flex items-center gap-2"
           >
+            <ShoppingCart className="w-4 h-4" />
             Ordini
           </Button>
         </div>

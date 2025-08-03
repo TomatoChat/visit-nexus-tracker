@@ -197,20 +197,24 @@ function SidebarMenuContent() {
       </div>
       <div className="flex flex-col gap-2 p-2">
         <SidebarMenuItem>
-          <SidebarMenuButton asChild isActive={location.pathname === "/profile"}>
-            <Link to="/profile" onClick={handleNavigationClick}>
-              <User className="w-5 h-5 flex-shrink-0" />
-              {(state === 'expanded' || isMobile) && <span className="truncate">Profilo</span>}
-            </Link>
-          </SidebarMenuButton>
+          <div className="flex items-center justify-between w-full">
+            <SidebarMenuButton asChild isActive={false}>
+              <Link to="/profile" onClick={handleNavigationClick}>
+                <User className="w-5 h-5 flex-shrink-0" />
+                {(state === 'expanded' || isMobile) && <span className="truncate">Profilo</span>}
+              </Link>
+            </SidebarMenuButton>
+            {(state === 'expanded' || isMobile) && (
+              <button
+                onClick={handleLogoutClick}
+                className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-background transition-colors focus:outline-none focus:bg-background text-foreground"
+                title="Logout"
+              >
+                <Power className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </SidebarMenuItem>
-        <button
-          onClick={handleLogoutClick}
-          className="w-full flex items-center gap-2 px-4 py-3 text-base font-normal rounded-lg transition-colors hover:bg-background focus:outline-none focus:bg-background text-foreground"
-        >
-          <Power className="w-5 h-5 flex-shrink-0" />
-          {(state === 'expanded' || isMobile) && <span className="truncate text-base">Logout</span>}
-        </button>
       </div>
       <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
         <AlertDialogContent>

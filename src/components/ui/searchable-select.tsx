@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Check, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useIsMobile, useKeyboardPositioning } from '@/hooks/use-mobile';
 
 interface Option {
   value: string;
@@ -37,6 +38,8 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   const [open, setOpen] = useState(false);
   const [selectedOption, setSelectedOption] = useState<Option | undefined>();
   const [selectedOptions, setSelectedOptions] = useState<Option[]>([]);
+  const isMobile = useIsMobile();
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (isMulti && Array.isArray(value)) {
@@ -47,14 +50,23 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
     }
   }, [value, options, isMulti]);
 
+  // Use keyboard positioning hook for mobile dropdown
+  useKeyboardPositioning(open && isMobile, triggerRef, 150);
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          ref={triggerRef}
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between", className)}
+          className={cn(
+            "w-full justify-between",
+            // Mobile-specific improvements
+            isMobile && "h-12 text-base px-4 py-3 min-h-[48px]",
+            className
+          )}
           disabled={disabled}
         >
           {isMulti && Array.isArray(value) ? (
@@ -81,7 +93,14 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" style={{ width: 'var(--radix-popover-trigger-width)' }}>
+      <PopoverContent 
+        className={cn(
+          "w-full p-0", 
+          // Mobile-specific improvements
+          isMobile && "w-[95vw] max-w-[450px] max-h-[70vh] rounded-lg"
+        )} 
+        style={!isMobile ? { width: 'var(--radix-popover-trigger-width)' } : undefined}
+      >
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList>
@@ -91,6 +110,10 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
                 <CommandItem
                   key={option.value}
                   value={option.label}
+                  className={cn(
+                    // Mobile-specific improvements
+                    isMobile && "py-3 px-3 text-base min-h-[44px] rounded-md"
+                  )}
                   onSelect={() => {
                     if (isMulti) {
                       let newSelected: string[] = Array.isArray(value) ? [...value] : [];
@@ -135,6 +158,10 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
                 <CommandItem
                   key={alwaysVisibleOption.value}
                   value={alwaysVisibleOption.label}
+                  className={cn(
+                    // Mobile-specific improvements
+                    isMobile && "py-3 px-3 text-base min-h-[44px]"
+                  )}
                   onSelect={() => {
                     if (isMulti) {
                       let newSelected: string[] = Array.isArray(value) ? [...value] : [];

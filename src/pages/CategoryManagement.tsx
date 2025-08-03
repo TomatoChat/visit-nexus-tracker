@@ -4,7 +4,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useRoles } from '@/hooks/use-roles';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, Activity as ActivityIcon, Users, Building } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useActivities, usePersonRoles, useCompanyCategories } from '@/hooks/use-data';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -269,21 +269,27 @@ const CategoryManagement = () => {
             variant={tab === 'activities' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setTab('activities')}
+            className="flex items-center gap-2"
           >
+            <ActivityIcon className="w-4 h-4" />
             Attività ({activitiesQuery.data?.length || 0})
           </Button>
           <Button
             variant={tab === 'roles' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setTab('roles')}
+            className="flex items-center gap-2"
           >
+            <Users className="w-4 h-4" />
             Ruoli Persona ({rolesQuery.data?.length || 0})
           </Button>
           <Button
             variant={tab === 'categories' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setTab('categories')}
+            className="flex items-center gap-2"
           >
+            <Building className="w-4 h-4" />
             Categorie Azienda ({categoriesQuery.data?.length || 0})
           </Button>
         </div>
