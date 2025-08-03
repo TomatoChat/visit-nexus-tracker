@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Check, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile, useKeyboardPositioning } from '@/hooks/use-mobile';
 
 interface Option {
   value: string;
@@ -39,6 +39,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   const [selectedOption, setSelectedOption] = useState<Option | undefined>();
   const [selectedOptions, setSelectedOptions] = useState<Option[]>([]);
   const isMobile = useIsMobile();
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (isMulti && Array.isArray(value)) {
@@ -49,10 +50,14 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
     }
   }, [value, options, isMulti]);
 
+  // Use keyboard positioning hook for mobile dropdown
+  useKeyboardPositioning(open && isMobile, triggerRef, 150);
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          ref={triggerRef}
           variant="outline"
           role="combobox"
           aria-expanded={open}

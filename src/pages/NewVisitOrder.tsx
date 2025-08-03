@@ -3,6 +3,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
+import { Activity, ShoppingCart } from 'lucide-react';
 
 const NewVisitOrder = () => {
   const [activeTab, setActiveTab] = useState<'visit' | 'order'>('visit');
@@ -25,14 +26,18 @@ const NewVisitOrder = () => {
           variant={activeTab === 'visit' ? 'default' : 'outline'}
           size="sm"
           onClick={() => setActiveTab('visit')}
+          className="flex items-center gap-2"
         >
+          <Activity className="w-4 h-4" />
           Visita
         </Button>
         <Button
           variant={activeTab === 'order' ? 'default' : 'outline'}
           size="sm"
           onClick={() => setActiveTab('order')}
+          className="flex items-center gap-2"
         >
+          <ShoppingCart className="w-4 h-4" />
           Ordine
         </Button>
       </div>

@@ -44,6 +44,7 @@ import { formatDateForDatabase } from '@/lib/date-utils';
 import { useQuery } from '@tanstack/react-query';
 import { useRoles } from '@/hooks/use-roles';
 import { useAdminMode } from '@/hooks/use-admin-mode';
+import { useIsMobile, useKeyboardPositioning } from '@/hooks/use-mobile';
 
 type Company = Database['public']['Tables']['companies']['Row'];
 type SellingPointWithAddress = Database['public']['Tables']['sellingPoints']['Row'] & { addresses?: Database['public']['Tables']['addresses']['Row'] };
@@ -53,6 +54,110 @@ type Person = Database['public']['Tables']['people']['Row'];
 interface NewVisitFormProps {
   activeTab: 'visit' | 'order';
 }
+
+// Custom DatePicker component with scroll functionality for mobile
+interface DatePickerWithScrollProps {
+  selectedDate: Date | undefined;
+  onSelect: (date: Date | undefined) => void;
+  placeholder: string;
+  disabled?: (date: Date) => boolean;
+  className?: string;
+}
+
+const DatePickerWithScroll: React.FC<DatePickerWithScrollProps> = ({
+  selectedDate,
+  onSelect,
+  placeholder,
+  disabled,
+  className
+}) => {
+  const [open, setOpen] = useState(false);
+  const isMobile = useIsMobile();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  // Use keyboard positioning hook for mobile date picker
+  useKeyboardPositioning(open && isMobile, triggerRef, 150);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          ref={triggerRef}
+          variant="outline"
+          className={cn(
+            "w-full justify-start text-left font-normal",
+            !selectedDate && "text-muted-foreground",
+            className
+          )}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {selectedDate ? formatDateForDisplay(selectedDate) : <span>{placeholder}</span>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={selectedDate}
+          onSelect={(date) => {
+            onSelect(date);
+            setOpen(false);
+          }}
+          disabled={disabled}
+          initialFocus
+          className="p-3 pointer-events-auto"
+        />
+      </PopoverContent>
+    </Popover>
+  );
+};
+
+// Custom DatePicker component for order date with Italian locale
+const OrderDatePickerWithScroll: React.FC<DatePickerWithScrollProps> = ({
+  selectedDate,
+  onSelect,
+  placeholder,
+  disabled,
+  className
+}) => {
+  const [open, setOpen] = useState(false);
+  const isMobile = useIsMobile();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  // Use keyboard positioning hook for mobile date picker
+  useKeyboardPositioning(open && isMobile, triggerRef, 150);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          ref={triggerRef}
+          variant="outline"
+          className={cn(
+            "w-full justify-start text-left font-normal",
+            !selectedDate && "text-muted-foreground",
+            className
+          )}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {selectedDate ? format(selectedDate, "PPP", { locale: it }) : <span>{placeholder}</span>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={selectedDate}
+          onSelect={(date) => {
+            onSelect(date);
+            setOpen(false);
+          }}
+          disabled={disabled}
+          initialFocus
+          locale={it}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 export const NewVisitForm: React.FC<NewVisitFormProps> = ({ activeTab }) => {
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
@@ -249,6 +354,14 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = ({ activeTab }) => {
       setSelectedSellerId('');
       setSelectedSellingPointId('');
       setSelectedActivityId('');
+      
+      // Scroll to next section after a short delay
+      setTimeout(() => {
+        window.scrollBy({
+          top: 100,
+          behavior: 'smooth'
+        });
+      }, 300);
     }
   }, [selectedSupplierId]);
 
@@ -258,6 +371,14 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = ({ activeTab }) => {
       // Reset subsequent selections
       setSelectedSellingPointId('');
       setSelectedActivityId('');
+      
+      // Scroll to next section after a short delay
+      setTimeout(() => {
+        window.scrollBy({
+          top: 100,
+          behavior: 'smooth'
+        });
+      }, 300);
     }
   }, [selectedSellerId, selectedSupplierId]);
 
@@ -266,6 +387,14 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = ({ activeTab }) => {
     if (selectedSellingPointId) {
       // Reset subsequent selections
       setSelectedActivityId('');
+      
+      // Scroll to next section after a short delay
+      setTimeout(() => {
+        window.scrollBy({
+          top: 100,
+          behavior: 'smooth'
+        });
+      }, 300);
     }
   }, [selectedSellingPointId]);
 
@@ -275,8 +404,29 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = ({ activeTab }) => {
       setOrderStatus('not_placed');
       setVisitedPerson(false);
       setPersonVisitedId(null);
+      
+      // Scroll all the way down to show submit button and summary after a short delay
+      setTimeout(() => {
+        window.scrollTo({
+          top: document.body.scrollHeight,
+          behavior: 'smooth'
+        });
+      }, 300);
     }
   }, [selectedActivityId]);
+
+  // Scroll when order date is selected
+  useEffect(() => {
+    if (orderDate && activeTab === 'order') {
+      // Scroll to next section after a short delay
+      setTimeout(() => {
+        window.scrollBy({
+          top: 100,
+          behavior: 'smooth'
+        });
+      }, 300);
+    }
+  }, [orderDate, activeTab]);
 
   // Use different data sources based on admin mode status
   const supplierOptions = (shouldUseAdminMode ? allSuppliers : amSuppliers)
@@ -511,30 +661,12 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = ({ activeTab }) => {
                   <CalendarIcon className="w-4 h-4" />
                   Data visita
                 </label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !selectedDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {selectedDate ? formatDateForDisplay(selectedDate) : <span>Scegli una data</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={(date) => date && setSelectedDate(date)}
-                      disabled={(date) => date > new Date()}
-                      initialFocus
-                      className="p-3 pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
+                <DatePickerWithScroll
+                  selectedDate={selectedDate}
+                  onSelect={setSelectedDate}
+                  placeholder="Scegli una data"
+                  disabled={(date) => date > new Date()}
+                />
               </div>
               
               {/* Step 1: Fornitore */}
@@ -636,11 +768,12 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = ({ activeTab }) => {
                     <label className="text-sm font-medium flex items-center gap-2" htmlFor="ordine-completato-switch">
                       Ordine
                     </label>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 overflow-x-auto pb-2 -mb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
                       <Button
                         type="button"
                         variant={orderStatus === 'placed' ? 'default' : 'outline'}
                         onClick={() => setOrderStatus('placed')}
+                        className="flex-shrink-0 min-w-fit"
                       >
                         Effettuato
                       </Button>
@@ -648,6 +781,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = ({ activeTab }) => {
                         type="button"
                         variant={orderStatus === 'will_be_placed' ? 'default' : 'outline'}
                         onClick={() => setOrderStatus('will_be_placed')}
+                        className="flex-shrink-0 min-w-fit"
                       >
                         Sarà effettuato
                       </Button>
@@ -655,6 +789,7 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = ({ activeTab }) => {
                         type="button"
                         variant={orderStatus === 'not_placed' ? 'default' : 'outline'}
                         onClick={() => setOrderStatus('not_placed')}
+                        className="flex-shrink-0 min-w-fit"
                       >
                         Non effettuato
                       </Button>
@@ -795,29 +930,12 @@ export const NewVisitForm: React.FC<NewVisitFormProps> = ({ activeTab }) => {
                     <CalendarIcon className="w-4 h-4" />
                     Data Ordine *
                   </label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !orderDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {orderDate ? format(orderDate, "PPP", { locale: it }) : "Seleziona data"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={orderDate}
-                        onSelect={setOrderDate}
-                        initialFocus
-                        locale={it}
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <OrderDatePickerWithScroll
+                    selectedDate={orderDate}
+                    onSelect={setOrderDate}
+                    placeholder="Seleziona data"
+                    disabled={(date) => date > new Date()}
+                  />
                 </div>
               )}
 

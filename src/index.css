@@ -126,15 +126,15 @@ All colors MUST be HSL.
     --sidebar-ring: 240 4.9% 83.9%;
 
     /* Modern Semantic colors */
-    --success: 142 70% 45%;
-    --success-foreground: 144 80% 10%;
+    --success: 142 76% 36%;
+    --success-foreground: 355 100% 97%;
     --success-muted: 142 76% 36%;
-    --success-muted-foreground: 355 100% 97%;
+    --success-muted-foreground: 144 80% 10%;
 
-    --warning: 48 96% 89%;
-    --warning-foreground: 38 92% 50%;
-    --warning-muted: 38 92% 50%;
-    --warning-muted-foreground: 48 96% 89%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 48 96% 89%;
+    --warning-muted: 48 96% 89%;
+    --warning-muted-foreground: 38 92% 50%;
 
     --info: 221 83% 53%;
     --info-foreground: 210 40% 98%;
@@ -142,61 +142,77 @@ All colors MUST be HSL.
     --info-muted-foreground: 215 20% 65%;
 
     /* Status colors */
-    --status-active: 142 70% 45%;
+    --status-active: 142 76% 36%;
     --status-inactive: 240 5% 64.9%;
-    --status-pending: 48 96% 89%;
+    --status-pending: 38 92% 50%;
 
     /* Overlay colors */
     --overlay: 240 10% 3.9%;
     --overlay-foreground: 0 0% 100%;
 
-    /* Chart colors - Modern dark palette */
+    /* Chart colors - Modern palette */
     --chart-1: 0 0% 98%;
     --chart-2: 240 3.7% 15.9%;
-    --chart-3: 240 10% 3.9%;
-    --chart-4: 142 70% 45%;
-    --chart-5: 48 96% 89%;
+    --chart-3: 240 5% 64.9%;
+    --chart-4: 142 76% 36%;
+    --chart-5: 38 92% 50%;
     --chart-6: 221 83% 53%;
     --chart-7: 262 83% 58%;
     --chart-8: 0 84% 60%;
   }
-}
 
-@layer base {
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
 
   body {
-    @apply bg-background text-foreground;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
-}
 
-@layer utilities {
-  /* Prevent layout shift for dynamic content */
   .content-visibility-auto {
     content-visibility: auto;
-    contain-intrinsic-size: 0 500px;
   }
-  
-  /* Reserve space for dynamic elements */
+
   .reserve-space {
-    min-height: 1rem;
+    contain-intrinsic-size: 1px 5000px;
   }
-  
-  /* Prevent layout shift for buttons */
+
   .btn-stable {
-    min-height: 2.5rem;
-    min-width: 2.5rem;
+    contain-layout: style;
   }
-  
-  /* Prevent layout shift for tables */
+
   .table-stable {
-    min-height: 200px;
+    contain-layout: style;
   }
-  
-  /* Prevent layout shift for cards */
+
   .card-stable {
-    min-height: 100px;
+    contain-layout: style;
+  }
+
+  /* Custom scrollbar styles for order status buttons */
+  .scrollbar-thin::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 2px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  /* Hide scrollbar on mobile when not needed */
+  @media (max-width: 768px) {
+    .scrollbar-thin::-webkit-scrollbar {
+      height: 6px;
+    }
   }
 }

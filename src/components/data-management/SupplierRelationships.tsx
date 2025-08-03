@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -22,6 +22,7 @@ import {
   useDeleteCompanySellingPoint 
 } from '@/hooks/use-data';
 import type { Database } from '@/integrations/supabase/types';
+import { useIsMobile, useKeyboardPositioning } from '@/hooks/use-mobile';
 
 type CompanySellingPoint = Database['public']['Tables']['companySellingPoint']['Row'] & {
   supplierCompany: Database['public']['Tables']['companies']['Row'];
@@ -31,6 +32,62 @@ interface SupplierRelationshipsProps {
   sellingPointId: string;
   sellingPointName: string;
 }
+
+// Custom DatePicker component with scroll functionality for mobile
+interface DatePickerWithScrollProps {
+  selectedDate: Date | undefined;
+  onSelect: (date: Date | undefined) => void;
+  placeholder: string;
+  disabled?: (date: Date) => boolean;
+  className?: string;
+}
+
+const DatePickerWithScroll: React.FC<DatePickerWithScrollProps> = ({
+  selectedDate,
+  onSelect,
+  placeholder,
+  disabled,
+  className
+}) => {
+  const [open, setOpen] = useState(false);
+  const isMobile = useIsMobile();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  // Use keyboard positioning hook for mobile date picker
+  useKeyboardPositioning(open && isMobile, triggerRef, 150);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          ref={triggerRef}
+          variant="outline"
+          className={cn(
+            "w-full justify-start text-left font-normal",
+            !selectedDate && "text-muted-foreground",
+            className
+          )}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {selectedDate ? format(selectedDate, "PPP", { locale: it }) : <span>{placeholder}</span>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={selectedDate}
+          onSelect={(date) => {
+            onSelect(date);
+            setOpen(false);
+          }}
+          disabled={disabled}
+          initialFocus
+          className="p-3"
+        />
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 const SupplierRelationships: React.FC<SupplierRelationshipsProps> = ({ 
   sellingPointId, 
@@ -176,57 +233,22 @@ const SupplierRelationships: React.FC<SupplierRelationshipsProps> = ({
 
             <div className="space-y-2">
               <Label>Data di inizio <span className="text-red-500">*</span></Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !startDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {startDate ? format(startDate, "PPP", { locale: it }) : <span>Scegli una data</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={startDate}
-                    onSelect={(date) => date && setStartDate(date)}
-                    initialFocus
-                    className="p-3"
-                  />
-                </PopoverContent>
-              </Popover>
+              <DatePickerWithScroll
+                selectedDate={startDate}
+                onSelect={(date) => setStartDate(date || new Date())}
+                placeholder="Scegli una data"
+                disabled={(date) => date <= new Date()}
+              />
             </div>
 
             <div className="space-y-2">
               <Label>Data di fine (opzionale)</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !endDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {endDate ? format(endDate, "PPP", { locale: it }) : <span>Scegli una data</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={endDate}
-                    onSelect={setEndDate}
-                    disabled={(date) => date <= startDate}
-                    initialFocus
-                    className="p-3"
-                  />
-                </PopoverContent>
-              </Popover>
+              <DatePickerWithScroll
+                selectedDate={endDate}
+                onSelect={(date) => setEndDate(date || undefined)}
+                placeholder="Scegli una data"
+                disabled={(date) => date && date <= startDate}
+              />
             </div>
 
             <div>
