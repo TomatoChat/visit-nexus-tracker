@@ -5,21 +5,44 @@ import MyOrdersList from '@/components/data-management/MyOrdersList';
 import MyVisitsList from '@/components/data-management/MyVisitsList';
 import { Button } from '@/components/ui/button';
 import { FileText, ShoppingCart, Activity } from 'lucide-react';
+import DataFilter, { DataFilters } from '@/components/ui/data-filter';
 
 const MyData = () => {
   const [activeTab, setActiveTab] = useState('visits');
+  const [filters, setFilters] = useState<DataFilters>({});
+
+  const handleFiltersChange = (newFilters: DataFilters) => {
+    setFilters(newFilters);
+  };
+
+  const handleClearFilters = () => {
+    setFilters({});
+  };
 
   return (
     <Layout>
       <div className="min-h-screen w-full pb-2 md:pb-0">
         {/* Mobile: Sidebar button and title row */}
-        <div className="flex flex-row items-center gap-2 md:hidden mb-4">
-          <SidebarTrigger />
-          <h1 className="text-lg font-bold text-foreground">I miei dati</h1>
+        <div className="flex flex-row items-center justify-between gap-2 md:hidden mb-4">
+          <div className="flex items-center gap-2">
+            <SidebarTrigger />
+            <h1 className="text-lg font-bold text-foreground">I miei dati</h1>
+          </div>
+          <DataFilter 
+            filters={filters}
+            onFiltersChange={handleFiltersChange}
+            onClearFilters={handleClearFilters}
+          />
         </div>
-        {/* Desktop: Title */}
-        <div className="hidden md:flex items-center gap-4 mb-8">
+        
+        {/* Desktop: Title and filter */}
+        <div className="hidden md:flex items-center justify-between gap-4 mb-8">
           <h1 className="text-3xl font-bold text-foreground text-left">I miei dati</h1>
+          <DataFilter 
+            filters={filters}
+            onFiltersChange={handleFiltersChange}
+            onClearFilters={handleClearFilters}
+          />
         </div>
         
         {/* Filter buttons */}
@@ -47,13 +70,13 @@ const MyData = () => {
         {/* Content */}
         {activeTab === 'visits' && (
           <div className="mt-6">
-            <MyVisitsList />
+            <MyVisitsList filters={filters} />
           </div>
         )}
         
         {activeTab === 'orders' && (
           <div className="mt-6">
-            <MyOrdersList />
+            <MyOrdersList filters={filters} />
           </div>
         )}
       </div>

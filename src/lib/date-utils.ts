@@ -2,6 +2,21 @@ import { format, formatISO } from 'date-fns';
 import { it } from 'date-fns/locale';
 
 /**
+ * Formats a date with the specified format string
+ */
+export function formatDate(date: Date | string, formatStr: string): string {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  return format(dateObj, formatStr, { locale: it });
+}
+
+/**
+ * Parses a date string into a Date object
+ */
+export function parseDate(dateString: string): Date {
+  return new Date(dateString);
+}
+
+/**
  * Converts a Date object to a YYYY-MM-DD string in Italian timezone
  * This ensures the date doesn't shift due to UTC conversion
  */
